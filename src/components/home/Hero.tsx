@@ -17,6 +17,10 @@ export default function Hero() {
       </h1>
       {/* Below 1024, forces the intro onto its own line. flex-basis 100% alone isn't
           enough: max-width 640 lets the intro squeeze in beside the words at ~800–1000px. */}
+      {/* 768–1023: stands in for the right half, so "Korn." centres in the space
+          between "Hello, I am" and the middle of the page (as it does beside the intro
+          from 1024) */}
+      <span className={styles.half} aria-hidden="true" />
       <span className={styles.break} aria-hidden="true" />
       {/* Phrases that read badly split across lines are kept whole with .keep */}
       <p className={styles.intro} data-reveal data-d="160">

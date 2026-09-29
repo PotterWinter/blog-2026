@@ -42,6 +42,24 @@
   white-space: nowrap;
 }
 
+.half {
+  display: none;
+}
+
+/* "Korn." sits in the middle of the open space after "Hello, I am": on phones, the
+   space up to the right edge (owner, 30 Sep 69) */
+.word + .word {
+  margin: 0 auto;
+}
+
+/* Phones: nothing follows "Korn." on its line, so the 12px column gap only sits
+   before it; the same 12px after keeps it truly centred */
+@media (max-width: 767px) {
+  .word + .word {
+    padding-right: 12px;
+  }
+}
+
 @media (min-width: 768px) {
   .hero {
     padding-bottom: 96px;
@@ -53,16 +71,28 @@
   }
 }
 
-/* 1024–1279: one row — the intro sits beside "Hello, I am Korn.", baseline to baseline,
-   taking the room that's left (up to 640px), as the v4 1024 frame renders it */
+/* 768–1023: "Korn." centres in the space up to the middle of the page (.half stands
+   in for the right half) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .half {
+    display: block;
+    flex: 0 0 50%;
+    height: 0;
+  }
+}
+
+/* 1024–1279: one row, baseline to baseline. The intro takes the right half — its left
+   edge at the middle of the page, the centre of the middle cover below — so there's
+   always open space after "Korn." (v4 butts it up against the title; owner, 30 Sep 69) */
 @media (min-width: 1024px) {
   .break {
     display: none;
   }
 
   .intro {
-    flex: 1 1 0;
-    margin-top: 0;
+    flex: 0 0 50%;
+    max-width: none;
+    margin: 0;
   }
 }
 
@@ -83,6 +113,11 @@
 
   .break {
     display: none;
+  }
+
+  /* Back at the start of its own column */
+  .word + .word {
+    margin: 0;
   }
 
   /* Fills its column to the right edge of the page (v4 capped it at 584px, which on
