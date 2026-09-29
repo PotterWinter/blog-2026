@@ -43,8 +43,22 @@
 - จุดใน nav ใช้สี ink ตรงๆ แทน white + difference blend (blend มองไม่เห็นเมื่อจุดลอยต่ำกว่า header)
 - ยังไม่มี loader ตอนเปิดเว็บครั้งแรก (ช้าเกินสำหรับบล็อกอ่านเร็ว — ทำเพิ่มได้ถ้าต้องการ)
 
-### 3.2 หน้าอ่าน
-- [ ] 01 · 04 · 02 · 04B · 03 · 10
+### 3.2 หน้า 01 Blog home
+- [x] 3.2a Data layer `src/lib/content.ts` (อ่าน .md + ตรวจ schema) · fixtures 30 เรื่องใน `fixtures/content` (`.env.development` ชี้ไปที่นี่)
+- [x] 3.2b Hero (flow < 1024 · แถวเดียว 1024–1279 · 3 คอลัมน์ ≥ 1280) · reveal on scroll (`data-reveal`, `RevealObserver`)
+- [x] 3.2c แถบกรองหมวด + travel dot แยกเป็น `travel-dot/useTravelDot` ใช้ร่วมกับ nav · `/?category=`
+- [x] 3.2d Grid การ์ด 3/2/1 คอลัมน์ + pager (`/?page=`) · `/media/...` route · กดหน้าเดิม = reset ทุกอย่าง (`PageSlot`)
+- [ ] 3.2d-2 ของตกแต่งการ์ด: จุดบนการ์ด, เคอร์เซอร์ VIEW, animation เปลี่ยนหน้า
+- [ ] 3.2e Tags panel, ช่องค้นหา, GRID/LIST (01B)
+- [ ] 3.2f Closing block ก่อน footer
+
+**ตัดสินใจเพิ่ม (29 ก.ย. 69)**
+- กรอบกว้างสุด `--frame: 1680px` (v4 วาดที่ 1280) ตัวอักษรหยุดโตที่ 1280
+- กดปุ่มที่พากลับหน้าเดิม (nav, โลโก้) = โหลดใหม่ + reset ตัวกรอง/หน้า + URL สะอาด
+- เลขหมวดใช้ `src/lib/site.ts` ไปก่อน (ขั้น 5 ย้ายไป `site.json`)
+
+### 3.3 หน้าอื่น
+- [ ] 04 · 02 · 04B · 03 · 10
 
 ## ขั้น 4 · อ่านผ่าน GitHub API + cache
 
@@ -65,4 +79,4 @@
 
 ## ตอนนี้อยู่
 
-ขั้น 3.2 · หน้า 01 Blog home (อ่าน .md จาก `blog-content` ในเครื่อง)
+ขั้น 3.2d-2 หรือ 3.2e (หน้า 01 ยังเหลือของตกแต่ง, Tags/ค้นหา/GRID-LIST, closing block)
