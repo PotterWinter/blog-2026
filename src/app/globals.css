@@ -72,6 +72,9 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Keep room for the scrollbar on short pages too, so the header (and the nav dot)
+     doesn't shift sideways when a page change adds or removes the scrollbar */
+  scrollbar-gutter: stable;
 }
 
 body {

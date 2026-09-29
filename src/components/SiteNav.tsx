@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
 import styles from "./SiteNav.module.css";
+import { usePageTransition } from "./PageTransition";
 
 type Point = { x: number; y: number };
 
@@ -109,7 +110,9 @@ function placeDot({ dot, links, hop }: Refs, active: number, animate: boolean) {
 
 export default function SiteNav() {
   const pathname = usePathname();
-  const active = items.findIndex((item) => item.match(pathname));
+  // While the panel is up, the dot already points at where we're going
+  const { target, go } = usePageTransition();
+  const active = items.findIndex((item) => item.match(target ?? pathname));
 
   const dotRef = useRef<HTMLSpanElement>(null);
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -123,15 +126,18 @@ export default function SiteNav() {
     placeDot({ dot: dotRef.current, links: linkRefs.current, hop: hopRef }, active, true);
   }, [active]);
 
-  // Header resized (window, a scrollbar appearing, shown again): snap into place,
-  // or re-aim mid-air if a hop is still running
+  // Header resized (window, a scrollbar appearing, shown again): snap into place.
+  // Mid-hop, let the hop land first — the dot lives in nav space, so the nav sliding
+  // sideways doesn't move its target, and a second hop would read as a double bounce.
   useLayoutEffect(() => {
     const dot = dotRef.current;
     const header = dot?.parentElement?.parentElement;
     if (!dot || !header) return;
+    const snap = () => placeDot({ dot, links: linkRefs.current, hop: hopRef }, activeRef.current, false);
     const observer = new ResizeObserver(() => {
-      const flying = hopRef.current?.playState === "running";
-      placeDot({ dot, links: linkRefs.current, hop: hopRef }, activeRef.current, flying);
+      const hop = hopRef.current;
+      if (hop?.playState === "running") hop.finished.then(snap, () => {});
+      else snap();
     });
     observer.observe(header);
     return () => observer.disconnect();
@@ -148,6 +154,11 @@ export default function SiteNav() {
           }}
           className={styles.item}
           aria-current={i === active ? "page" : undefined}
+          onNavigate={(e) => {
+            if (!go) return;
+            e.preventDefault();
+            if (i !== active) go(item.href);
+          }}
         >
           <span className={styles.slot} />
           {item.label}

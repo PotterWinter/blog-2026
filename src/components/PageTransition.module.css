@@ -1,0 +1,46 @@
+/* Page change: an e8 panel rises over the page, the new page swaps in under it,
+   then the panel drops back down. z-index 39 keeps it under the sticky header (40),
+   so the nav and its dot stay in view the whole time. */
+.panel {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Loader: name ——— 64% (after the dashdigital.studio reference) */
+.loader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.name {
+  font-size: 16px;
+  letter-spacing: -0.04em;
+}
+
+.track {
+  width: 64px;
+  height: 1px;
+  background: var(--line);
+}
+
+.line {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.count {
+  min-width: 4ch;
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
+  font-variant-numeric: tabular-nums;
+}
