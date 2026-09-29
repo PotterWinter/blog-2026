@@ -9,9 +9,12 @@ button.toggle,
 }
 
 /* "Tags +" — same type as the categories, grey until hovered or open.
-   On phones it takes its own row, so the four categories share the first. */
-.toggle {
+   On phones its wrapper takes its own row, so the four categories share the first. */
+.toggleRow {
   flex-basis: 100%;
+}
+
+.toggle {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -28,21 +31,23 @@ button.toggle,
   color: var(--ink);
 }
 
+/* The plus is sized in em, so it follows the type: 16px wide with 2.4px bars at the
+   30px desktop size (v4), 12.8 / 1.9px at a phone's 24px */
 .sign {
   position: relative;
   display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-left: 2px;
-  vertical-align: -0.5px;
+  width: 0.533em;
+  height: 0.533em;
+  margin-left: 0.067em;
+  vertical-align: -0.017em;
 }
 
 .sign > span {
   position: absolute;
-  top: 6.8px;
+  top: 0.227em;
   left: 0;
-  width: 16px;
-  height: 2.4px;
+  width: 0.533em;
+  height: 0.08em;
   background: currentColor;
 }
 
@@ -260,8 +265,11 @@ button.toggle,
 /* Off real phones the categories are one plain row (see CategoryFilter), and Tags
    joins them — it only drops to the next line if the row runs out of room */
 @media (min-width: 480px), (pointer: fine) {
+  .toggleRow {
+    display: contents;
+  }
+
   .toggle {
-    flex-basis: auto;
     display: inline-block;
     min-height: 0;
     margin-left: 6px;

@@ -18,9 +18,14 @@ export default function Hero() {
       {/* Below 1024, forces the intro onto its own line. flex-basis 100% alone isn't
           enough: max-width 640 lets the intro squeeze in beside the words at ~800–1000px. */}
       <span className={styles.break} aria-hidden="true" />
+      {/* Phrases that read badly split across lines are kept whole with .keep */}
       <p className={styles.intro} data-reveal data-d="160">
-        I graduated in architecture but work in software, and write here about how things are put
-        together.
+        I graduated in architecture, <span className={styles.keep}>ended up</span> building
+        software, and write here about how things are{" "}
+        <span className={styles.keep}>put together.</span> This is{" "}
+        <span className={styles.keep}>a notebook,</span>{" "}
+        <span className={styles.keep}>not a publication.</span> Posts go up when something breaks
+        and <span className={styles.keep}>I finally understand why.</span>
       </p>
     </section>
   );

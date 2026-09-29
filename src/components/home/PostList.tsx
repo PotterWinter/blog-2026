@@ -12,10 +12,18 @@ import styles from "./PostList.module.css";
 const DOT = 8;
 const COVER_H = 112; // the preview panel's cover: 224 × 112, 2:1 like every cover
 const CARD_H = 110; // the phone card's cover: 220 × 110
-const HOLD = 20; // px a row boundary must pass the phone card's line before switching
-// Where the phone card comes to rest below the last row: more than HOLD, so the last
-// row's bottom can pass the line by HOLD and be chosen
-const REST = HOLD + 16;
+const CARD_MIN_H = CARD_H + 14 * 1.4 + 18; // with a one-line excerpt (14px / 1.4, 8 + 10 padding)
+// px a row boundary must pass the phone card's line before switching (the card's
+// height is fixed, so this only has to absorb a scroll left resting on a boundary)
+const HOLD = 8;
+// Where the phone card comes to rest below the last row (more than HOLD, so the last
+// row can clear its line there)
+const REST = 12;
+// Over the last this-many rows of scroll before the card comes to rest, the one-row
+// gap between the chosen row and the card closes, so the last rows still get their turn
+const CLOSE_ROWS = 4;
+// Rows of space between the chosen row and the phone card while it's pinned
+const GAP_ROWS = 2;
 
 // A tap of the phone's vibration motor as the dot lands on a new row. Android only:
 // iOS Safari gives web pages no way to vibrate (a hidden <input switch> was tried,
@@ -52,7 +60,7 @@ const moving = (s: Spring, eps = 0.05) => Math.abs(s.to - s.x) > eps || Math.abs
 // Below 768 the preview is a card pinned to the bottom of the screen instead (cover +
 // excerpt), and the dot sits in the left margin. With a mouse the card follows the
 // hovered row. On a real phone (touch) there's no hover, so the list follows the scroll:
-// the chosen row is the one a full row above the card's top edge (room to read it),
+// the chosen row is the one GAP_ROWS rows above the card's top edge (room to read it),
 // and the dot and card spring to it, the other rows dim, and (Android) the phone gives a
 // light tick. At the end of the list the card rests just below the last row (REST), above
 // the pager, and the last row gets its turn as the card settles.
@@ -155,6 +163,20 @@ export default function PostList({ posts, phase, direction }: Props) {
       if (!raf) raf = requestAnimationFrame(tick);
     };
 
+    // The phone card's excerpt box takes the height of its text (1–3 lines), eased so
+    // the card grows and shrinks instead of jumping
+    const fitHeight = (excerpt: HTMLElement, instant: boolean) => {
+      if (excerpt !== cardExcerpt) return;
+      const from = excerpt.style.height;
+      excerpt.style.height = "auto";
+      const to = `${excerpt.offsetHeight}px`;
+      excerpt.style.height = instant ? to : from || to;
+      if (!instant) {
+        void excerpt.offsetHeight; // commit `from`, so the change to `to` transitions
+        excerpt.style.height = to;
+      }
+    };
+
     const swapExcerpt = (excerpt: HTMLElement, text: string, instant: boolean) => {
       if (excerpt.dataset.text === text) return;
       excerpt.dataset.text = text;
@@ -162,6 +184,7 @@ export default function PostList({ posts, phase, direction }: Props) {
       excerpt.getAnimations().forEach((a) => a.cancel());
       if (instant) {
         excerpt.textContent = text;
+        fitHeight(excerpt, true);
         return;
       }
       excerpt.animate(
@@ -173,6 +196,7 @@ export default function PostList({ posts, phase, direction }: Props) {
       );
       const timer = window.setTimeout(() => {
         excerpt.textContent = text;
+        fitHeight(excerpt, false);
         excerpt.getAnimations().forEach((a) => a.cancel());
         excerpt.animate(
           [
@@ -233,9 +257,8 @@ export default function PostList({ posts, phase, direction }: Props) {
       run();
     };
 
-    // Phones: pick the row a full row above the pinned card — the last row whose next
-    // row has cleared the card's top edge (the first row until one has; the last row
-    // once it has cleared the edge itself)
+    // Phones: pick the row GAP_ROWS rows above the pinned card, closing to the row just
+    // above it as the card comes to rest (see `gap`)
     let cardShown = false;
     const track = () => {
       if (!phone.matches) return;
@@ -255,27 +278,37 @@ export default function PostList({ posts, phase, direction }: Props) {
       const rows = [...zone.querySelectorAll<HTMLElement>("[data-index]")];
       const last = rows.at(-1);
       if (!last) return;
-      // Same room above and below the card at rest: last row · REST · card · REST · pager
-      card.style.margin = `${REST}px auto`;
-      const line = card.getBoundingClientRect().top;
-      // Where each row sits in the layout (offsets ignore the reveal's 22px rise). The
-      // last row has no row after it, so it's chosen once its own bottom clears the
-      // line — which happens just as the card comes to rest REST px below it.
+      // At rest: last row · REST · card · pager. The 14px below the card matches the
+      // last row's own padding under its text, so the space reads the same above
+      // the cover and below the excerpt.
+      card.style.margin = `${REST}px auto 14px`;
+      // The line the rows are measured against: where the card's top would be if its
+      // excerpt were one line. Taken from the card's bottom (the pinned edge), so it
+      // stays put while the card's real height follows the excerpt — a line that moved
+      // with it would flip the choice back and forth.
+      const line = card.getBoundingClientRect().bottom - CARD_MIN_H;
+      // Where each row sits in the layout (offsets ignore the reveal's 22px rise)
       const bottom = (r: HTMLElement) => z.top + r.offsetTop + r.offsetHeight;
+      // The chosen row is the last one whose bottom is `gap` above the card. While the
+      // card is pinned the gap is GAP_ROWS rows (room to read the row). As the card nears
+      // its resting place REST px under the last row, the gap shrinks to 0, so every
+      // row down to the last one gets picked before the card stops.
+      const rowH = rows[0].offsetHeight;
+      const toRest = Math.max(0, bottom(last) + REST - line);
+      const gap = GAP_ROWS * rowH * Math.min(1, toRest / (CLOSE_ROWS * rowH));
       const pick = (edge: number) => {
         let k = 0;
         rows.forEach((r, i) => {
-          const below = rows[i + 1] ? bottom(rows[i + 1]) : bottom(r);
-          if (below <= edge + 1) k = i;
+          if (bottom(r) <= edge + 1) k = i;
         });
         return k;
       };
       // Hysteresis: a row boundary has to pass the line by HOLD px before the choice
       // moves, so a scroll left resting right on a boundary doesn't flicker between rows
       const now = row ? rows.indexOf(row) : -1;
-      const down = pick(line - HOLD);
-      const up = pick(line + HOLD);
-      const k = now < 0 ? pick(line) : Math.min(Math.max(now, down), up);
+      const down = pick(line - gap - HOLD);
+      const up = pick(line - gap + HOLD);
+      const k = now < 0 ? pick(line - gap) : Math.min(Math.max(now, down), up);
       card.setAttribute("data-on", "");
       const next = rows[k];
       if (!next || (next === row && cardShown)) return;

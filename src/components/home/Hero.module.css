@@ -33,7 +33,13 @@
   font-size: var(--fs-lead);
   line-height: var(--lh-lead);
   letter-spacing: -0.01em;
-  text-wrap: pretty;
+  /* Below 1280 (the intro under or beside a short title): even lines that tend to
+     break at the commas, the same in Chrome and Safari */
+  text-wrap: balance;
+}
+
+.keep {
+  white-space: nowrap;
 }
 
 @media (min-width: 768px) {
@@ -60,12 +66,15 @@
   }
 }
 
-/* 1280: "Hello, I am" | "Korn." | intro — columns at 0 / 352 / 600 of the 1192 content
-   width, as placed in v4, scaling proportionally on wider screens */
+/* 1280: "Hello, I am" | "Korn." | intro — columns at 0 / 352 / 532 of the 1192 content
+   width, scaling with the screen, the intro running to the right edge (v4: starts at
+   600, capped at 584px wide). Tried starting it at half the width (the centre of the
+   middle cover): 4 lines with a short, ragged second one on a 1571 screen. From 532
+   the intro sets in 3 even lines from ~1570 up and 4 below (owner, 30 Sep 69). */
 @media (min-width: 1280px) {
   .hero {
     display: grid;
-    grid-template-columns: minmax(0, 352fr) minmax(0, 248fr) minmax(0, 592fr);
+    grid-template-columns: minmax(0, 352fr) minmax(0, 180fr) minmax(0, 660fr);
     align-items: start;
     gap: 0;
     min-height: 246px;
@@ -76,8 +85,16 @@
     display: none;
   }
 
+  /* Fills its column to the right edge of the page (v4 capped it at 584px, which on
+     wider screens left the right side well short of the nav — owner, 30 Sep 69).
+     pretty here, not balance: long first lines that reach the right edge, and no
+     one-word last line */
   .intro {
-    max-width: 584px;
+    max-width: none;
     margin: 1px 0 0;
+    /* Safari 17 has no pretty and would keep balance's short even lines: plain wrap
+       first, pretty where supported */
+    text-wrap: wrap;
+    text-wrap: pretty;
   }
 }

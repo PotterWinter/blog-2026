@@ -53,7 +53,9 @@
   align-items: baseline;
   gap: 8px 20px;
   margin: 0 var(--page-x);
-  padding: 20px 0 16px;
+  /* Phones: the links already carry 44px tap areas, so the row itself adds little
+     (84px tall before, 56 now — the owner found it too tall, 30 Sep 69) */
+  padding: 6px 0;
   border-top: var(--rule-section);
 }
 

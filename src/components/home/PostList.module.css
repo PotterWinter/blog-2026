@@ -249,7 +249,7 @@
 
 /* Phone card: cover 220 × 110 + excerpt, pinned 12px above the bottom of the screen
    while the list is in view. It lives at the end of the list, so at the end it stops
-   there, above the pager (on a phone REST px above and below it — set in JS). */
+   there, above the pager (on a phone REST px below the last row — set in JS). */
 .card {
   display: none;
 }
@@ -261,7 +261,7 @@
     z-index: 5;
     display: block;
     width: 220px;
-    margin: 12px auto;
+    margin: 12px auto 0;
     background: var(--paper);
     pointer-events: none;
     opacity: 0;
@@ -287,12 +287,10 @@
 }
 
 /* The desktop panel's excerpt, a size down for the phone */
-/* A fixed three lines (the card's height must not change with the excerpt: its top
-   edge is the line the phone list tracks, so a taller card would move the line and
-   flip the choice back) */
+/* As tall as its text, up to three lines (JS sets the height and it eases, so the
+   card grows or shrinks with the excerpt instead of jumping) */
 .cardExcerpt {
   display: -webkit-box;
-  height: calc(3 * 1.4em + 18px);
   padding: 8px 10px 10px;
   overflow: hidden;
   font-family: var(--ff-serif);
@@ -301,4 +299,5 @@
   text-wrap: pretty;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }

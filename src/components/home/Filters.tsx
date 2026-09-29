@@ -12,21 +12,25 @@ import SearchPanel from "./SearchPanel";
 export function TagsToggle({ turns, onToggle }: { turns: number; onToggle: () => void }) {
   const open = turns % 2 === 1;
   return (
-    <button
-      type="button"
-      className={styles.toggle}
-      aria-expanded={open}
-      aria-controls="tags-panel"
-      onClick={onToggle}
-    >
-      Tags
-      {/* A plus that turns into a minus and back. The upright bar always turns clockwise,
+    // On phones the wrapper takes its own row, so the button (and its tap area) is
+    // only as wide as "Tags +"; elsewhere the wrapper steps aside (display: contents)
+    <div className={styles.toggleRow}>
+      <button
+        type="button"
+        className={styles.toggle}
+        aria-expanded={open}
+        aria-controls="tags-panel"
+        onClick={onToggle}
+      >
+        Tags
+        {/* A plus that turns into a minus and back. The upright bar always turns clockwise,
           another quarter each press (v4), so closing doesn't spin it backwards. */}
-      <span className={styles.sign} aria-hidden="true">
-        <span />
-        <span style={{ rotate: `${90 + turns * 90}deg` }} />
-      </span>
-    </button>
+        <span className={styles.sign} aria-hidden="true">
+          <span />
+          <span style={{ rotate: `${90 + turns * 90}deg` }} />
+        </span>
+      </button>
+    </div>
   );
 }
 
