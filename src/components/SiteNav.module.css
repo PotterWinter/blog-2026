@@ -1,15 +1,57 @@
 .nav {
+  position: relative;
   display: flex;
-  gap: 26px;
+  gap: 16px;
   margin-left: auto;
 }
 
 .item {
+  display: inline-block;
   font-size: var(--fs-nav);
   color: var(--muted);
+  user-select: none;
   transition: color 0.3s cubic-bezier(0.22, 0.72, 0.2, 1);
 }
 
-.item:hover {
+.item:hover,
+.item[aria-current="page"] {
   color: var(--ink);
+}
+
+/* Room in front of the active label where the dot lands */
+.slot {
+  display: inline-block;
+  width: 0;
+  height: 1px;
+  vertical-align: middle;
+  transition: width 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.item[aria-current="page"] .slot {
+  width: 13px;
+}
+
+/* White + difference blend = reads black on white, white on black */
+.dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.dot[data-ready] {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    gap: 26px;
+  }
 }
