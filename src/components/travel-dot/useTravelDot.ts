@@ -11,7 +11,6 @@ type Point = { x: number; y: number };
 // Which way the arc bows: "down" for the nav (it sits at the top edge), "up" elsewhere
 export type HopDirection = "up" | "down";
 
-const DOT = 8;
 const HOP_MS = 330;
 const HOP_HEIGHT = 76;
 const SETTLE_MS = 600;
@@ -23,14 +22,14 @@ const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 // Where the dot rests once the slots finish animating: the active slot's left edge,
 // minus the width of any earlier slot that is still collapsing.
-function restingPoint(items: (HTMLElement | null)[], active: number): Point {
+function restingPoint(items: (HTMLElement | null)[], active: number, dotSize: number): Point {
   const item = items[active]!;
   let x = item.offsetLeft;
   for (let i = 0; i < active; i++) {
     const slot = items[i]?.firstElementChild as HTMLElement | null | undefined;
     x -= slot?.offsetWidth ?? 0;
   }
-  const y = item.offsetTop + item.offsetHeight / 2 - DOT / 2;
+  const y = item.offsetTop + item.offsetHeight / 2 - dotSize / 2;
   return { x, y };
 }
 
@@ -109,7 +108,7 @@ function placeDot({ dot, items, hop }: Parts, active: number, sign: number, anim
   }
   // A zero-width group isn't laid out yet (hidden tab, mid-reload): measure later
   if (dot.parentElement!.offsetWidth === 0) return;
-  const to = restingPoint(items, active);
+  const to = restingPoint(items, active, dot.offsetHeight);
   const from = currentPoint(dot);
 
   const wasShown = dot.dataset.ready !== undefined;

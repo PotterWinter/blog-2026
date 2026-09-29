@@ -4,9 +4,10 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { usePageTransition } from "./PageTransition";
 
-// Watches every [data-reveal] block on the page and marks it data-in when it scrolls
-// into view (after its data-d delay). Waits while the transition panel covers the page,
-// so the fade-up plays where you can see it, then rescans on every page change.
+// Watches every [data-reveal] block and marks it data-in when it scrolls into view
+// (after its data-d delay). Waits while the transition panel covers the page, so the
+// fade-up plays where you can see it. Blocks added later (a new page of cards, a
+// filter) are picked up as they appear.
 export default function RevealObserver() {
   const pathname = usePathname();
   const { ready } = usePageTransition();
@@ -26,9 +27,20 @@ export default function RevealObserver() {
       },
       { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
     );
-    document.querySelectorAll("[data-reveal]:not([data-in])").forEach((el) => observer.observe(el));
+    const watched = new WeakSet<Element>();
+    const scan = () => {
+      document.querySelectorAll("[data-reveal]:not([data-in])").forEach((el) => {
+        if (watched.has(el)) return;
+        watched.add(el);
+        observer.observe(el);
+      });
+    };
+    scan();
+    const mutations = new MutationObserver(scan);
+    mutations.observe(document.body, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
+      mutations.disconnect();
       timers.forEach(clearTimeout);
     };
   }, [pathname, ready]);

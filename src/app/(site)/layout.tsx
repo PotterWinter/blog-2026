@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import PageSlot from "@/components/PageSlot";
 import PageTransition from "@/components/PageTransition";
 import RevealObserver from "@/components/RevealObserver";
 import SiteNav from "@/components/SiteNav";
@@ -11,7 +12,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <Header>
         <SiteNav />
       </Header>
-      {children}
+      <PageSlot>{children}</PageSlot>
       <Footer />
       <RevealObserver />
     </PageTransition>

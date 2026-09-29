@@ -1,5 +1,6 @@
-/* Shared by every travel-dot group (nav, category filter). The group itself needs
-   position: relative — the dot is placed in its coordinates. */
+/* Shared by every travel-dot group (nav, category filter, pager). The group itself
+   needs position: relative — the dot is placed in its coordinates. A group can set
+   --dot (size, 8px) and --slot (room it opens, 13px); the pager uses 6 / 11. */
 
 /* Room in front of the active label where the dot lands */
 .slot {
@@ -11,7 +12,7 @@
 }
 
 [data-active] > .slot {
-  width: 13px;
+  width: var(--slot, 13px);
 }
 
 /* Outer span travels (transform); solid ink, not a white difference blend — the
@@ -20,8 +21,8 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 8px;
-  height: 8px;
+  width: var(--dot, 8px);
+  height: var(--dot, 8px);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s;

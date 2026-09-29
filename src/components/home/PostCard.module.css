@@ -1,0 +1,86 @@
+/* Rows are 22px of air above and below the cards, with a 1px ink rule between rows.
+   The rule is drawn by each card (::before) and reaches 1px into the 2px column gaps
+   on both sides, so it reads as one continuous line across the row. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 23px 0 22px; /* 1px rule + 22px, as v4's bordered rows */
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  right: -1px;
+  height: 1px;
+  background: var(--ink);
+}
+
+.cover {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 14px 0 3px;
+}
+
+/* On the home grid the category and tags are full ink (v4 overrides the grey) */
+.meta :global(.label) {
+  color: var(--ink);
+}
+
+.tags {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
+}
+
+/* The date waits above its clip and drops in on hover */
+.dateClip {
+  display: block;
+  margin-left: 4px;
+  overflow: hidden;
+}
+
+.date {
+  display: block;
+  transform: translateY(-105%);
+  transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .card:hover .date {
+    transform: none;
+  }
+}
+
+.card:focus-visible .date {
+  transform: none;
+}
+
+.title {
+  font-size: var(--fs-card-title);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+}
+
+.excerpt {
+  margin-top: 2px;
+  font-family: var(--ff-serif);
+  font-size: var(--fs-body);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--muted);
+}

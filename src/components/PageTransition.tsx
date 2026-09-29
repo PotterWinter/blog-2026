@@ -22,9 +22,10 @@ type PageTransitionApi = {
   target: string | null; // where we're headed while the panel is up
   go: ((href: string) => void) | null; // null outside the site (login, admin)
   ready: boolean; // the page is (or is about to be) visible: no panel, or it's dropping
+  round: number; // bumps when the current page is pressed again — see PageSlot
 };
 
-const Context = createContext<PageTransitionApi>({ target: null, go: null, ready: true });
+const Context = createContext<PageTransitionApi>({ target: null, go: null, ready: true, round: 0 });
 
 export function usePageTransition() {
   return useContext(Context);
@@ -69,6 +70,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   const frame = useRef(0);
   const [target, setTarget] = useState<string | null>(null);
   const [covered, setCovered] = useState(false);
+  const [round, setRound] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   // The loader is drawn straight into the DOM every frame, not through state,
@@ -94,9 +96,15 @@ export default function PageTransition({ children }: { children: ReactNode }) {
     }).finished;
     setCovered(true);
     if (href === pathname) {
-      // Same page: reload its content under the panel and start again from the top
+      // Same page pressed again: a fresh start, not a cached one. Fresh content from the
+      // server, the page's own state reset (filters, page number — PageSlot remounts it),
+      // a clean URL and the top of the page, all while the panel covers it.
       window.scrollTo({ top: 0, behavior: "instant" });
-      startTransition(() => router.refresh());
+      startTransition(() => {
+        setRound((r) => r + 1);
+        if (window.location.search) router.push(href);
+        else router.refresh();
+      });
     } else {
       startTransition(() => router.push(href));
     }
@@ -124,7 +132,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   }, [arrived, loader]);
 
   return (
-    <Context value={{ target, go, ready: target === null || arrived }}>
+    <Context value={{ target, go, ready: target === null || arrived, round }}>
       {children}
       <div ref={panelRef} className={styles.panel} aria-hidden="true">
         <div className={styles.loader}>

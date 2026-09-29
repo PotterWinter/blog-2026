@@ -91,6 +91,29 @@ function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
   };
 }
 
+const MEDIA_TYPES: Record<string, string> = {
+  ".webp": "image/webp",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+};
+
+// A file from media/ (images only — clips live in Vercel Blob). null if it doesn't exist
+// or the path tries to leave the media folder.
+export async function getMedia(parts: string[]): Promise<{ body: Buffer; type: string } | null> {
+  const mediaDir = path.join(CONTENT_DIR, "media");
+  const file = path.resolve(mediaDir, ...parts);
+  const type = MEDIA_TYPES[path.extname(file).toLowerCase()];
+  if (!file.startsWith(mediaDir + path.sep) || !type) return null;
+  try {
+    return { body: await readFile(file), type };
+  } catch {
+    return null;
+  }
+}
+
 async function readPost(slug: string): Promise<Post> {
   const file = await readFile(path.join(CONTENT_DIR, "posts", `${slug}.md`), "utf8");
   const { data, body } = splitFrontmatter(file, slug);
