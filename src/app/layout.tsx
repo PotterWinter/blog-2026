@@ -28,11 +28,22 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: the script below marks <html> before React takes over
     <html
       lang="en"
       data-scroll-behavior="smooth"
       className={`${serif.variable} ${mono.variable} ${thai.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Hide [data-reveal] blocks only when JS is on, before the first paint, so they
+            can fade up without a flash — and without JS everything simply shows */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.dataset.revealing = ''",
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

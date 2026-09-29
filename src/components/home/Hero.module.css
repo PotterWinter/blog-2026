@@ -1,0 +1,83 @@
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  padding: 40px var(--page-x) 56px;
+}
+
+/* The two words are laid out by .hero directly (flex below 1280, grid above) */
+.title {
+  display: contents;
+}
+
+.word {
+  font-size: var(--fs-display);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+/* Space above the intro is a margin, not row-gap: row-gap would count twice
+   (words → break → intro) */
+.intro {
+  flex: 0 0 100%;
+  margin-top: 20px;
+  font-family: var(--ff-serif);
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding-bottom: 96px;
+  }
+
+  .intro {
+    max-width: 640px;
+    margin-top: 28px;
+  }
+}
+
+/* 1024–1279: one row — the intro sits beside "Hello, I am Korn.", baseline to baseline,
+   taking the room that's left (up to 640px), as the v4 1024 frame renders it */
+@media (min-width: 1024px) {
+  .break {
+    display: none;
+  }
+
+  .intro {
+    flex: 1 1 0;
+    margin-top: 0;
+  }
+}
+
+/* 1280: "Hello, I am" | "Korn." | intro — columns at 0 / 352 / 600 of the 1192 content
+   width, as placed in v4, scaling proportionally on wider screens */
+@media (min-width: 1280px) {
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 352fr) minmax(0, 248fr) minmax(0, 592fr);
+    align-items: start;
+    gap: 0;
+    min-height: 246px;
+    padding-bottom: 132px;
+  }
+
+  .break {
+    display: none;
+  }
+
+  .intro {
+    max-width: 584px;
+    margin: 1px 0 0;
+  }
+}

@@ -37,6 +37,15 @@
   /* Page inset: 20 → 32 (768) → 44 (1024) */
   --inset: 20px;
 
+  /* Content never grows past the frame: on wider screens the extra space becomes
+     equal margins. v4 is drawn at 1280; the owner set the cap at 1680 (29 Sep 69) so a
+     full-screen MacBook Pro 15" isn't mostly margin — between the two, layouts keep
+     stretching while type stays at its 1280 size.
+     Use --page-x for left/right padding or margin on full-width blocks; the %
+     resolves against each block's own width. */
+  --frame: 1680px;
+  --page-x: max(var(--inset), calc((100% - var(--frame)) / 2 + var(--inset)));
+
   /* Rules */
   --rule-nav: 0.5px solid rgba(17, 17, 16, 0.5);
   --rule-section: 1px solid var(--ink);
@@ -119,5 +128,29 @@ select {
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/* ---------- Reveal on scroll (v4) ----------
+   Blocks marked data-reveal rise 22px and fade in when they enter the viewport;
+   data-d="90" delays one in ms. RevealObserver adds data-in. */
+[data-revealing] [data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+[data-revealing] [data-reveal][data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-revealing] [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

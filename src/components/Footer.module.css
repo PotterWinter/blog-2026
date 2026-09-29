@@ -2,7 +2,7 @@
 .groups {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  margin: 0 var(--inset);
+  margin: 0 var(--page-x);
   border-top: var(--rule-section);
 }
 
@@ -52,7 +52,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 20px;
-  margin: 0 var(--inset);
+  margin: 0 var(--page-x);
   padding: 20px 0 16px;
   border-top: var(--rule-section);
 }

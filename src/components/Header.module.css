@@ -5,7 +5,7 @@
   display: flex;
   align-items: baseline;
   gap: 26px;
-  padding: 7px var(--inset);
+  padding: 7px var(--page-x);
   border-bottom: var(--rule-nav);
   background: var(--paper);
 }

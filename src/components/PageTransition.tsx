@@ -21,9 +21,10 @@ const FINISH_MS = 250; // loader: the last stretch to 100% once it has loaded
 type PageTransitionApi = {
   target: string | null; // where we're headed while the panel is up
   go: ((href: string) => void) | null; // null outside the site (login, admin)
+  ready: boolean; // the page is (or is about to be) visible: no panel, or it's dropping
 };
 
-const Context = createContext<PageTransitionApi>({ target: null, go: null });
+const Context = createContext<PageTransitionApi>({ target: null, go: null, ready: true });
 
 export function usePageTransition() {
   return useContext(Context);
@@ -123,7 +124,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   }, [arrived, loader]);
 
   return (
-    <Context value={{ target, go }}>
+    <Context value={{ target, go, ready: target === null || arrived }}>
       {children}
       <div ref={panelRef} className={styles.panel} aria-hidden="true">
         <div className={styles.loader}>
