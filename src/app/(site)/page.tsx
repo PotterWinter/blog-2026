@@ -1,21 +1,16 @@
 import Hero from "@/components/home/Hero";
+import PostBrowser from "@/components/home/PostBrowser";
 import { getPosts } from "@/lib/content";
+import { isCategory } from "@/lib/site";
 
-// 01 Blog home. The plain list below is temporary until the grid (3.2d).
-export default async function Home() {
+// 01 Blog home
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { category } = await searchParams;
   const posts = await getPosts({ section: "blog" });
   return (
     <main>
       <Hero />
-      <p className="label" style={{ padding: "0 var(--page-x)" }}>{posts.length} posts</p>
-      <ul style={{ padding: "0 var(--page-x) 104px", listStyle: "none" }}>
-        {posts.map((post) => (
-          <li key={post.slug}>
-            {post.publishedAt} · {post.category} · {post.title} · [{post.tags.join(", ")}] ·{" "}
-            {post.cover ?? "no cover"}
-          </li>
-        ))}
-      </ul>
+      <PostBrowser posts={posts} initialCategory={isCategory(category) ? category : null} />
     </main>
   );
 }

@@ -1,0 +1,48 @@
+/* Shared by every travel-dot group (nav, category filter). The group itself needs
+   position: relative — the dot is placed in its coordinates. */
+
+/* Room in front of the active label where the dot lands */
+.slot {
+  display: inline-block;
+  width: 0;
+  height: 1px;
+  vertical-align: middle;
+  transition: width 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-active] > .slot {
+  width: 13px;
+}
+
+/* Outer span travels (transform); solid ink, not a white difference blend — the
+   sticky header is its own stacking context, so a blend vanishes below it */
+.dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  will-change: transform;
+}
+
+.dot[data-ready] {
+  opacity: 1;
+}
+
+/* Inner span takes the press, so it shrinks around its own centre */
+.ink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+  transition: scale 0.16s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Press (pointer held down on a label): only the dot reacts, 1 → 0.62 */
+:has(> [data-pressed]) > .dot .ink {
+  scale: 0.62;
+}
