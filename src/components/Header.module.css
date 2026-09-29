@@ -1,0 +1,17 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: baseline;
+  gap: 26px;
+  padding: 7px var(--inset);
+  border-bottom: var(--rule-nav);
+  background: var(--paper);
+}
+
+.mark {
+  font-size: var(--fs-logo);
+  line-height: 1.25;
+  white-space: nowrap;
+}

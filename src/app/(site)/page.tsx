@@ -11,10 +11,19 @@ export default function Home() {
       >
         Code by Korn Natthanat
       </h1>
-      <p style={{ fontFamily: "var(--ff-serif)", fontSize: "var(--fs-lead)", lineHeight: "var(--lh-lead)" }}>
+      <p
+        style={{
+          fontFamily: "var(--ff-serif)",
+          fontSize: "var(--fs-lead)",
+          lineHeight: "var(--lh-lead)",
+        }}
+      >
         I graduated in architecture but work in software. ผมเรียนสถาปัตย์แต่ทำงานซอฟต์แวร์
       </p>
-      <p style={{ fontFamily: "var(--ff-mono)", fontSize: "var(--fs-meta)", color: "var(--muted)" }}>
+      <div style={{ height: "200vh" }}>abc</div>
+      <p
+        style={{ fontFamily: "var(--ff-mono)", fontSize: "var(--fs-meta)", color: "var(--muted)" }}
+      >
         6 SEP 26 · react, events · #134
       </p>
     </main>

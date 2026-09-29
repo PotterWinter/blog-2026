@@ -1,0 +1,15 @@
+.nav {
+  display: flex;
+  gap: 26px;
+  margin-left: auto;
+}
+
+.item {
+  font-size: var(--fs-nav);
+  color: var(--muted);
+  transition: color 0.3s cubic-bezier(0.22, 0.72, 0.2, 1);
+}
+
+.item:hover {
+  color: var(--ink);
+}
