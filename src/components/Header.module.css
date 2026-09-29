@@ -10,8 +10,41 @@
   background: var(--paper);
 }
 
+/* Logo: a window shows "Code by Korn"; on hover the whole line slides left
+   to "Korn Natthanat" while the window widens. Widths are Helvetica Neue in em,
+   so they follow the fluid logo size (the design measured the same with JS). */
 .mark {
   font-size: var(--fs-logo);
   line-height: 1.25;
+}
+
+.window {
+  display: block;
+  overflow: hidden;
+  width: 6.3em;
+  transition: width 0.5s cubic-bezier(0.3, 0.75, 0.2, 1);
+}
+
+.line {
+  display: block;
   white-space: nowrap;
+  transition: transform 0.5s cubic-bezier(0.3, 0.75, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .mark:hover .window {
+    width: 6.9em;
+  }
+
+  .mark:hover .line {
+    transform: translateX(-4.076em);
+  }
+}
+
+.mark:focus-visible .window {
+  width: 6.9em;
+}
+
+.mark:focus-visible .line {
+  transform: translateX(-4.076em);
 }
