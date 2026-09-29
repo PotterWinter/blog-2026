@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
+import type { PointerEvent } from "react";
 import styles from "./SiteNav.module.css";
 import { usePageTransition } from "./PageTransition";
 
@@ -12,6 +13,7 @@ const DOT = 8;
 const HOP_MS = 330;
 const HOP_HEIGHT = 76;
 const SETTLE_MS = 600;
+const BOING_MS = 820;
 const SQUASH = 0.35;
 const SETTLE_EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
 
@@ -79,6 +81,25 @@ function hopKeyframes(from: Point, to: Point): Keyframe[] {
   return frames;
 }
 
+// Re-press on the page you're already on: the shared hop in place — dip 16px, land with a
+// squash, then 6px and 1.5px settles (the same profile as the footer dot)
+function boingKeyframes(at: Point): Keyframe[] {
+  const frame = (drop: number, sx: number, sy: number, offset: number): Keyframe => ({
+    transform: `translate(${at.x}px, ${at.y + drop}px) scale(${sx}, ${sy})`,
+    offset,
+    easing: SETTLE_EASE,
+  });
+  return [
+    frame(0, 1, 1, 0),
+    frame(16, 0.9, 1.1, 0.2),
+    frame(0, 1.2, 0.78, 0.42),
+    frame(6, 0.94, 1.06, 0.6),
+    frame(0, 1.08, 0.92, 0.78),
+    frame(1.5, 1, 1, 0.9),
+    frame(0, 1, 1, 1),
+  ];
+}
+
 type Refs = {
   dot: HTMLSpanElement;
   links: (HTMLAnchorElement | null)[];
@@ -143,6 +164,19 @@ export default function SiteNav() {
     return () => observer.disconnect();
   }, []);
 
+  // Press = pointer held down on a label, until it's released or slides off
+  const release = (e: PointerEvent<HTMLAnchorElement>) => {
+    delete e.currentTarget.dataset.pressed;
+  };
+
+  // Bounce in place, unless the dot is still mid-hop
+  const boing = () => {
+    const dot = dotRef.current;
+    if (!dot || hopRef.current?.playState === "running") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    hopRef.current = dot.animate(boingKeyframes(currentPoint(dot)), { duration: BOING_MS });
+  };
+
   return (
     <nav className={styles.nav}>
       {items.map((item, i) => (
@@ -157,14 +191,26 @@ export default function SiteNav() {
           onNavigate={(e) => {
             if (!go) return;
             e.preventDefault();
-            if (i !== active) go(item.href);
+            // Blog is also "active" on /posts/…, so compare the actual page, not the item.
+            // Same page: bounce in place while the panel reloads it.
+            if (item.href === (target ?? pathname)) boing();
+            go(item.href);
           }}
+          draggable={false}
+          onPointerDown={(e) => (e.currentTarget.dataset.pressed = "")}
+          onPointerUp={release}
+          onPointerLeave={release}
+          onPointerCancel={release}
         >
           <span className={styles.slot} />
           {item.label}
         </Link>
       ))}
-      <span ref={dotRef} className={styles.dot} aria-hidden="true" />
+      {/* Outer span travels (transform), inner span takes the press, so it shrinks
+          around its own centre instead of being pulled toward the nav's corner */}
+      <span ref={dotRef} className={styles.dot} aria-hidden="true">
+        <span className={styles.ink} />
+      </span>
     </nav>
   );
 }

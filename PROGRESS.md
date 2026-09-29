@@ -27,6 +27,23 @@
 
 ## ขั้น 3 · หน้าอ่าน (อ่าน .md จากเครื่อง)
 
+### 3.1 Header + footer (ใช้ร่วมทุกหน้า) ✅
+- [x] Route group `(site)` มี layout ของตัวเอง · หน้า `/project`, `/about` ยังเป็นหน้าเปล่าชั่วคราว
+- [x] `Header` (sticky, ใช้ร่วมกับ login/admin ได้ — ด้านขวารับเป็น children)
+- [x] โลโก้: กรอบ 6.3em → 6.9em + ข้อความเลื่อน −4.076em (CSS ล้วน, ค่า em วัดจาก Helvetica Neue)
+- [x] `Footer`: 3 คอลัมน์ ≥768 / ซ้อนแถวที่ 390 · dot link hop · ลิงก์ LinkedIn/Behance/CV ยังเป็น `#`
+- [x] `SiteNav` travel dot: slot 13px · hop 330ms + settle 600ms (ค่าจริงจากแผงปรับค่าของ v4: hopHeight 76, squash .35) · กดค้าง = จุดหด .62 · กดหน้าเดิม = boing
+- [x] Page transition: แผ่น #e8e8e7 ขึ้นคลุมใต้ navbar → เปลี่ยน/โหลดหน้าใต้แผ่น → แผ่นเลื่อนกลับลง · loader "Korn Natthanat ——— %"
+- [x] Back to top เลื่อนแบบ smooth (`data-scroll-behavior="smooth"` ให้ Next ปิด smooth ตอนเปลี่ยนหน้า)
+- [x] Safari: คราบหาง g/j ตอน slot หด → แก้ด้วย `padding: 6px 0; margin: -6px 0` บนลิงก์ nav
+
+**เปลี่ยน/เพิ่มจาก v4 (เจ้าของตัดสินใจ 29 ก.ย. 69)**
+- Page transition + loader (ไม่มีใน v4, อ้างอิง dashdigital.studio) · กดหน้าเดิม = โหลดหน้าเดิมใหม่ + loader วิ่งอีกรอบ
+- กดค้าง: ตัวหนังสือไม่จม 1.5px (v4 จม) — จุดหดรอบจุดกึ่งกลางอย่างเดียว
+- จุดใน nav ใช้สี ink ตรงๆ แทน white + difference blend (blend มองไม่เห็นเมื่อจุดลอยต่ำกว่า header)
+- ยังไม่มี loader ตอนเปิดเว็บครั้งแรก (ช้าเกินสำหรับบล็อกอ่านเร็ว — ทำเพิ่มได้ถ้าต้องการ)
+
+### 3.2 หน้าอ่าน
 - [ ] 01 · 04 · 02 · 04B · 03 · 10
 
 ## ขั้น 4 · อ่านผ่าน GitHub API + cache
@@ -41,6 +58,11 @@
 
 ## ขั้น 6 · Dark mode
 
+## ข้อควรรู้ตอน dev
+
+- เปิดผ่าน `localhost:3000` · ถ้าเปิดจาก IP (เช่นทดสอบบนมือถือ) ต้องใส่ IP ใน `allowedDevOrigins` ของ `next.config.ts` แล้วรีสตาร์ท dev server ไม่งั้น JS ไม่ทำงาน
+- ทดสอบ Safari อัตโนมัติ: Safari › Develop › Allow Remote Automation แล้วใช้ `safaridriver`
+
 ## ตอนนี้อยู่
 
-ขั้น 3 · หน้าอ่าน → เริ่มจาก header + footer ใน layout.tsx
+ขั้น 3.2 · หน้า 01 Blog home (อ่าน .md จาก `blog-content` ในเครื่อง)

@@ -74,7 +74,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   // so counting doesn't re-render the whole page underneath
   const loader = useMemo(() => ({ frame, progress, line: lineRef, count: countRef }), []);
 
-  // 1. Raise the panel while the loader starts counting, 2. only then swap the page under it
+  // 1. Raise the panel while the loader starts counting, 2. only then swap (or reload) the page under it
   const go = async (href: string) => {
     const panel = panelRef.current;
     if (!panel || target !== null) return;
@@ -92,7 +92,13 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       fill: "forwards",
     }).finished;
     setCovered(true);
-    startTransition(() => router.push(href));
+    if (href === pathname) {
+      // Same page: reload its content under the panel and start again from the top
+      window.scrollTo({ top: 0, behavior: "instant" });
+      startTransition(() => router.refresh());
+    } else {
+      startTransition(() => router.push(href));
+    }
   };
 
   // 3. The new page is on screen under the panel: finish at 100%, then drop the panel back down
