@@ -1,4 +1,5 @@
-/* 390: two rows of 44px-tall targets, centred. 768 up: one baseline row. */
+/* Real phones (touch, under 480): two rows of 44px-tall targets. Everything else —
+   wider screens, and a narrow window on a computer — one baseline row that wraps. */
 .row {
   position: relative;
   display: flex;
@@ -44,9 +45,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Phones: the number hangs off the word instead of taking room in the line, sitting
-   in the gap, so All · Engineering · Math · Reading fit on one 350px row */
-@media (max-width: 767px) {
+/* Real phones: the number hangs off the word instead of taking room in the line, sitting
+   in the gap, so All · Engineering · Math · Reading fit on one 350px row. Touch is
+   part of the test, not just the width: a computer window squeezed to 375 has a
+   scrollbar eating 15px and would collide, so it gets the plain wrapping row. */
+@media (max-width: 479px) and (pointer: coarse) {
   /* spread the four across the row: All flush left, the last flush right.
      14px is only the minimum gap; space-between hands out whatever is left over */
   .row {
@@ -72,7 +75,7 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 480px), (pointer: fine) {
   .row {
     align-items: baseline;
     gap: 14px 20px;

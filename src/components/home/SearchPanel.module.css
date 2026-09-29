@@ -1,30 +1,32 @@
-/* Only where there's a keyboard and room for it; phones just filter the grid */
+/* Drops under the search box at every size: the box's own width below 1024 (v4 390),
+   400px pinned right from 1024 */
 .panel {
-  display: none;
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: 0fr;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.25s ease;
+}
+
+.panel[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 @media (min-width: 1024px) {
   .panel {
-    position: absolute;
-    top: calc(100% + 12px);
-    right: 0;
-    z-index: 30;
-    display: grid;
-    grid-template-rows: 0fr;
+    left: auto;
     width: 400px;
-    border: 1px solid var(--line);
-    background: var(--paper);
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-      opacity 0.25s ease;
-  }
-
-  .panel[data-open] {
-    grid-template-rows: 1fr;
-    opacity: 1;
-    pointer-events: auto;
   }
 }
 
@@ -43,8 +45,47 @@
   padding: 8px 12px 10px;
 }
 
+.scroller {
+  position: relative;
+}
+
 .list {
   position: relative;
+  scrollbar-width: none; /* ours is drawn beside it (.track) */
+  /* About six and a half rows, so the cut-off one says there's more to scroll */
+  max-height: min(266px, 45svh, var(--room, 100vh));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scroll bar: 2px, a grey line with the ink thumb, just inside the panel's right edge */
+.track {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.track[data-on] {
+  opacity: 1;
+}
+
+.thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: var(--ink);
+  will-change: transform;
 }
 
 /* The bar behind the active row: grey while choosing, ink once picked */
@@ -179,4 +220,29 @@
 
 .esc {
   margin-left: auto;
+}
+
+/* Phones: title on its line, category · date under it, rows at least 44px tall */
+@media (max-width: 767px) {
+  .list {
+    max-height: min(390px, var(--room, 45svh));
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+  }
+
+  .title {
+    flex: none;
+    width: 100%;
+  }
+}
+
+/* No keyboard on touch screens, so no ↑↓ / ↵ / Esc hints */
+@media (hover: none) and (pointer: coarse) {
+  .foot {
+    display: none;
+  }
 }

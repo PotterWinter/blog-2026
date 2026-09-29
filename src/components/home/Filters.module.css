@@ -50,9 +50,8 @@ button.toggle,
   transition: rotate 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Search (and later GRID / LIST): its own row below 1024, pushed right from 1024 */
+/* Search + GRID / LIST: its own row below 1024, pushed right from 1024 */
 .right {
-  position: relative;
   display: flex;
   flex: 0 0 100%;
   align-items: center;
@@ -60,9 +59,15 @@ button.toggle,
   margin-top: 10px;
 }
 
+/* The box and its results panel, which drops from under the box */
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
 .search {
   display: flex;
-  flex: 1;
   align-items: center;
   gap: 9px;
   min-width: 0;
@@ -94,6 +99,14 @@ button.toggle,
   appearance: none;
 }
 
+/* iOS zooms the page into any field under 16px when it's tapped: touch screens get
+   16px (v4 draws 14px) */
+@media (hover: none) and (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+}
+
 .input::placeholder {
   color: var(--muted);
   opacity: 1;
@@ -107,6 +120,54 @@ button.toggle,
 /* Hide the browser's own clear (×) button in type=search */
 .input::-webkit-search-cancel-button {
   display: none;
+}
+
+/* GRID / LIST capsule (v4 .seg): 1px line, 3px inside, ink pill behind the choice */
+.views {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.pill[data-ready] {
+  transition:
+    transform 0.39s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.39s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.view {
+  position: relative;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  line-height: normal;
+  text-transform: uppercase;
+  color: var(--paper);
+  mix-blend-mode: difference;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.view:active {
+  transform: scale(0.96);
 }
 
 /* Tags panel */
@@ -196,14 +257,18 @@ button.toggle,
   vertical-align: super;
 }
 
-@media (min-width: 768px) {
+/* Off real phones the categories are one plain row (see CategoryFilter), and Tags
+   joins them — it only drops to the next line if the row runs out of room */
+@media (min-width: 480px), (pointer: fine) {
   .toggle {
     flex-basis: auto;
     display: inline-block;
     min-height: 0;
     margin-left: 6px;
   }
+}
 
+@media (min-width: 768px) {
   .right {
     margin-top: 6px;
   }
@@ -211,6 +276,11 @@ button.toggle,
   .search {
     min-height: 0;
     padding-bottom: 5px;
+  }
+
+  .view {
+    padding: 7px 15px;
+    font-size: 12px;
   }
 
   .input {
@@ -232,6 +302,27 @@ button.toggle,
   }
 }
 
+/* 768–1023: GRID / LIST moves up to the end of the category row and the search gets
+   the whole row below (v4 keeps them side by side; the owner's call, 30 Sep 69).
+   display: contents lets the box and the capsule join the category row as items. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .right {
+    display: contents;
+  }
+
+  .views {
+    order: 1;
+    align-self: center;
+    margin-left: auto;
+  }
+
+  .searchWrap {
+    flex: 0 0 100%;
+    order: 2;
+    margin-top: 6px;
+  }
+}
+
 @media (min-width: 1024px) {
   .right {
     flex: none;
@@ -239,9 +330,12 @@ button.toggle,
     margin: 0 0 0 auto;
   }
 
+  .searchWrap {
+    flex: none;
+  }
+
   /* 210px at 1280 (v4), widening with the screen up to 330px at the 1680 frame */
   .search {
-    flex: none;
     width: clamp(210px, calc(210px + (100vw - 1280px) * 0.3), 330px);
   }
 

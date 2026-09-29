@@ -6,9 +6,11 @@ import type { PostMeta } from "@/lib/content";
 import type { CategorySlug } from "@/lib/site";
 import CategoryFilter from "./CategoryFilter";
 import { usePageTransition } from "../PageTransition";
-import { SearchBox, TagsPanel, TagsToggle } from "./Filters";
+import { SearchBox, TagsPanel, TagsToggle, ViewToggle } from "./Filters";
+import type { View } from "./Filters";
 import Pager from "./Pager";
 import PostCard from "./PostCard";
+import PostList from "./PostList";
 import gridStyles from "./PostGrid.module.css";
 
 const PER_PAGE = 12;
@@ -24,6 +26,7 @@ export type BrowseState = {
   tags: string[];
   query: string;
   page: number;
+  view: View;
 };
 
 type Props = {
@@ -36,7 +39,9 @@ function matches(post: PostMeta, { category, tags, query }: BrowseState) {
   if (category && post.category !== category) return false;
   if (tags.length && !post.tags.some((t) => tags.includes(t))) return false;
   if (query) {
-    const haystack = [post.title, post.excerpt, post.category, ...post.tags].join(" ").toLowerCase();
+    const haystack = [post.title, post.excerpt, post.category, ...post.tags]
+      .join(" ")
+      .toLowerCase();
     // Every word must appear somewhere: "row locks" finds "Postgres row locks, illustrated"
     return query
       .toLowerCase()
@@ -47,9 +52,10 @@ function matches(post: PostMeta, { category, tags, query }: BrowseState) {
   return true;
 }
 
-// Keep the view in the address bar (/?category=math&tags=react,css&q=grid&page=2) so it
-// can be shared or reloaded. Only the URL changes: no navigation, no transition, no scroll.
-function remember({ category, tags, query, page }: BrowseState) {
+// Keep the view in the address bar (/?category=math&tags=react,css&q=grid&page=2&view=list)
+// so it can be shared or reloaded. Only the URL changes: no navigation, no transition,
+// no scroll.
+function remember({ category, tags, query, page, view }: BrowseState) {
   const url = new URL(window.location.href);
   const set = (key: string, value: string | null) =>
     value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
@@ -57,6 +63,7 @@ function remember({ category, tags, query, page }: BrowseState) {
   set("tags", tags.length ? tags.join(",") : null);
   set("q", query.trim() || null);
   set("page", page > 1 ? String(page) : null);
+  set("view", view === "list" ? "list" : null);
   window.history.replaceState(null, "", url);
 }
 
@@ -80,7 +87,7 @@ function glideTo(top: number) {
   requestAnimationFrame(step);
 }
 
-// Everything under the hero on 01: the filters, the grid and the pager.
+// Everything under the hero on 01: the filters, the grid (or the 01B list) and the pager.
 // Filtering happens in the browser — the whole index is small, so search covers every
 // post, not just the 12 on screen.
 export default function PostBrowser({ posts, initial }: Props) {
@@ -91,6 +98,8 @@ export default function PostBrowser({ posts, initial }: Props) {
   // The grid lags the pager by a beat while the cards swap: state.page moves the pager
   // dot at once, gridPage follows when the old cards have left.
   const [gridPage, setGridPage] = useState(initial.page);
+  // Same for GRID / LIST: the pill moves at once, the posts swap a beat later
+  const [shownView, setShownView] = useState(initial.view);
   const [phase, setPhase] = useState<"out" | "in" | null>(null);
   const [direction, setDirection] = useState(1); // 1 = forward (NEXT), -1 = back
   const timers = useRef<number[]>([]);
@@ -120,8 +129,7 @@ export default function PostBrowser({ posts, initial }: Props) {
     ? posts
         .filter((post) => matches(post, { ...state, category: null, tags: [] }))
         .sort((a, b) => Number(inTitle(b)) - Number(inTitle(a)))
-        .slice(0, 6)
-    : [];
+    : []; // every match — the panel shows about six and scrolls for the rest
   const { go } = usePageTransition();
   const pages = Math.max(1, Math.ceil(matching.length / PER_PAGE));
   const current = Math.min(state.page, pages);
@@ -142,6 +150,23 @@ export default function PostBrowser({ posts, initial }: Props) {
     setGridPage(1);
     setPhase(null);
     remember(next);
+  };
+
+  // GRID ↔ LIST: the same page of posts leaves and comes back in the other layout
+  const switchView = (view: View) => {
+    const next = { ...state, view };
+    clearTimers();
+    setState(next);
+    remember(next);
+    setDirection(0);
+    setPhase("out");
+    timers.current.push(
+      window.setTimeout(() => {
+        setShownView(view);
+        setGridPage(next.page);
+        setPhase("in");
+      }, SWAP_MS),
+    );
   };
 
   const turnPage = (page: number) => {
@@ -168,7 +193,9 @@ export default function PostBrowser({ posts, initial }: Props) {
 
   const toggleTag = (name: string) =>
     update({
-      tags: state.tags.includes(name) ? state.tags.filter((t) => t !== name) : [...state.tags, name],
+      tags: state.tags.includes(name)
+        ? state.tags.filter((t) => t !== name)
+        : [...state.tags, name],
     });
 
   return (
@@ -189,7 +216,9 @@ export default function PostBrowser({ posts, initial }: Props) {
             results={quickResults}
             onChange={(query) => update({ query })}
             onOpen={(post) => go?.(`/posts/${post.slug}`)}
-          />
+          >
+            <ViewToggle value={state.view} onChange={switchView} />
+          </SearchBox>
         </CategoryFilter>
         <TagsPanel
           open={tagTurns % 2 === 1}
@@ -201,9 +230,14 @@ export default function PostBrowser({ posts, initial }: Props) {
           onClear={() => update({ tags: [] })}
         />
       </div>
-      {shown.length > 0 ? (
+      {shown.length === 0 ? (
+        <p className={gridStyles.empty}>Nothing matches.</p>
+      ) : shownView === "list" ? (
+        <PostList posts={shown} phase={phase} direction={direction} />
+      ) : (
         <div
           className={gridStyles.grid}
+          data-swap
           data-phase={phase ?? undefined}
           style={{ "--dir": direction } as CSSProperties}
         >
@@ -218,8 +252,6 @@ export default function PostBrowser({ posts, initial }: Props) {
             />
           ))}
         </div>
-      ) : (
-        <p className={gridStyles.empty}>Nothing matches.</p>
       )}
       <div style={{ paddingBottom: 104 }}>
         <Pager

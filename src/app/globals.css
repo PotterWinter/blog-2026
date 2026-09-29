@@ -154,3 +154,42 @@ select {
     transition: none;
   }
 }
+
+/* ---------- Page change (v4) ----------
+   A container marked data-swap (the 01 grid, the 01B list) swaps its items in two
+   beats: data-phase="out", then "in" with the next set. --dir is 1 going forward,
+   -1 going back, 0 for GRID ↔ LIST (no sideways drift); --i is each item's order.
+   Out: the items fade, blur and drift 10px away from the direction of travel. */
+[data-swap][data-phase="out"] > * {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateX(calc(var(--dir) * -10px));
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* In: the next set arrives from 14px on the travel side and 6px low, in reading order */
+[data-swap][data-phase="in"] > * {
+  animation: swap-in 0.52s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 34ms);
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate(calc(var(--dir) * 14px), 6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-swap][data-phase] > * {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}

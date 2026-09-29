@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { PostMeta } from "@/lib/content";
 import { shortDate } from "@/lib/format";
@@ -44,14 +44,82 @@ function Highlight({ title, query }: { title: string; query: string }) {
   return <>{parts}</>;
 }
 
-// The v4 search panel under the search box (1024 and up): the top results, a grey bar
+// The v4 search panel under the search box: every result (about six in view, the rest
+// scroll), a grey bar
 // that follows the pointer or ↑↓, and on Enter the bar turns ink, the title nudges 14px
 // and a white dot hops in front before the post opens.
-export default function SearchPanel({ id, open, query, results, active, picked, onHover, onPick }: Props) {
+export default function SearchPanel({
+  id,
+  open,
+  query,
+  results,
+  active,
+  picked,
+  onHover,
+  onPick,
+}: Props) {
   const label = (slug: string) => categories.find((c) => c.slug === slug)?.label ?? slug;
   const bar = picked ?? active;
   const barRef = useRef<HTMLDivElement>(null);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const listRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLSpanElement>(null);
+  const thumbRef = useRef<HTMLSpanElement>(null);
+
+  // Our own scroll bar, always shown while the list overflows: phones (and macOS)
+  // only flash theirs during a scroll, so you couldn't tell there was more or where
+  // you were. Thumb = the share of the list in view, placed by how far it's scrolled.
+  useEffect(() => {
+    const list = listRef.current;
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    if (!list || !track || !thumb) return;
+    const paint = () => {
+      const { scrollTop, scrollHeight, clientHeight } = list;
+      const overflow = scrollHeight - clientHeight > 1;
+      track.toggleAttribute("data-on", overflow);
+      if (!overflow) return;
+      const h = Math.max(24, (clientHeight * clientHeight) / scrollHeight);
+      const y = (scrollTop / (scrollHeight - clientHeight)) * (clientHeight - h);
+      thumb.style.height = `${h}px`;
+      thumb.style.transform = `translateY(${y}px)`;
+    };
+    paint();
+    list.addEventListener("scroll", paint, { passive: true });
+    const resized = new ResizeObserver(paint);
+    resized.observe(list);
+    return () => {
+      list.removeEventListener("scroll", paint);
+      resized.disconnect();
+    };
+  }, [results, open]);
+
+  // The list never runs under the phone keyboard: its height is capped by the room
+  // left in the visible part of the screen, which grows when the keyboard goes away
+  useEffect(() => {
+    const list = listRef.current;
+    const vv = window.visualViewport;
+    if (!open || !list) return;
+    const fit = () => {
+      const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const room = bottom - list.getBoundingClientRect().top - 20;
+      list.style.setProperty("--room", `${Math.max(120, Math.round(room))}px`);
+    };
+    fit();
+    vv?.addEventListener("resize", fit);
+    vv?.addEventListener("scroll", fit);
+    window.addEventListener("scroll", fit, { passive: true });
+    return () => {
+      vv?.removeEventListener("resize", fit);
+      vv?.removeEventListener("scroll", fit);
+      window.removeEventListener("scroll", fit);
+    };
+  }, [open]);
+
+  // A new search starts at the top of the list
+  useLayoutEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [query]);
 
   // One bar slides between rows (grey on hover / ↑↓, ink once picked)
   useLayoutEffect(() => {
@@ -75,42 +143,53 @@ export default function SearchPanel({ id, open, query, results, active, picked, 
             <span>Results</span>
             <span>{String(results.length).padStart(2, "0")}</span>
           </div>
-          <div id={id} role="listbox" aria-label="Search results" className={styles.list}>
+          <div className={styles.scroller}>
             <div
-              ref={barRef}
-              className={styles.bar}
-              data-picked={picked !== null || undefined}
-              aria-hidden="true"
-            />
-            {results.map((post, i) => (
+              ref={listRef}
+              id={id}
+              role="listbox"
+              aria-label="Search results"
+              className={styles.list}
+            >
               <div
-                key={post.slug}
-                ref={(el) => {
-                  rowRefs.current[i] = el;
-                }}
-                id={`${id}-${i}`}
-                role="option"
-                aria-selected={i === active}
-                className={styles.row}
-                data-picked={i === picked || undefined}
-                style={{ animationDelay: `${i * 32}ms` }}
-                // Keep focus in the input so ↑↓ and Enter keep working
-                onMouseDown={(e) => e.preventDefault()}
-                onPointerEnter={() => onHover(i)}
-                onClick={() => onPick(i)}
-              >
-                <span className={styles.dot} aria-hidden="true" />
-                <span className={styles.title}>
-                  <Highlight title={post.title} query={query.trim()} />
-                </span>
-                <span className={`label ${styles.meta}`}>
-                  {label(post.category)} · {shortDate(post.publishedAt)}
-                </span>
-              </div>
-            ))}
-            {results.length === 0 && (
-              <p className={styles.empty}>Nothing yet on “{query.trim()}”.</p>
-            )}
+                ref={barRef}
+                className={styles.bar}
+                data-picked={picked !== null || undefined}
+                aria-hidden="true"
+              />
+              {results.map((post, i) => (
+                <div
+                  key={post.slug}
+                  ref={(el) => {
+                    rowRefs.current[i] = el;
+                  }}
+                  id={`${id}-${i}`}
+                  role="option"
+                  aria-selected={i === active}
+                  className={styles.row}
+                  data-picked={i === picked || undefined}
+                  style={{ animationDelay: `${i * 32}ms` }}
+                  // Keep focus in the input so ↑↓ and Enter keep working
+                  onMouseDown={(e) => e.preventDefault()}
+                  onPointerEnter={() => onHover(i)}
+                  onClick={() => onPick(i)}
+                >
+                  <span className={styles.dot} aria-hidden="true" />
+                  <span className={styles.title}>
+                    <Highlight title={post.title} query={query.trim()} />
+                  </span>
+                  <span className={`label ${styles.meta}`}>
+                    {label(post.category)} · {shortDate(post.publishedAt)}
+                  </span>
+                </div>
+              ))}
+              {results.length === 0 && (
+                <p className={styles.empty}>Nothing yet on “{query.trim()}”.</p>
+              )}
+            </div>
+            <span ref={trackRef} className={styles.track} aria-hidden="true">
+              <span ref={thumbRef} className={styles.thumb} />
+            </span>
           </div>
           <div className={`label ${styles.foot}`}>
             <span>↑↓ Select</span>

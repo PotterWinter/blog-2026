@@ -1,0 +1,304 @@
+/* 01B list. Columns by width (v4):
+   390        Title only; category · tags · date under it
+   768        NO 40 · Title (category · tags under it) · Date 84
+   1024       NO 44 · Title · Category 100 · Tags 150 · Date 80
+   1280 up    NO 52 · Title · Category 110 · Tags 190 · Date 90 */
+.zone {
+  --cols: minmax(0, 1fr);
+  position: relative;
+  margin: 0 var(--page-x);
+  padding-top: 2px;
+}
+
+.head,
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 24px;
+}
+
+.head {
+  padding-bottom: 12px;
+}
+
+/* Rows: 14px of air, a hairline ink rule above (v4 .row) */
+.row {
+  position: relative;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 0.5px solid var(--ink);
+  cursor: pointer;
+}
+
+/* The number, category, tags and date are ink here (v4 overrides the grey) */
+.row :global(.label) {
+  color: var(--ink);
+}
+
+.no,
+.tags,
+.subTags {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
+}
+
+.no {
+  display: inline-block;
+  transform-origin: left center;
+  transition:
+    opacity 0.15s ease,
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.028em;
+}
+
+.sub {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.sub .subTags {
+  color: var(--muted);
+}
+
+.subDate {
+  margin-left: auto;
+}
+
+.tags {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.date {
+  text-align: right;
+}
+
+/* Phones: only the title column; the number and the big-screen columns step aside */
+.head > :not(:nth-child(2)),
+.row > :not(.main) {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .zone {
+    --cols: 40px minmax(0, 1fr) 84px;
+  }
+
+  .head > :is(:first-child, :last-child),
+  .row > :is(.no, .date) {
+    display: revert;
+  }
+
+  .date,
+  .head > :last-child {
+    text-align: right;
+  }
+
+  .subDate {
+    display: none;
+  }
+
+  /* Leave room beside the title for the preview panel (60% across) */
+  .main {
+    max-width: calc(60% - 28px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .zone {
+    --cols: 44px minmax(0, 1fr) 100px 150px 80px;
+  }
+
+  .head > :not(:nth-child(2)),
+  .row > :not(.main) {
+    display: revert;
+  }
+
+  .main {
+    max-width: none;
+  }
+
+  .title {
+    max-width: calc(60% - 28px);
+  }
+
+  .sub {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .zone {
+    --cols: 52px minmax(0, 1fr) 110px 190px 90px;
+  }
+}
+
+/* Hover (mouse only): the other rows dim, the dot stands in for the row's number */
+/* The chosen row (hovered, or on a phone the one the scroll picked) stays ink and the
+   others dim; the dot stands in for its number */
+.row > * {
+  transition: opacity 0.2s cubic-bezier(0.2, 0.7, 0.2, 1); /* v4 .45s */
+}
+
+.zone[data-hover] .row:not([data-on]) > * {
+  opacity: 0.65;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row[data-on] .no {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 999px;
+  background: var(--ink);
+  pointer-events: none;
+  transform: scale(0);
+  will-change: transform;
+}
+
+/* Preview panel: cover strip + excerpt, 224px wide, beside the title (768 up) */
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  display: none;
+  width: 224px;
+  background: var(--paper);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  will-change: transform;
+}
+
+.panel[data-on] {
+  opacity: 1;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .panel {
+    display: block;
+  }
+}
+
+.cover {
+  position: relative;
+  height: 112px;
+  overflow: hidden;
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  will-change: transform;
+}
+
+.frame {
+  position: relative;
+  height: 112px;
+  background: var(--surface);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.excerpt {
+  padding: 10px 12px 12px;
+  font-family: var(--ff-serif);
+  font-size: 16px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+/* Phones: the rules are a full 1px (a .5px hairline goes grey, or vanishes at some
+   scroll positions, on an iPhone screen) */
+@media (max-width: 767px) {
+  .row {
+    border-top-width: 1px;
+  }
+}
+
+/* Phone card: cover 220 × 110 + excerpt, pinned 12px above the bottom of the screen
+   while the list is in view. It lives at the end of the list, so at the end it stops
+   there, above the pager (on a phone REST px above and below it — set in JS). */
+.card {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .card {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 5;
+    display: block;
+    width: 220px;
+    margin: 12px auto;
+    background: var(--paper);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .card[data-on] {
+    opacity: 1;
+  }
+}
+
+.cardCover {
+  position: relative;
+  height: 110px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.cardFrame {
+  position: relative;
+  height: 110px;
+  background: var(--surface);
+}
+
+/* The desktop panel's excerpt, a size down for the phone */
+/* A fixed three lines (the card's height must not change with the excerpt: its top
+   edge is the line the phone list tracks, so a taller card would move the line and
+   flip the choice back) */
+.cardExcerpt {
+  display: -webkit-box;
+  height: calc(3 * 1.4em + 18px);
+  padding: 8px 10px 10px;
+  overflow: hidden;
+  font-family: var(--ff-serif);
+  font-size: 14px;
+  line-height: 1.4;
+  text-wrap: pretty;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}

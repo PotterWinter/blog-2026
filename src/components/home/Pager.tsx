@@ -57,7 +57,9 @@ export default function Pager({ page, pages, from, to, total, onChange }: Props)
 
   return (
     <nav className={styles.pager} aria-label="Pages">
-      <span className="label">{total ? `Showing ${from}—${to} of ${total}` : "No posts match"}</span>
+      <span className="label">
+        {total ? `Showing ${from}—${to} of ${total}` : "No posts match"}
+      </span>
       <div className={styles.controls}>
         <button
           type="button"
