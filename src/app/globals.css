@@ -101,3 +101,14 @@ select {
   font: inherit;
   color: inherit;
 }
+
+
+/* ---------- Shared type ---------- */
+.label {
+  font-size: var(--fs-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+

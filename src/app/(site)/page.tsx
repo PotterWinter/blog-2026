@@ -20,12 +20,12 @@ export default function Home() {
       >
         I graduated in architecture but work in software. ผมเรียนสถาปัตย์แต่ทำงานซอฟต์แวร์
       </p>
-      <div style={{ height: "200vh" }}>abc</div>
       <p
         style={{ fontFamily: "var(--ff-mono)", fontSize: "var(--fs-meta)", color: "var(--muted)" }}
       >
         6 SEP 26 · react, events · #134
       </p>
+      <div style={{ height: "200vh" }}></div>
     </main>
   );
 }
