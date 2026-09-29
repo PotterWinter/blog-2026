@@ -16,8 +16,8 @@
 
 - [x] 1.2 create-next-app (โฟลเดอร์ต้องเป็นตัวเล็ก → ใช้ชื่อ `blog`)
 - [x] 1.3 รันได้ที่ localhost:3000 (page.tsx เหลือ h1 อย่างเดียว, ลบ page.module.css + public/\*.svg แล้ว)
-- [ ] 1.4 สร้าง repo `kornnat/blog` + `kornnat/blog-content` บน GitHub แล้ว push
-- [ ] 1.5 Deploy ขึ้น Vercel
+- [x] 1.4 สร้าง repo `kornnat/blog` + `kornnat/blog-content` บน GitHub แล้ว push
+- [x] 1.5 Deploy ขึ้น Vercel
 
 ## ขั้น 2 · Design tokens
 
