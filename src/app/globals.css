@@ -102,7 +102,6 @@ select {
   color: inherit;
 }
 
-
 /* ---------- Shared type ---------- */
 .label {
   font-size: var(--fs-label);
@@ -112,3 +111,10 @@ select {
   color: var(--muted);
 }
 
+/* Smooth in-page jumps (Back to top). Next skips it on page changes
+   because <html> has data-scroll-behavior="smooth". */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

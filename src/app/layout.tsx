@@ -28,7 +28,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${serif.variable} ${mono.variable} ${thai.variable}`}>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${serif.variable} ${mono.variable} ${thai.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

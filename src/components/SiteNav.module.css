@@ -11,6 +11,10 @@
   color: var(--muted);
   user-select: none;
   transition: color 0.3s cubic-bezier(0.22, 0.72, 0.2, 1);
+  /* Safari: a taller box (cancelled by the margin, so layout is unchanged) makes it
+     repaint the descenders of g / j as the labels slide, instead of leaving specks */
+  padding: 6px 0;
+  margin: -6px 0;
 }
 
 .item:hover,
@@ -31,7 +35,8 @@
   width: 13px;
 }
 
-/* White + difference blend = reads black on white, white on black */
+/* Solid ink, not a white difference blend: the sticky header is its own
+   stacking context, so a blended dot turns invisible once it dips below it */
 .dot {
   position: absolute;
   top: 0;
@@ -39,11 +44,11 @@
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--paper);
-  mix-blend-mode: difference;
+  background: var(--ink);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s;
+  will-change: transform;
 }
 
 .dot[data-ready] {
