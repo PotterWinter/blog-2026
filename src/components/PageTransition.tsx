@@ -17,6 +17,7 @@ const PANEL_MS = 500;
 const PANEL_EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)"; // --ease-panel
 const COUNT_MS = 900; // loader: 0 → 90% while the next page loads
 const FINISH_MS = 250; // loader: the last stretch to 100% once it has loaded
+const GIVE_UP_MS = 8000; // still not there (a server error, a dev rebuild): load it the old way
 
 type PageTransitionApi = {
   target: string | null; // where we're headed while the panel is up
@@ -72,6 +73,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   const [covered, setCovered] = useState(false);
   const [round, setRound] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const giveUp = useRef(0);
 
   // The loader is drawn straight into the DOM every frame, not through state,
   // so counting doesn't re-render the whole page underneath
@@ -95,6 +97,9 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       fill: "forwards",
     }).finished;
     setCovered(true);
+    // Never leave the loader stuck at 90%: if the new page hasn't arrived by now, do a
+    // plain full-page load instead. Cleared as soon as it arrives.
+    giveUp.current = window.setTimeout(() => window.location.assign(href), GIVE_UP_MS);
     if (href === pathname) {
       // Same page pressed again: a fresh start, not a cached one. Fresh content from the
       // server, the page's own state reset (filters, page number — PageSlot remounts it),
@@ -115,6 +120,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   useEffect(() => {
     const panel = panelRef.current;
     if (!arrived || !panel) return;
+    clearTimeout(giveUp.current);
     countTo(loader, 100, FINISH_MS, (t) => t)
       .then(
         () =>

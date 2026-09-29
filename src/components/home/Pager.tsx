@@ -24,17 +24,40 @@ function pageList(page: number, pages: number): (number | "gap")[] {
 
 const two = (n: number) => String(n).padStart(2, "0");
 
+// The site's arrow: long shaft, open head, 1.2px stroke, sized in em so it follows the
+// text beside it. Phones only here — the owner wanted PREV / NEXT to point there
+// (v4 keeps the pager text-only).
+function Arrow({ back }: { back?: boolean }) {
+  return (
+    <svg
+      className={styles.arrow}
+      viewBox="0 0 18 10"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.2"
+      aria-hidden="true"
+      style={back ? { scale: "-1 1" } : undefined}
+    >
+      <path d="M0 5h17M12.5 0.8 17 5l-4.5 4.2" />
+    </svg>
+  );
+}
+
 // SHOWING 1—12 OF 134 · PREV 01 02 03 … 12 NEXT, with a small travel dot on the page
 export default function Pager({ page, pages, from, to, total, onChange }: Props) {
   const list = pageList(page, pages);
   const numbers = list.filter((n): n is number => n !== "gap");
-  const { dotRef, itemRef, boing } = useTravelDot(numbers.indexOf(page), "up");
+  // v4's pager dot glides on a low arc instead of the big hop
+  const { dotRef, itemRef, boing } = useTravelDot(
+    numbers.indexOf(page),
+    "up",
+    "slide",
+    list.join(" "), // the page list changes shape → the numbers move under the dot
+  );
 
   return (
     <nav className={styles.pager} aria-label="Pages">
-      <span className="label">
-        Showing {from}—{to} of {total}
-      </span>
+      <span className="label">{total ? `Showing ${from}—${to} of ${total}` : "No posts match"}</span>
       <div className={styles.controls}>
         <button
           type="button"
@@ -42,6 +65,7 @@ export default function Pager({ page, pages, from, to, total, onChange }: Props)
           disabled={page === 1}
           onClick={() => onChange(page - 1)}
         >
+          <Arrow back />
           Prev
         </button>
         <div className={styles.numbers}>
@@ -79,6 +103,7 @@ export default function Pager({ page, pages, from, to, total, onChange }: Props)
           onClick={() => onChange(page + 1)}
         >
           Next
+          <Arrow />
         </button>
       </div>
     </nav>

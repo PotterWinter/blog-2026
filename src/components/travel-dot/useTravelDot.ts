@@ -10,6 +10,9 @@ import type { PointerEvent } from "react";
 type Point = { x: number; y: number };
 // Which way the arc bows: "down" for the nav (it sits at the top edge), "up" elsewhere
 export type HopDirection = "up" | "down";
+// "hop": the signature jump with a squash landing (nav, categories).
+// "slide": a quick glide on a low 12px arc, no landing bounce (the pager, as in v4).
+export type Motion = "hop" | "slide";
 
 const HOP_MS = 330;
 const HOP_HEIGHT = 76;
@@ -17,19 +20,32 @@ const SETTLE_MS = 600;
 const BOING_MS = 820;
 const SQUASH = 0.35;
 const SETTLE_EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
+const SLIDE_MS = HOP_MS + 80;
+const SLIDE_LIFT = 12;
+const SLIDE_EASE = "cubic-bezier(0.3, 0.7, 0.25, 1)";
 
 const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Where the dot rests once the slots finish animating: the active slot's left edge,
-// minus the width of any earlier slot that is still collapsing.
-function restingPoint(items: (HTMLElement | null)[], active: number, dotSize: number): Point {
+// Where the dot rests once the slots finish animating (the old slot still closing, the
+// new one still opening), predicted from the layout of this very moment:
+//   left-aligned group:  the active label is pushed left by earlier slots that close
+//   right-aligned group (the pager): it's pulled left by its own slot opening, and
+//                        pushed right by later slots that close
+function restingPoint(items: (HTMLElement | null)[], active: number, dot: HTMLElement): Point {
   const item = items[active]!;
+  const slotWidth = (el: HTMLElement | null | undefined) =>
+    (el?.firstElementChild as HTMLElement | null | undefined)?.offsetWidth ?? 0;
+  const group = dot.parentElement!;
+  const style = getComputedStyle(group);
   let x = item.offsetLeft;
-  for (let i = 0; i < active; i++) {
-    const slot = items[i]?.firstElementChild as HTMLElement | null | undefined;
-    x -= slot?.offsetWidth ?? 0;
+  if (/end|right/.test(style.justifyContent)) {
+    const open = parseFloat(style.getPropertyValue("--slot")) || 13;
+    x -= open - slotWidth(item);
+    for (let i = active + 1; i < items.length; i++) x += slotWidth(items[i]);
+  } else {
+    for (let i = 0; i < active; i++) x -= slotWidth(items[i]);
   }
-  const y = item.offsetTop + item.offsetHeight / 2 - dotSize / 2;
+  const y = item.offsetTop + item.offsetHeight / 2 - dot.offsetHeight / 2;
   return { x, y };
 }
 
@@ -74,6 +90,19 @@ function hopKeyframes(from: Point, to: Point, sign: number): Keyframe[] {
   return frames;
 }
 
+// v4 pager: the row does the moving, the dot only hints at lift
+function slideKeyframes(from: Point, to: Point, sign: number): Keyframe[] {
+  const at = (x: number, y: number, offset: number): Keyframe => ({
+    transform: `translate(${x}px, ${y}px)`,
+    offset,
+  });
+  return [
+    at(from.x, from.y, 0),
+    at((from.x + to.x) / 2, (from.y + to.y) / 2 + sign * SLIDE_LIFT, 0.5),
+    at(to.x, to.y, 1),
+  ];
+}
+
 // Re-press on the current label: the shared hop in place — 16px, land with a
 // squash, then 6px and 1.5px settles (the same profile as the footer dot)
 function boingKeyframes(at: Point, sign: number): Keyframe[] {
@@ -101,14 +130,20 @@ type Parts = {
 
 // Put the dot in front of the active label, hopping there when asked.
 // active = -1 hides it (e.g. the nav on a 404).
-function placeDot({ dot, items, hop }: Parts, active: number, sign: number, animate: boolean) {
+function placeDot(
+  { dot, items, hop }: Parts,
+  active: number,
+  sign: number,
+  motion: Motion,
+  animate: boolean,
+) {
   if (active === -1) {
     delete dot.dataset.ready;
     return;
   }
   // A zero-width group isn't laid out yet (hidden tab, mid-reload): measure later
   if (dot.parentElement!.offsetWidth === 0) return;
-  const to = restingPoint(items, active, dot.offsetHeight);
+  const to = restingPoint(items, active, dot);
   const from = currentPoint(dot);
 
   const wasShown = dot.dataset.ready !== undefined;
@@ -117,7 +152,10 @@ function placeDot({ dot, items, hop }: Parts, active: number, sign: number, anim
   hop.current?.cancel();
   dot.style.transform = `translate(${to.x}px, ${to.y}px)`;
   if (animate && wasShown && moved && !calm()) {
-    hop.current = dot.animate(hopKeyframes(from, to, sign), { duration: HOP_MS + SETTLE_MS });
+    hop.current =
+      motion === "slide"
+        ? dot.animate(slideKeyframes(from, to, sign), { duration: SLIDE_MS, easing: SLIDE_EASE })
+        : dot.animate(hopKeyframes(from, to, sign), { duration: HOP_MS + SETTLE_MS });
   }
   dot.dataset.ready = "";
 }
@@ -137,7 +175,14 @@ export const pressHandlers = {
   onPointerCancel: release,
 };
 
-export function useTravelDot(active: number, direction: HopDirection) {
+// layout: anything that can move the labels without changing the active one or the group's
+// size — e.g. the pager's page list (02 disappears, 01 slides right in a right-aligned group)
+export function useTravelDot(
+  active: number,
+  direction: HopDirection,
+  motion: Motion = "hop",
+  layout = "",
+) {
   const sign = direction === "down" ? 1 : -1;
   const dotRef = useRef<HTMLSpanElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -148,8 +193,22 @@ export function useTravelDot(active: number, direction: HopDirection) {
   useLayoutEffect(() => {
     activeRef.current = active;
     if (!dotRef.current) return;
-    placeDot({ dot: dotRef.current, items: itemRefs.current, hop: hopRef }, active, sign, true);
-  }, [active, sign]);
+    placeDot({ dot: dotRef.current, items: itemRefs.current, hop: hopRef }, active, sign, motion, true);
+  }, [active, sign, motion]);
+
+  // The labels moved under a dot that keeps its label: glide along with them
+  const laidOut = useRef(layout);
+  useLayoutEffect(() => {
+    if (laidOut.current === layout || !dotRef.current) return;
+    laidOut.current = layout;
+    placeDot(
+      { dot: dotRef.current, items: itemRefs.current, hop: hopRef },
+      activeRef.current,
+      sign,
+      "slide",
+      true,
+    );
+  }, [layout, sign]);
 
   // The group resized (window, breakpoint, shown again): snap into place.
   // Mid-hop, let the hop land first — a second hop would read as a double bounce.
@@ -158,15 +217,16 @@ export function useTravelDot(active: number, direction: HopDirection) {
     const group = dot?.parentElement;
     if (!dot || !group) return;
     const snap = () =>
-      placeDot({ dot, items: itemRefs.current, hop: hopRef }, activeRef.current, sign, false);
+      placeDot({ dot, items: itemRefs.current, hop: hopRef }, activeRef.current, sign, motion, false);
     const observer = new ResizeObserver(() => {
       const hop = hopRef.current;
       if (hop?.playState === "running") hop.finished.then(snap, () => {});
       else snap();
     });
-    observer.observe(group);
+    // border-box: past the 1680 frame only the padding grows, the content box doesn't
+    observer.observe(group, { box: "border-box" });
     return () => observer.disconnect();
-  }, [sign]);
+  }, [sign, motion]);
 
   // Bounce in place, unless the dot is still mid-hop
   const boing = useCallback(() => {

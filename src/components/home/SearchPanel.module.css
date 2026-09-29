@@ -1,0 +1,182 @@
+/* Only where there's a keyboard and room for it; phones just filter the grid */
+.panel {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-rows: 0fr;
+    width: 400px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.25s ease;
+  }
+
+  .panel[data-open] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inner {
+  padding: 6px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px 10px;
+}
+
+.list {
+  position: relative;
+}
+
+/* The bar behind the active row: grey while choosing, ink once picked */
+.bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0;
+  background: var(--surface);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease,
+    background-color 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bar[data-picked] {
+  background: var(--ink);
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 11px 12px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: row-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.row[data-picked] {
+  color: var(--paper);
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(3px);
+  }
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Room below the line for the match underline, which overflow: hidden (needed for
+     the …) would otherwise cut off; the negative margin keeps the row height */
+  padding-bottom: 5px;
+  margin-bottom: -5px;
+}
+
+.row[data-picked] .title {
+  transform: translateX(14px);
+}
+
+.match {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.meta {
+  flex: none;
+  transition: color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.row[data-picked] .meta {
+  color: var(--line);
+}
+
+/* White dot that hops in front of the picked title */
+.dot {
+  position: absolute;
+  top: calc(50% - 3px);
+  left: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--paper);
+  opacity: 0;
+}
+
+.row[data-picked] .dot {
+  animation: pick-hop 0.62s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes pick-hop {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.6);
+  }
+  38% {
+    opacity: 1;
+    transform: translateY(0) scale(1.2, 0.78);
+  }
+  58% {
+    transform: translateY(-4px) scale(0.94, 1.06);
+  }
+  78% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.empty {
+  padding: 12px 12px 14px;
+  font-family: var(--ff-serif);
+  font-size: 16px;
+}
+
+.foot {
+  display: flex;
+  gap: 16px;
+  padding: 10px 12px 8px;
+}
+
+.esc {
+  margin-left: auto;
+}

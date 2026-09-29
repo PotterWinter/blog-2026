@@ -69,6 +69,19 @@
   cursor: default;
 }
 
+.arrow {
+  width: 1.7em;
+  height: 1em;
+  margin: 0 0.6em;
+  vertical-align: -0.1em;
+}
+
+@media (min-width: 768px) {
+  .arrow {
+    display: none;
+  }
+}
+
 @media (min-width: 768px) {
   .pager {
     flex-wrap: nowrap;

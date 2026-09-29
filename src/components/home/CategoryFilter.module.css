@@ -31,13 +31,45 @@
   color: var(--ink);
 }
 
-/* "72" raised after the label, a third of its size (v4 .sup) */
+/* "72" after the label at a third of its size, lifted like an exponent so its top
+   lines up with the top of the capitals (higher than v4's vertical-align: super —
+   the owner's call, 29 Sep 69) */
 .count {
+  position: relative;
+  top: -1.45em;
+  margin-left: 0.55em; /* the "&nbsp; " gap v4 put before the number */
   font-size: 0.34em;
   font-weight: 500;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
-  vertical-align: super;
+}
+
+/* Phones: the number hangs off the word instead of taking room in the line, sitting
+   in the gap, so All · Engineering · Math · Reading fit on one 350px row */
+@media (max-width: 767px) {
+  /* spread the four across the row: All flush left, the last flush right.
+     14px is only the minimum gap; space-between hands out whatever is left over */
+  .row {
+    justify-content: space-between;
+    column-gap: 14px;
+  }
+
+  .item > span {
+    position: relative;
+  }
+
+  .count {
+    position: absolute;
+    top: 0.2em;
+    left: 100%;
+    margin-left: 2px;
+  }
+
+  /* The last category leaves room for its hanging number, so the number, not the
+     word, is what lines up with the right edge */
+  .item:has(+ :not(.item)) {
+    margin-right: 9px;
+  }
 }
 
 @media (min-width: 768px) {

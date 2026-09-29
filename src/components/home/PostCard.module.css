@@ -1,6 +1,7 @@
 /* Rows are 22px of air above and below the cards, with a 1px ink rule between rows.
-   The rule is drawn by each card (::before) and reaches 1px into the 2px column gaps
-   on both sides, so it reads as one continuous line across the row. */
+   The rule belongs to the row below it (like v4's bordered row divs) and always spans
+   the whole grid width — drawn by the first card of each row (PostGrid picks which),
+   so a half-empty last row still gets a full-width line above it. */
 .card {
   position: relative;
   display: flex;
@@ -12,8 +13,8 @@
   content: "";
   position: absolute;
   top: 0;
-  left: -1px;
-  right: -1px;
+  left: 0;
+  width: var(--row-rule, 100%);
   height: 1px;
   background: var(--ink);
 }

@@ -1,0 +1,251 @@
+button.toggle,
+.tag,
+.clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* "Tags +" — same type as the categories, grey until hovered or open.
+   On phones it takes its own row, so the four categories share the first. */
+.toggle {
+  flex-basis: 100%;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+  color: var(--muted);
+  transition: color 0.25s ease;
+}
+
+.toggle:hover,
+.toggle[aria-expanded="true"] {
+  color: var(--ink);
+}
+
+.sign {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  vertical-align: -0.5px;
+}
+
+.sign > span {
+  position: absolute;
+  top: 6.8px;
+  left: 0;
+  width: 16px;
+  height: 2.4px;
+  background: currentColor;
+}
+
+.sign > span:last-child {
+  transition: rotate 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Search (and later GRID / LIST): its own row below 1024, pushed right from 1024 */
+.right {
+  position: relative;
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  gap: 20px;
+  margin-top: 10px;
+}
+
+.search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 44px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.search svg {
+  stroke: var(--muted);
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
+    stroke 0.3s;
+}
+
+.search:focus-within svg {
+  stroke: var(--ink);
+  transform: translateX(-2px) scale(1.08);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--fs-ui);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.search:focus-within .input::placeholder {
+  opacity: 0.35;
+}
+
+/* Hide the browser's own clear (×) button in type=search */
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* Tags panel */
+.panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.panel[data-open] {
+  grid-template-rows: 1fr;
+}
+
+.clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px var(--page-x) 24px;
+  border-top: var(--rule-row);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.summary {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+
+.clear {
+  margin: -14px 0 -14px auto;
+  padding: 14px 0;
+  color: var(--ink);
+}
+
+.tags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+}
+
+/* Tags found in the chosen category are ink; the box says whether it's picked.
+   Tags with no posts there are grey and can't be pressed. */
+.tag {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 0;
+  font-size: var(--fs-ui);
+  text-align: left;
+  color: var(--ink);
+  transition: color 0.25s ease;
+}
+
+.tag:disabled {
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.box {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--line);
+  translate: 0 -1px;
+}
+
+.tag[aria-pressed="true"] .box {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.count {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  vertical-align: super;
+}
+
+@media (min-width: 768px) {
+  .toggle {
+    flex-basis: auto;
+    display: inline-block;
+    min-height: 0;
+    margin-left: 6px;
+  }
+
+  .right {
+    margin-top: 6px;
+  }
+
+  .search {
+    min-height: 0;
+    padding-bottom: 5px;
+  }
+
+  .input {
+    padding: 0;
+  }
+
+  .clear {
+    margin: 0 0 0 auto;
+    padding: 0;
+  }
+
+  .tags {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 28px;
+  }
+
+  .tag {
+    padding: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .right {
+    flex: none;
+    align-self: center;
+    margin: 0 0 0 auto;
+  }
+
+  /* 210px at 1280 (v4), widening with the screen up to 330px at the 1680 frame */
+  .search {
+    flex: none;
+    width: clamp(210px, calc(210px + (100vw - 1280px) * 0.3), 330px);
+  }
+
+  .tags {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

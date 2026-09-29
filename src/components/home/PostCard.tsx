@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
 import { shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
@@ -6,14 +7,22 @@ import TransitionLink from "../TransitionLink";
 import styles from "./PostCard.module.css";
 
 // One card in the 01 grid: 2:1 cover, CATEGORY · tags · (date on hover), title, excerpt
-export default function PostCard({ post, delay }: { post: PostMeta; delay: number }) {
+type Props = {
+  post: PostMeta;
+  delay: number; // reveal-on-scroll stagger (ms)
+  reveal?: boolean;
+  order: number; // position on the page, for the page-change stagger
+};
+
+export default function PostCard({ post, delay, reveal = true, order }: Props) {
   const category = categories.find((c) => c.slug === post.category)?.label ?? post.category;
   return (
     <TransitionLink
       href={`/posts/${post.slug}`}
       className={styles.card}
-      data-reveal
-      data-d={delay}
+      data-reveal={reveal || undefined}
+      data-d={reveal ? delay : undefined}
+      style={{ "--i": order } as CSSProperties}
     >
       <div className={styles.cover}>
         {post.cover && (

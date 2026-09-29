@@ -1,11 +1,12 @@
-/* 1 column → 2 at 768 → 3 at 1024. Cards in the first row get no rule and only 2px
-   of top padding (v4). overflow-x: clip trims the rule's 1px reach at the outer edges. */
+/* 1 column → 2 at 768 → 3 at 1024, 2px between columns.
+   Only the first card of each row draws the row rule, stretched across all columns
+   (--row-rule: n card widths + the gaps between them). The first row has no rule and
+   only 2px of top padding (v4). */
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   column-gap: 2px;
   margin: 0 var(--page-x);
-  overflow-x: clip;
 }
 
 .grid > :first-child {
@@ -21,12 +22,16 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .grid > :nth-child(-n + 2) {
-    padding-top: 2px;
+  .grid > * {
+    --row-rule: calc(200% + 2px);
   }
 
-  .grid > :nth-child(-n + 2)::before {
+  .grid > :nth-child(2n)::before {
     display: none;
+  }
+
+  .grid > :nth-child(-n + 2) {
+    padding-top: 2px;
   }
 }
 
@@ -35,12 +40,21 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .grid > :nth-child(-n + 3) {
-    padding-top: 2px;
+  .grid > * {
+    --row-rule: calc(300% + 4px);
   }
 
-  .grid > :nth-child(-n + 3)::before {
+  /* Reset the 2-column choice, then keep only the cards that start a row of 3 */
+  .grid > :nth-child(2n)::before {
+    display: block;
+  }
+
+  .grid > :not(:nth-child(3n + 1))::before {
     display: none;
+  }
+
+  .grid > :nth-child(-n + 3) {
+    padding-top: 2px;
   }
 }
 
@@ -49,4 +63,40 @@
   padding: 22px 0 44px;
   font-family: var(--ff-serif);
   font-size: var(--fs-lead);
+}
+
+/* Page change (v4). --dir is 1 going forward, -1 going back.
+   Out: the cards fade, blur and drift 10px away from the direction of travel. */
+.grid[data-phase="out"] > * {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateX(calc(var(--dir) * -10px));
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* In: the next set arrives from 14px on the travel side and 6px low, in reading order */
+.grid[data-phase="in"] > * {
+  animation: card-in 0.52s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 34ms);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate(calc(var(--dir) * 14px), 6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid[data-phase] > * {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
 }

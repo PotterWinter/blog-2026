@@ -37,7 +37,14 @@ export default function RevealObserver() {
     };
     scan();
     const mutations = new MutationObserver(scan);
-    mutations.observe(document.body, { childList: true, subtree: true });
+    // New blocks, and blocks that gain data-reveal later (a card that arrived with a page
+    // change keeps its element when a filter change re-marks it)
+    mutations.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-reveal"],
+    });
     return () => {
       observer.disconnect();
       mutations.disconnect();
