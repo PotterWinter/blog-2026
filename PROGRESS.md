@@ -7,13 +7,12 @@
 ## ตอนนี้อยู่
 
 - ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
-- ขั้น 5.1 Login: โค้ดเสร็จ ทดสอบใน dev ผ่าน · ยังไม่ commit · รอเจ้าของตั้ง secret บน production
+- ขั้น 5.1 Login เสร็จ (1 ต.ค. 69): login บนเว็บจริงได้ · commit "Sign in · Mac · Safari" ลง content repo · Firewall ตั้งแล้ว
+- ถัดไป: 5.2 Admin hub (06 / 06B)
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] เจ้าของ: token → Contents **Read and write** · `npm run auth-secrets` → แอป authenticator + Vercel · กฎ Firewall
-- [ ] ลอง login บนเว็บจริง
 - [ ] 5.2 Admin hub (06 / 06B)
 
 ---
@@ -74,7 +73,7 @@
 - [x] 5.1 Login (05) → [notes/admin.md](notes/admin.md)
   - [x] TOTP เขียนเอง · session cookie + `sessions.json` · `proxy.ts` กัน `/admin`
   - [x] หน้า `/login` ตาม v4 (ช่องรหัส 6 ช่อง, Paste, Continue)
-  - [ ] secret + Firewall บน production
+  - [x] token Read and write · `TOTP_SECRET` / `SESSION_SECRET` บน Vercel · กฎ Firewall "Login rate limit" (POST `/api/login`, 5 ครั้ง / 600 วิ ต่อ IP → 429)
 - [ ] 5.2 Admin hub (06 / 06B)
 - [ ] 5.3 Editor (07) + preview (07P)
 - [ ] 5.4 Media (08)
