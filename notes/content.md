@@ -16,7 +16,9 @@
 - **ไม่ตั้ง** → อ่าน GitHub (`CONTENT_REPO`, `CONTENT_BRANCH`, `GITHUB_TOKEN`)
   - `GET /repos/{repo}/contents/{file}` + `Accept: application/vnd.github.raw+json` → ได้ไฟล์ดิบ (ข้อความหรือรูป)
   - 404 = ไม่มีไฟล์ · error อื่น = throw พร้อมชื่อไฟล์
-  - ยังไม่ตั้ง `CONTENT_REPO` = เว็บว่าง ไม่พัง
+  - `CONTENT_REPO` มีค่าตั้งต้นในโค้ด = `PotterWinter/blog-content-2026` (ไม่ใช่ความลับ) · ตั้งบน Vercel ไว้ด้วย ย้าย repo แก้ที่ Vercel ได้
+  - ตัวแปรบน Vercel อยู่ที่ Settings › Environments › Production › Environment Variables (UI ใหม่)
+  - token ไม่มีสิทธิ์ / repo ผิด = GitHub ตอบ 404 → เว็บว่างเฉยๆ ไม่ error (เคยเจอตอนลืมตั้ง `CONTENT_REPO`)
 - ตัวแปรทั้งหมดอยู่ใน `.env.example`
 
 ## Cache

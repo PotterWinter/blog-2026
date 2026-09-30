@@ -6,15 +6,13 @@
 
 ## ตอนนี้อยู่
 
-- ขั้น 4: โค้ดเสร็จ ยังไม่ commit · รอเจ้าของสร้าง token + ตั้ง env บน Vercel
+- ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
+- ถัดไป: ขั้น 5 Login + Admin
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] เจ้าของ: สร้าง fine-grained token (content repo, Contents read-only)
-- [ ] เจ้าของ: ตั้ง `CONTENT_REPO` + `GITHUB_TOKEN` บน Vercel
-- [ ] commit โค้ด + commit `index.json` ใน content repo แล้ว push ทั้งสอง
-- [ ] ตรวจบนเว็บจริงว่าอ่านจาก GitHub ได้
+- [ ] เริ่มขั้น 5 · Login (05)
 
 ---
 
@@ -64,7 +62,8 @@
 - [x] cache 1 ชั่วโมง + tag ไว้ล้างตอน admin เซฟ
 - [x] `index.json` + script `npm run rebuild-index`
 - [x] รูป `/media` อ่านจาก GitHub
-- [ ] token + env บน Vercel · push · ตรวจเว็บจริง
+- [x] token (fine-grained, Contents read-only) + `GITHUB_TOKEN` / `CONTENT_REPO` บน Vercel (Environments › Production)
+- [x] ตรวจเว็บจริง: /posts/hello-world เปิดได้
 
 ## ขั้น 5 · Login (05) → Admin (06–09)
 
