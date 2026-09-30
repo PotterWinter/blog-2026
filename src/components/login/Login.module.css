@@ -1,0 +1,281 @@
+/* 05 Login (v4). One box, centred on the page; the phone set is at the bottom. */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  /* Six underlines: width, and slot to slot */
+  --seg: 64px;
+  --pitch: 76px;
+  --code-size: 30px;
+  --input-w: 500px;
+}
+
+.access {
+  margin-left: auto;
+}
+
+/* Centred, then lifted a little: a box dead centre reads low (owner, 30 Sep 69; a
+   higher lift was tried and undone, 1 Oct 69) */
+.main {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 72px var(--page-x) calc(72px + 12vh);
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  width: min(520px, 100%);
+}
+
+.title {
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: var(--track-display);
+}
+
+.lead {
+  max-width: 36ch;
+  margin-top: 20px;
+  font-family: var(--ff-serif);
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+/* ---------- the code ---------- */
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.slots {
+  position: relative;
+  flex: none;
+  width: calc(var(--pitch) * 5 + var(--seg));
+}
+
+/* An underline; checked, it grows into a box: green right, red wrong. 2px all round, as
+   the underline (v4's 1.5px drew its sides unevenly, some soft) */
+.seg {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--i) * var(--pitch));
+  box-sizing: border-box;
+  width: var(--seg);
+  height: 2px;
+  border-radius: 0;
+  background: var(--line);
+  box-shadow: inset 0 0 0 2px transparent;
+  transition:
+    height 0.4s cubic-bezier(0.34, 1.3, 0.5, 1),
+    border-radius 0.4s,
+    background 0.3s,
+    box-shadow 0.35s;
+}
+
+.seg[data-state] {
+  height: 100%;
+  border-radius: 10px;
+  background: transparent;
+}
+
+/* Selected (⌘A, shift-arrows): a grey box, in place of the browser's highlight */
+.seg[data-sel]:not([data-state]) {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.seg[data-state="right"] {
+  box-shadow: inset 0 0 0 2px var(--success);
+}
+
+.seg[data-state="wrong"] {
+  box-shadow: inset 0 0 0 2px var(--error);
+}
+
+/* One field; monospace digits spaced to sit one over each underline */
+.input {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: var(--input-w);
+  padding: 14px 0 14px calc((var(--seg) - 1ch) / 2);
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--ff-mono);
+  font-size: var(--code-size);
+  letter-spacing: calc(var(--pitch) - 1ch);
+  color: var(--ink);
+  caret-color: var(--ink);
+}
+
+.input::selection {
+  background: transparent;
+  color: inherit;
+}
+
+/* ---------- Continue (v4 .btnm) ---------- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* A black pill that, pointed at, shrinks to a dot in front of the words */
+.continue {
+  position: relative;
+  isolation: isolate;
+  padding: 13px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--paper);
+  cursor: pointer;
+  transition:
+    padding 0.55s cubic-bezier(0.34, 1.35, 0.5, 1),
+    color 0.3s;
+}
+
+.continue::before,
+.continue::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.continue::before {
+  z-index: -2;
+  inset: 0;
+  background: var(--surface);
+}
+
+.continue::after {
+  z-index: -1;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--ink);
+  transform: translateY(-50%);
+  transition:
+    width 0.55s cubic-bezier(0.34, 1.35, 0.5, 1),
+    height 0.55s cubic-bezier(0.34, 1.35, 0.5, 1),
+    left 0.55s cubic-bezier(0.34, 1.35, 0.5, 1);
+}
+
+@media (hover: hover) {
+  .continue:hover {
+    padding-left: 34px;
+    color: var(--ink);
+  }
+
+  .continue:hover::after {
+    left: 20px;
+    width: 8px;
+    height: 8px;
+  }
+}
+
+.note {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+/* v4 .wlk: an ink underline, grey behind on hover */
+.walk {
+  margin: 0 -2px;
+  padding: 0 2px 1px;
+  background-image: linear-gradient(var(--ink), var(--ink));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+  background-color: transparent;
+  color: var(--ink);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color 0.25s ease;
+}
+
+.walk:hover {
+  background-color: var(--surface);
+}
+
+.walk svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+.keep {
+  white-space: nowrap;
+}
+
+/* On phones the note leaves the button's row for the foot of the screen */
+.foot {
+  display: none;
+}
+
+/* ---------- Phones (v4 390) ---------- */
+@media (max-width: 599px) {
+  .page {
+    --seg: 44px;
+    --pitch: 52px;
+    --code-size: 26px;
+    --input-w: 320px;
+  }
+
+  .main {
+    place-items: center stretch;
+    padding: 40px var(--page-x) calc(40px + 10vh);
+  }
+
+  .box {
+    gap: 32px;
+    width: 100%;
+  }
+
+  .form {
+    gap: 32px;
+  }
+
+  .title {
+    font-size: 40px;
+  }
+
+  .lead {
+    margin-top: 16px;
+  }
+
+  .actions {
+    justify-content: center;
+  }
+
+  .actions .note {
+    display: none;
+  }
+
+  .foot {
+    display: block;
+    margin: 0 var(--page-x);
+    padding: 20px 0 28px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    text-wrap: balance;
+  }
+}

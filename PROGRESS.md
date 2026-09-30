@@ -7,12 +7,14 @@
 ## ตอนนี้อยู่
 
 - ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
-- ถัดไป: ขั้น 5 Login + Admin
+- ขั้น 5.1 Login: โค้ดเสร็จ ทดสอบใน dev ผ่าน · ยังไม่ commit · รอเจ้าของตั้ง secret บน production
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] เริ่มขั้น 5 · Login (05)
+- [ ] เจ้าของ: token → Contents **Read and write** · `npm run auth-secrets` → แอป authenticator + Vercel · กฎ Firewall
+- [ ] ลอง login บนเว็บจริง
+- [ ] 5.2 Admin hub (06 / 06B)
 
 ---
 
@@ -67,7 +69,16 @@
 
 ## ขั้น 5 · Login (05) → Admin (06–09)
 
-- [ ] ยังไม่เริ่ม
+ตัดสินใจ (30 ก.ย. 69): rate limit = กฎ Vercel Firewall (POST `/api/login` ≤ 5 ครั้ง / 10 นาที ต่อ IP) · รายการ session = `sessions.json` ใน content repo · มี homelab database เมื่อไหร่ค่อยย้ายทั้งสองไปที่นั่น
+
+- [x] 5.1 Login (05) → [notes/admin.md](notes/admin.md)
+  - [x] TOTP เขียนเอง · session cookie + `sessions.json` · `proxy.ts` กัน `/admin`
+  - [x] หน้า `/login` ตาม v4 (ช่องรหัส 6 ช่อง, Paste, Continue)
+  - [ ] secret + Firewall บน production
+- [ ] 5.2 Admin hub (06 / 06B)
+- [ ] 5.3 Editor (07) + preview (07P)
+- [ ] 5.4 Media (08)
+- [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
 ## ขั้น 5.5 · ย้ายพอร์ตเก่า
@@ -75,8 +86,14 @@
 - [ ] ย้ายเนื้อหา korn-natthanat.vercel.app → หน้า 02 / 03
 - [ ] ปิดโปรเจกต์ Vercel เก่า 3 ตัว (เช็ก env vars ของ personal-blog-api ก่อน)
 - [ ] ผูก korn-natthanat.vercel.app เข้ากับ blog-2026-vercel (เลือก Redirect old domain to new)
-- [ ] ใส่ลิงก์จริง: LinkedIn, Behance, CV (ตอนนี้เป็น `#`)
+- [ ] ใส่ลิงก์จริง: LinkedIn, Behance, CV, วิดีโอ walkthrough ในหน้า Login (ตอนนี้เป็น `#`)
 - [ ] ภาพพรีวิวลิงก์ของ project จริง (ตอนนี้ Buddy Blog ใช้รูป interior ชั่วคราว)
+- [ ] เจ้าของสร้าง project เองผ่าน Admin — ฝั่ง Design มี 3 project ที่ใส่แน่
+
+## อนาคต (มี homelab database แล้ว)
+
+- [ ] ย้าย rate limit + sessions จาก Firewall / `sessions.json` ไป database
+- [ ] Dashboard ยอดคนอ่านต่อบทความ, บทความยอดนิยม, ประวัติ login
 
 ## ขั้น 6 · Dark mode
 
@@ -94,4 +111,5 @@
   - [02-03-10.md](notes/02-03-10.md) — Project, About, 404
   - [04-post.md](notes/04-post.md) — หน้าบทความ, project detail, สารบัญ
   - [content.md](notes/content.md) — อ่านบทความจากไหน, index.json, cache
+  - [admin.md](notes/admin.md) — login, session, secret
   - [dev.md](notes/dev.md) — รัน dev, วัด v4, ทดสอบ Chrome / Safari / iPhone

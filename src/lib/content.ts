@@ -126,3 +126,54 @@ export async function getMedia(parts: string[]): Promise<{ body: ArrayBuffer; ty
   const res = await fromGitHub(file.split("/").map(encodeURIComponent).join("/"), ["media"]);
   return res && { body: await res.arrayBuffer(), type };
 }
+
+// ---------- writing (the admin, step 5) ----------
+// Every write is a commit to the content repo (on disk in dev). Read with readFresh
+// first: on GitHub its sha must come back with the write, so a file changed in between
+// is refused (409) instead of overwritten.
+
+export type Fresh = { text: string; sha: string | null };
+
+export async function readFresh(file: string): Promise<Fresh | null> {
+  if (LOCAL_DIR) {
+    const body = await fromDisk(file);
+    return body && { text: body.toString("utf8"), sha: null };
+  }
+  const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=${BRANCH}`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(TOKEN && { Authorization: `Bearer ${TOKEN}` }),
+    },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub ${res.status} reading ${REPO}/${file}`);
+  const { content, sha } = (await res.json()) as { content: string; sha: string };
+  return { text: Buffer.from(content, "base64").toString("utf8"), sha };
+}
+
+export async function writeContent(file: string, text: string, message: string, sha: string | null) {
+  if (LOCAL_DIR) {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const target = path.join(LOCAL_DIR, file);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, text);
+    return;
+  }
+  const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      Authorization: `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify({
+      message,
+      content: Buffer.from(text).toString("base64"),
+      branch: BRANCH,
+      ...(sha && { sha }),
+    }),
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status} writing ${REPO}/${file}`);
+}

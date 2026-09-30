@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Dev sign-ins write here (the content repo keeps the real one)
+/fixtures/content/sessions.json
