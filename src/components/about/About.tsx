@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import BangkokClock from "./BangkokClock";
+import JumpText from "../jump/JumpText";
 import CursorBadge from "./CursorBadge";
 import styles from "./About.module.css";
 
@@ -100,9 +101,9 @@ export default function About() {
     <main>
       <div className={styles.hero}>
         <h1 className={styles.headline} data-reveal>
-          I learned to build things
+          <JumpText text="I learned to build things" />
           <br />
-          before I learned to build software.
+          <JumpText text="before I learned to build software." />
         </h1>
       </div>
 

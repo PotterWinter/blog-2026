@@ -6,14 +6,13 @@
 
 ## ตอนนี้อยู่
 
-- ขั้น 3 (หน้าอ่าน) เหลือชิ้นสุดท้าย
-- commit ล่าสุด `6576fb7` · **ยังไม่ push** (ค้าง 3 commit)
+- ขั้น 3 (หน้าอ่าน) เสร็จ commit และ push แล้ว (30 ก.ย. 69)
+- กำลังเริ่มขั้น 4
 
 ## ทำต่อ
 
-- [ ] ตัวอักษรหัวข้อกระโดดหนีเมาส์ + แกว่งไหว (`data-jump` ของ v4 — หน้า 01 / 01B / 02 / 03)
-- [ ] push ขึ้น GitHub
-- [ ] เริ่มขั้น 4
+- [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
+- [ ] ขั้น 4 · อ่านผ่าน GitHub API + cache
 
 ---
 
@@ -55,7 +54,7 @@
   - [x] Previous | Next
 - [x] 04B Project detail (ลิงก์ + พรีวิว) → [notes/04-post.md](notes/04-post.md)
 - [x] จุดทุกตัวกลับสีบนของดำ → [notes/shared.md](notes/shared.md)
-- [ ] ตัวอักษรหัวข้อกระโดด (`data-jump`)
+- [x] ตัวอักษรหัวข้อกระโดด (`data-jump`) → [notes/shared.md](notes/shared.md)
 
 ## ขั้น 4 · อ่านผ่าน GitHub API + cache
 
@@ -85,7 +84,7 @@
 - `~/Desktop/PersonalBlog2026/blog` — โค้ด (Next.js 16.3.6, React 19.2, CSS Modules, ไม่ใช้ Tailwind)
 - `~/Desktop/PersonalBlog2026/blog-content` — บทความ .md + media
 - `notes/` — รายละเอียดและการตัดสินใจของแต่ละหน้า
-  - [shared.md](notes/shared.md) — header, footer, nav, page transition, travel dot, จุดกลับสี
+  - [shared.md](notes/shared.md) — header, footer, nav, page transition, travel dot, จุดกลับสี, ตัวอักษรกระโดด
   - [01-home.md](notes/01-home.md) — หน้า 01 / 01B
   - [02-03-10.md](notes/02-03-10.md) — Project, About, 404
   - [04-post.md](notes/04-post.md) — หน้าบทความ, project detail, สารบัญ

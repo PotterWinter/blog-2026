@@ -23,6 +23,10 @@ const SETTLE_EASE = "cubic-bezier(0.2, 0.7, 0.2, 1)";
 const SLIDE_MS = HOP_MS + 80;
 const SLIDE_LIFT = 12;
 const SLIDE_EASE = "cubic-bezier(0.3, 0.7, 0.25, 1)";
+// The minute's closing hop (v4 _dotHop): up 0.6 of a hop, then two bounces that die away
+const CLOSE_BOUNCES = 2;
+const CLOSE_BOUNCE_MS = 500;
+const CLOSE_BOUNCE_AMP = 16;
 
 const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -120,6 +124,34 @@ function boingKeyframes(at: Point, sign: number): Keyframe[] {
     frame(1.5, 1, 1, 0.9),
     frame(0, 1, 1, 1),
   ];
+}
+
+// v4 _dotHop: a jump straight up for the first third, then bounces that shrink and
+// squash as they land. sign = -1 jumps up.
+function closingHopKeyframes(at: Point, sign: number): Keyframe[] {
+  const height = Math.max(10, HOP_HEIGHT * 0.6);
+  const frames: Keyframe[] = [];
+  for (let i = 0; i <= 60; i++) {
+    const v = i / 60;
+    let y = 0;
+    let sx = 1;
+    let sy = 1;
+    if (v < 0.34) y = height * Math.sin((v / 0.34) * Math.PI);
+    else {
+      const u = (v - 0.34) / 0.66;
+      const env = Math.exp(-3.2 * u) * (1 - u);
+      const h = Math.abs(Math.sin(Math.PI * CLOSE_BOUNCES * u));
+      y = CLOSE_BOUNCE_AMP * env * h;
+      const squash = env * Math.pow(1 - h, 2.4) * SQUASH;
+      sx = 1 + squash;
+      sy = 1 - squash;
+    }
+    frames.push({
+      transform: `translate(${at.x}px, ${(at.y + sign * y).toFixed(2)}px) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`,
+      offset: v,
+    });
+  }
+  return frames;
 }
 
 type Parts = {
@@ -233,6 +265,23 @@ export function useTravelDot(
     const dot = dotRef.current;
     if (!dot || hopRef.current?.playState === "running" || calm()) return;
     hopRef.current = dot.animate(boingKeyframes(currentPoint(dot), sign), { duration: BOING_MS });
+  }, [sign]);
+
+  // The headline's once-a-minute jump ends with this dot hopping in place (JumpMotion
+  // sends "dothop" to groups marked data-dot-hop)
+  useLayoutEffect(() => {
+    const dot = dotRef.current;
+    const group = dot?.parentElement;
+    if (!dot || !group) return;
+    const onHop = () => {
+      if (hopRef.current?.playState === "running" || calm()) return;
+      hopRef.current = dot.animate(closingHopKeyframes(currentPoint(dot), sign), {
+        duration: HOP_MS + CLOSE_BOUNCE_MS * 1.6,
+        easing: "linear",
+      });
+    };
+    group.addEventListener("dothop", onHop);
+    return () => group.removeEventListener("dothop", onHop);
   }, [sign]);
 
   // ref={itemRef(i)} on each label, in order

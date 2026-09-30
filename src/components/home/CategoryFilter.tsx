@@ -36,6 +36,7 @@ export default function CategoryFilter<T>({
       role="group"
       aria-label="Category"
       data-spread={spread || undefined}
+      data-dot-hop
       data-reveal
       data-d="180"
     >

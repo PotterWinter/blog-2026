@@ -1,0 +1,28 @@
+/* Read out by screen readers, never drawn (the letters are aria-hidden) — nor copied,
+   or a selection over the headline would paste it twice */
+.plain {
+  position: absolute;
+  user-select: none;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.letter {
+  display: inline-block;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Composited: sub-pixel sway without the text snapping (v4) */
+  .letter {
+    will-change: transform;
+  }
+}

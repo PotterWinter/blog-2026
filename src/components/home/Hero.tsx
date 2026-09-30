@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import JumpText from "../jump/JumpText";
 import styles from "./Hero.module.css";
 
 type Props = {
@@ -16,10 +17,11 @@ export default function Hero({ first, second, intro }: Props) {
     <section className={styles.hero}>
       <h1 className={styles.title}>
         <span className={styles.word} data-reveal>
-          {first}
+          <JumpText text={first} />
         </span>{" "}
+        {/* In the minute's jump, the second word goes after the first (v4) */}
         <span className={styles.word} data-reveal data-d="90">
-          {second}
+          <JumpText text={second} lead={11} />
         </span>
       </h1>
       {/* Below 1024, forces the intro onto its own line. flex-basis 100% alone isn't
