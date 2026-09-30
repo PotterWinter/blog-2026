@@ -6,13 +6,15 @@
 
 ## ตอนนี้อยู่
 
-- ขั้น 3 (หน้าอ่าน) เสร็จ commit และ push แล้ว (30 ก.ย. 69)
-- กำลังเริ่มขั้น 4
+- ขั้น 4: โค้ดเสร็จ ยังไม่ commit · รอเจ้าของสร้าง token + ตั้ง env บน Vercel
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] ขั้น 4 · อ่านผ่าน GitHub API + cache
+- [ ] เจ้าของ: สร้าง fine-grained token (content repo, Contents read-only)
+- [ ] เจ้าของ: ตั้ง `CONTENT_REPO` + `GITHUB_TOKEN` บน Vercel
+- [ ] commit โค้ด + commit `index.json` ใน content repo แล้ว push ทั้งสอง
+- [ ] ตรวจบนเว็บจริงว่าอ่านจาก GitHub ได้
 
 ---
 
@@ -56,9 +58,13 @@
 - [x] จุดทุกตัวกลับสีบนของดำ → [notes/shared.md](notes/shared.md)
 - [x] ตัวอักษรหัวข้อกระโดด (`data-jump`) → [notes/shared.md](notes/shared.md)
 
-## ขั้น 4 · อ่านผ่าน GitHub API + cache
+## ขั้น 4 · อ่านผ่าน GitHub API + cache → [notes/content.md](notes/content.md)
 
-- [ ] ยังไม่เริ่ม
+- [x] อ่านได้สองแหล่ง: โฟลเดอร์ในเครื่อง (dev) / GitHub (production)
+- [x] cache 1 ชั่วโมง + tag ไว้ล้างตอน admin เซฟ
+- [x] `index.json` + script `npm run rebuild-index`
+- [x] รูป `/media` อ่านจาก GitHub
+- [ ] token + env บน Vercel · push · ตรวจเว็บจริง
 
 ## ขั้น 5 · Login (05) → Admin (06–09)
 
@@ -88,4 +94,5 @@
   - [01-home.md](notes/01-home.md) — หน้า 01 / 01B
   - [02-03-10.md](notes/02-03-10.md) — Project, About, 404
   - [04-post.md](notes/04-post.md) — หน้าบทความ, project detail, สารบัญ
+  - [content.md](notes/content.md) — อ่านบทความจากไหน, index.json, cache
   - [dev.md](notes/dev.md) — รัน dev, วัด v4, ทดสอบ Chrome / Safari / iPhone

@@ -2,110 +2,107 @@ import "server-only";
 
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { parse } from "yaml";
+import {
+  buildIndex,
+  splitFrontmatter,
+  toMeta,
+  type ContentIndex,
+  type IndexEntry,
+  type Post,
+} from "./schema.ts";
 
-// Step 3 reads posts from a folder on disk. Step 4 swaps this for the GitHub API;
-// everything that imports from here keeps working because the shapes stay the same.
-const CONTENT_DIR = path.resolve(process.cwd(), process.env.CONTENT_DIR ?? "../blog-content");
+export type { Post, PostLink, PostMeta, IndexEntry } from "./schema.ts";
 
-// A project's link (04B): up to 3. `preview` is a screenshot of where it goes, shown
-// beside the links on hover; without one the cover stands in.
-export type PostLink = { label: string; url: string; preview: string | null };
+// Where posts come from (step 4):
+//   CONTENT_DIR set  a folder on this machine — dev reads fixtures/content, and the list
+//                    is built from the .md files on the spot (no index.json needed)
+//   otherwise        the content repo on GitHub (CONTENT_REPO, "owner/name"), read with
+//                    GITHUB_TOKEN; lists come from its index.json in one request
+// GitHub reads are cached for an hour. The admin (step 5) clears them the moment it
+// commits (revalidateTag "content"), so the hour only matters for edits made elsewhere.
+// (turbopackIgnore: the folder is for dev only, so the deploy needn't carry the project
+// along in case it's read — without it, every file here was traced into the function)
+const LOCAL_DIR = process.env.CONTENT_DIR
+  ? path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.CONTENT_DIR)
+  : null;
+const REPO = process.env.CONTENT_REPO ?? "";
+const BRANCH = process.env.CONTENT_BRANCH ?? "main";
+const TOKEN = process.env.GITHUB_TOKEN ?? "";
+export const CONTENT_TTL = 3600;
 
-export type PostMeta = {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string;
-  section: "blog" | "project";
-  category: string;
-  tags: string[];
-  cover: string | null; // "media/2026/x.webp", relative to the content root
-  coverAlt: string;
-  status: "draft" | "published";
-  publishedAt: string; // "2026-09-29"
-  updatedAt: string;
-  // project only
-  role: string | null;
-  year: string | null;
-  links: PostLink[];
-};
-
-export type Post = PostMeta & { body: string };
-
-// Split "---\n<yaml>\n---\n<markdown>" into its two halves
-function splitFrontmatter(file: string, slug: string) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(file);
-  if (!match) throw new Error(`posts/${slug}.md: missing the --- frontmatter --- block`);
-  return { data: parse(match[1]) as Record<string, unknown>, body: match[2] };
-}
-
-// Check each field against the schema from step 0, so a typo in a .md file
-// fails loudly with the file name instead of rendering "undefined" somewhere.
-function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
-  const where = `posts/${slug}.md`;
-  const text = (key: string, optional = false): string => {
-    const value = data[key];
-    if (value == null && optional) return "";
-    if (typeof value !== "string" || value === "") throw new Error(`${where}: "${key}" must be text`);
-    return value;
-  };
-  const oneOf = <T extends string>(key: string, allowed: readonly T[]): T => {
-    const value = text(key);
-    if (!allowed.includes(value as T)) {
-      throw new Error(`${where}: "${key}" must be ${allowed.join(" or ")}`);
-    }
-    return value as T;
-  };
-  const date = (key: string): string => {
-    const value = text(key);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`${where}: "${key}" must look like 2026-09-29`);
-    return value;
-  };
-
-  const id = data.id;
-  if (typeof id !== "number" || !Number.isInteger(id)) throw new Error(`${where}: "id" must be a whole number`);
-  const tags = data.tags ?? [];
-  if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string")) {
-    throw new Error(`${where}: "tags" must be a list like [react, css]`);
-  }
-  const rawLinks = data.links ?? [];
-  if (!Array.isArray(rawLinks) || rawLinks.length > 3) {
-    throw new Error(`${where}: "links" takes up to 3`);
-  }
-  const links = rawLinks.map((link, i): PostLink => {
-    const { label, url, preview } = (link ?? {}) as Record<string, unknown>;
-    const at = `${where}: links[${i}]`;
-    if (typeof label !== "string" || label === "" || label.length > 24) {
-      throw new Error(`${at}: "label" must be text, up to 24 characters`);
-    }
-    if (typeof url !== "string" || !/^https:\/\//.test(url)) {
-      throw new Error(`${at}: "url" must be a full https:// link`);
-    }
-    if (preview != null && typeof preview !== "string") throw new Error(`${at}: "preview" must be a path`);
-    return { label, url, preview: preview ? preview.replace(/^\.\.\//, "") : null };
+// One file from the content repo, null if it isn't there
+async function fromGitHub(file: string, tags: string[]): Promise<Response | null> {
+  if (!REPO) return null; // not set up yet: an empty site, not a crash
+  const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=${BRANCH}`, {
+    headers: {
+      Accept: "application/vnd.github.raw+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(TOKEN && { Authorization: `Bearer ${TOKEN}` }),
+    },
+    next: { revalidate: CONTENT_TTL, tags: ["content", ...tags] },
   });
-
-  const cover = text("cover", true);
-  return {
-    id,
-    slug,
-    title: text("title"),
-    excerpt: text("excerpt"),
-    section: oneOf("section", ["blog", "project"] as const),
-    category: text("category"),
-    tags: tags as string[],
-    // In the .md the path is relative to the post ("../media/…"), so Obsidian can show it
-    cover: cover ? cover.replace(/^\.\.\//, "") : null,
-    coverAlt: text("coverAlt", true),
-    status: oneOf("status", ["draft", "published"] as const),
-    publishedAt: date("publishedAt"),
-    updatedAt: date("updatedAt"),
-    role: text("role", true) || null,
-    year: text("year", true) || null,
-    links,
-  };
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub ${res.status} reading ${REPO}/${file}`);
+  return res;
 }
+
+async function fromDisk(file: string): Promise<Buffer | null> {
+  try {
+    return await readFile(path.join(LOCAL_DIR!, file));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function readText(file: string, tags: string[]): Promise<string | null> {
+  if (LOCAL_DIR) return (await fromDisk(file))?.toString("utf8") ?? null;
+  return (await (await fromGitHub(file, tags))?.text()) ?? null;
+}
+
+// ---------- posts ----------
+
+async function localIndex(): Promise<ContentIndex> {
+  let names: string[];
+  try {
+    names = await readdir(path.join(LOCAL_DIR!, "posts"));
+  } catch {
+    return { nextId: 1, posts: [] };
+  }
+  const slugs = names.filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3));
+  const files = await Promise.all(
+    slugs.map(async (slug) => ({ slug, text: (await readText(`posts/${slug}.md`, []))! })),
+  );
+  return buildIndex(files);
+}
+
+async function getIndex(): Promise<ContentIndex> {
+  if (LOCAL_DIR) return localIndex();
+  const text = await readText("index.json", ["index"]);
+  if (!text) return { nextId: 1, posts: [] };
+  return JSON.parse(text) as ContentIndex;
+}
+
+// Newest first. Drafts stay out unless asked for (the admin will).
+export async function getPosts({
+  section,
+  drafts = false,
+}: { section?: IndexEntry["section"]; drafts?: boolean } = {}): Promise<IndexEntry[]> {
+  const { posts } = await getIndex();
+  return posts
+    .filter((p) => (drafts || p.status === "published") && (!section || p.section === section))
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || b.id - a.id);
+}
+
+export async function getPost(slug: string): Promise<Post | null> {
+  if (!/^[a-z0-9-]+$/.test(slug)) return null; // never let a slug walk out of posts/
+  const text = await readText(`posts/${slug}.md`, [`post:${slug}`]);
+  if (text == null) return null;
+  const { data, body } = splitFrontmatter(text, slug);
+  return { ...toMeta(data, slug), body };
+}
+
+// ---------- media ----------
 
 const MEDIA_TYPES: Record<string, string> = {
   ".webp": "image/webp",
@@ -118,56 +115,14 @@ const MEDIA_TYPES: Record<string, string> = {
 
 // A file from media/ (images only — clips live in Vercel Blob). null if it doesn't exist
 // or the path tries to leave the media folder.
-export async function getMedia(parts: string[]): Promise<{ body: Buffer; type: string } | null> {
-  const mediaDir = path.join(CONTENT_DIR, "media");
-  const file = path.resolve(mediaDir, ...parts);
-  const type = MEDIA_TYPES[path.extname(file).toLowerCase()];
-  if (!file.startsWith(mediaDir + path.sep) || !type) return null;
-  try {
-    return { body: await readFile(file), type };
-  } catch {
-    return null;
+export async function getMedia(parts: string[]): Promise<{ body: ArrayBuffer; type: string } | null> {
+  const type = MEDIA_TYPES[path.extname(parts.at(-1) ?? "").toLowerCase()];
+  if (!type || parts.some((p) => !p || p === "." || p === ".." || p.includes("\\"))) return null;
+  const file = ["media", ...parts].join("/");
+  if (LOCAL_DIR) {
+    const body = await fromDisk(file);
+    return body && { body: new Uint8Array(body).buffer, type };
   }
-}
-
-async function readPost(slug: string): Promise<Post> {
-  const file = await readFile(path.join(CONTENT_DIR, "posts", `${slug}.md`), "utf8");
-  const { data, body } = splitFrontmatter(file, slug);
-  return { ...toMeta(data, slug), body };
-}
-
-async function readMeta(slug: string): Promise<PostMeta> {
-  const file = await readFile(path.join(CONTENT_DIR, "posts", `${slug}.md`), "utf8");
-  return toMeta(splitFrontmatter(file, slug).data, slug);
-}
-
-async function listSlugs(): Promise<string[]> {
-  try {
-    const files = await readdir(path.join(CONTENT_DIR, "posts"));
-    return files.filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3));
-  } catch {
-    // No content folder (e.g. on Vercel before step 4): an empty site, not a crash
-    return [];
-  }
-}
-
-// Newest first. Drafts stay out unless asked for (the admin will).
-export async function getPosts({
-  section,
-  drafts = false,
-}: { section?: PostMeta["section"]; drafts?: boolean } = {}): Promise<PostMeta[]> {
-  const posts = await Promise.all((await listSlugs()).map(readMeta));
-  return posts
-    .filter((p) => (drafts || p.status === "published") && (!section || p.section === section))
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || b.id - a.id);
-}
-
-export async function getPost(slug: string): Promise<Post | null> {
-  if (!/^[a-z0-9-]+$/.test(slug)) return null; // never let a slug walk out of posts/
-  try {
-    return await readPost(slug);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw error;
-  }
+  const res = await fromGitHub(file.split("/").map(encodeURIComponent).join("/"), ["media"]);
+  return res && { body: await res.arrayBuffer(), type };
 }
