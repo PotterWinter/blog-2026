@@ -1,5 +1,5 @@
 ---
-id: 29
+id: 2
 title: "Linear algebra for layout"
 excerpt: "Matrices hiding in CSS transforms."
 section: blog

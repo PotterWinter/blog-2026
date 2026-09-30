@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
 import type { CategorySlug } from "@/lib/site";
+import { sortPosts, type Sort } from "@/lib/sort";
+import CardDot from "./CardDot";
 import CategoryFilter from "./CategoryFilter";
 import { usePageTransition } from "../PageTransition";
 import { SearchBox, TagsPanel, TagsToggle, ViewToggle } from "./Filters";
@@ -27,6 +29,7 @@ export type BrowseState = {
   query: string;
   page: number;
   view: View;
+  sort: Sort | null;
 };
 
 type Props = {
@@ -55,7 +58,7 @@ function matches(post: PostMeta, { category, tags, query }: BrowseState) {
 // Keep the view in the address bar (/?category=math&tags=react,css&q=grid&page=2&view=list)
 // so it can be shared or reloaded. Only the URL changes: no navigation, no transition,
 // no scroll.
-function remember({ category, tags, query, page, view }: BrowseState) {
+function remember({ category, tags, query, page, view, sort }: BrowseState) {
   const url = new URL(window.location.href);
   const set = (key: string, value: string | null) =>
     value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
@@ -64,6 +67,7 @@ function remember({ category, tags, query, page, view }: BrowseState) {
   set("q", query.trim() || null);
   set("page", page > 1 ? String(page) : null);
   set("view", view === "list" ? "list" : null);
+  set("sort", sort);
   window.history.replaceState(null, "", url);
 }
 
@@ -100,6 +104,8 @@ export default function PostBrowser({ posts, initial }: Props) {
   const [gridPage, setGridPage] = useState(initial.page);
   // Same for GRID / LIST: the pill moves at once, the posts swap a beat later
   const [shownView, setShownView] = useState(initial.view);
+  // And for a new order: the arrow turns at once, the posts swap a beat later
+  const [shownSort, setShownSort] = useState(initial.sort);
   const [phase, setPhase] = useState<"out" | "in" | null>(null);
   const [direction, setDirection] = useState(1); // 1 = forward (NEXT), -1 = back
   const timers = useRef<number[]>([]);
@@ -120,7 +126,10 @@ export default function PostBrowser({ posts, initial }: Props) {
   const tagsIn = (category: CategorySlug | null) =>
     new Set(posts.filter((p) => !category || p.category === category).flatMap((p) => p.tags));
 
-  const matching = posts.filter((post) => matches(post, state));
+  // The column heads sort the 01B list only; the grid has no heads, and is always
+  // newest first (the order the posts arrive in)
+  const filtered = posts.filter((post) => matches(post, state));
+  const matching = shownView === "list" ? sortPosts(filtered, shownSort) : filtered;
   // The search panel jumps to any post, whatever the category / tags on screen
   // Posts whose title holds every word come first, then ones matched on excerpt / tags
   const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -148,8 +157,26 @@ export default function PostBrowser({ posts, initial }: Props) {
     clearTimers();
     setState(next);
     setGridPage(1);
+    setShownSort(next.sort);
     setPhase(null);
     remember(next);
+  };
+
+  // A new order starts again from page 1, swapping the posts like GRID ↔ LIST
+  const sortBy = (sort: Sort) => {
+    const next = { ...state, sort, page: 1 };
+    clearTimers();
+    setState(next);
+    remember(next);
+    setDirection(0);
+    setPhase("out");
+    timers.current.push(
+      window.setTimeout(() => {
+        setShownSort(sort);
+        setGridPage(1);
+        setPhase("in");
+      }, SWAP_MS),
+    );
   };
 
   // GRID ↔ LIST: the same page of posts leaves and comes back in the other layout
@@ -233,24 +260,33 @@ export default function PostBrowser({ posts, initial }: Props) {
       {shown.length === 0 ? (
         <p className={gridStyles.empty}>Nothing matches.</p>
       ) : shownView === "list" ? (
-        <PostList posts={shown} phase={phase} direction={direction} />
+        <PostList
+          posts={shown}
+          phase={phase}
+          direction={direction}
+          sort={state.sort}
+          onSort={sortBy}
+        />
       ) : (
-        <div
-          className={gridStyles.grid}
-          data-swap
-          data-phase={phase ?? undefined}
-          style={{ "--dir": direction } as CSSProperties}
-        >
-          {shown.map((post, i) => (
-            <PostCard
-              key={post.slug}
-              post={post}
-              delay={(i % 3) * 70}
-              // Cards that arrive with a page change play the page-in instead
-              reveal={phase !== "in"}
-              order={i}
-            />
-          ))}
+        <div className={gridStyles.box}>
+          <div
+            className={gridStyles.grid}
+            data-swap
+            data-phase={phase ?? undefined}
+            style={{ "--dir": direction } as CSSProperties}
+          >
+            {shown.map((post, i) => (
+              <PostCard
+                key={post.slug}
+                post={post}
+                delay={(i % 3) * 70}
+                // Cards that arrive with a page change play the page-in instead
+                reveal={phase !== "in"}
+                order={i}
+              />
+            ))}
+          </div>
+          <CardDot phase={phase} />
         </div>
       )}
       <div style={{ paddingBottom: 104 }}>

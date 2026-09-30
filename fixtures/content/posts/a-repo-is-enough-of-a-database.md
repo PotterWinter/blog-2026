@@ -1,5 +1,5 @@
 ---
-id: 12
+id: 30
 title: "A repo is enough of a database"
 excerpt: "Writing a blog with git as the database."
 section: blog

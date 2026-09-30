@@ -1,5 +1,5 @@
 ---
-id: 3
+id: 21
 title: "Bézier curves from first principles"
 excerpt: "Four points, one lerp, repeated."
 section: blog

@@ -1,5 +1,5 @@
 ---
-id: 23
+id: 8
 title: "Cursor labels that follow"
 excerpt: "Lerp, but make it polite."
 section: blog

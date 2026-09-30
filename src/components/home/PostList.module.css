@@ -21,6 +21,56 @@
   padding-bottom: 12px;
 }
 
+/* Sorting heads (v4 06B): the plain grey label, ink on hover and once picked */
+.sortHead {
+  position: relative;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+@media (hover: hover) {
+  .sortHead:hover {
+    color: var(--ink);
+  }
+}
+
+.sortHead[data-on] {
+  color: var(--ink);
+}
+
+/* Hangs off the label's right edge, so the label stays exactly where it was (DATE
+   still lines up with the dates) — on the head in use only */
+.arrow {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  height: 11px;
+  margin: -6px 0 0 5px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.arrow svg {
+  display: block;
+  overflow: visible;
+  transition: transform 0.35s cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+
+.sortHead[data-on] .arrow {
+  opacity: 1;
+}
+
+.arrow[data-up] svg {
+  transform: rotate(180deg);
+}
+
 /* Rows: 14px of air, a hairline ink rule above (v4 .row) */
 .row {
   position: relative;
@@ -62,6 +112,31 @@
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: -0.028em;
+}
+
+/* The NO beside the title shows on phones only (< 768), top right over the date */
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.subNo {
+  flex: none;
+  margin-left: auto;
+}
+
+/* Phones: one head (Title), as before — no sorting on a touch list */
+@media (max-width: 767px) {
+  .sortHead,
+  .sortHead[data-on] {
+    pointer-events: none;
+    color: var(--muted);
+  }
+
+  .arrow {
+    display: none;
+  }
 }
 
 .sub {
@@ -107,10 +182,12 @@
 
   .date,
   .head > :last-child {
+    justify-self: end;
     text-align: right;
   }
 
-  .subDate {
+  .subDate,
+  .subNo {
     display: none;
   }
 

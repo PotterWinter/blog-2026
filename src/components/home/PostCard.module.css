@@ -42,6 +42,15 @@
   color: var(--ink);
 }
 
+/* Steps right to make room for the grid's dot (CardDot) on the hovered card */
+.category {
+  transition: margin-left 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.card[data-dot] .category {
+  margin-left: 20px;
+}
+
 .tags {
   font-family: var(--ff-mono);
   font-size: var(--fs-meta);
@@ -66,8 +75,59 @@
   }
 }
 
+/* A phone's scroll-picked card (CardDot) shows its date too */
+.card[data-dot] .date,
 .card:focus-visible .date {
   transform: none;
+}
+
+/* Phones (< 768 and touch): the date moves off the category row, which long tags
+   need. With the dot, NO (left) and the date (right) drop out of the cover's bottom
+   edge into the 14px gap under it — no line of their own, nothing reserved — and the
+   category row steps down a little so the two don't touch. */
+.stampHook {
+  display: none;
+}
+
+@media (max-width: 767px) and (pointer: coarse) {
+  .dateClip {
+    display: none;
+  }
+
+  /* No height of its own: the clip hangs from the cover's bottom edge */
+  .stampHook {
+    display: block;
+    position: relative;
+  }
+
+  .stampClip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+  }
+
+  .stamp {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 5px;
+    color: var(--ink);
+    transform: translateY(-105%);
+    transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .card[data-dot] .stamp {
+    transform: none;
+  }
+
+  .meta {
+    transition: margin-top 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .card[data-dot] .meta {
+    margin-top: 20px;
+  }
 }
 
 .title {

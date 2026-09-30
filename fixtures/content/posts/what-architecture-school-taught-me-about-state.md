@@ -1,5 +1,5 @@
 ---
-id: 10
+id: 28
 title: "What architecture school taught me about state"
 excerpt: "Section drawings and component trees."
 section: blog

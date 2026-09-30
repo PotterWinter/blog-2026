@@ -6,7 +6,8 @@ import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
 import styles from "./PostCard.module.css";
 
-// One card in the 01 grid: 2:1 cover, CATEGORY · tags · (date on hover), title, excerpt
+// One card in the 01 grid: 2:1 cover, CATEGORY · tags · (date on hover), title, excerpt.
+// Phones: NO (left) and date (right) drop into the gap under the cover with the dot.
 type Props = {
   post: PostMeta;
   delay: number; // reveal-on-scroll stagger (ms)
@@ -20,6 +21,7 @@ export default function PostCard({ post, delay, reveal = true, order }: Props) {
     <TransitionLink
       href={`/posts/${post.slug}`}
       className={styles.card}
+      data-card
       data-reveal={reveal || undefined}
       data-d={reveal ? delay : undefined}
       style={{ "--i": order } as CSSProperties}
@@ -35,8 +37,19 @@ export default function PostCard({ post, delay, reveal = true, order }: Props) {
           />
         )}
       </div>
+      {/* Phones: NO · date drop out of the cover's bottom edge into the gap below it */}
+      <span className={styles.stampHook} aria-hidden>
+        <span className={styles.stampClip}>
+          <span className={`label ${styles.stamp}`}>
+            <span>NO {String(post.id).padStart(3, "0")}</span>
+            <span>{shortDate(post.publishedAt)}</span>
+          </span>
+        </span>
+      </span>
       <div className={styles.meta}>
-        <span className="label">{category}</span>
+        <span className={`label ${styles.category}`} data-card-label>
+          {category}
+        </span>
         {post.tags.length > 0 && <span className={styles.tags}>{post.tags.join(", ")}</span>}
         <span className={styles.dateClip}>
           <span className={`label ${styles.date}`}>{shortDate(post.publishedAt)}</span>

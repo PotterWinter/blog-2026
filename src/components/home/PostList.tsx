@@ -4,9 +4,11 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
+import { buzz } from "@/lib/buzz";
 import { shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
+import type { Sort } from "@/lib/sort";
 import styles from "./PostList.module.css";
 
 const DOT = 8;
@@ -25,12 +27,6 @@ const CLOSE_ROWS = 4;
 // Rows of space between the chosen row and the phone card while it's pinned
 const GAP_ROWS = 2;
 
-// A tap of the phone's vibration motor as the dot lands on a new row. Android only:
-// iOS Safari gives web pages no way to vibrate (a hidden <input switch> was tried,
-// 30 Sep 69 — nothing on the owner's iPhone).
-function buzz() {
-  if ("vibrate" in navigator) navigator.vibrate(8);
-}
 const EXCERPT_OUT_MS = 110;
 // Spring pull / damping per frame. Tighter than v4 (.16 / .64, strip .13 / .72), which
 // felt a beat behind the mouse in use — the owner's call, 30 Sep 69. The dot and panel
@@ -42,7 +38,51 @@ type Props = {
   posts: PostMeta[];
   phase: "out" | "in" | null;
   direction: number;
+  sort: Sort | null;
+  onSort: (sort: Sort) => void;
 };
+
+// A column head that sorts (v4 06B). Reads as the plain grey label it was; once
+// pressed it turns ink and an arrow hangs beside it (down = NO 001 / A / newest
+// first, turned over = the other way). Only the head in use has one.
+function SortHead({
+  label,
+  on,
+  up,
+  onClick,
+}: {
+  label: string;
+  on: boolean;
+  up: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`label ${styles.sortHead}`}
+      data-on={on || undefined}
+      aria-label={`Sort by ${label.toLowerCase()}`}
+      aria-pressed={on}
+      // Phones keep the one plain Title head: no sorting there
+      onClick={() => !window.matchMedia("(max-width: 767px)").matches && onClick()}
+    >
+      {label}
+      <span className={styles.arrow} data-up={up || undefined} aria-hidden="true">
+        <svg
+          viewBox="0 0 14 26"
+          width="0.55em"
+          height="1em"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="square"
+        >
+          <path vectorEffect="non-scaling-stroke" d="M7 0v24M1.5 19 7 25l5.5-6" />
+        </svg>
+      </span>
+    </button>
+  );
+}
 
 // A spring stepped once per frame, as v4 does it: pull toward the target, then damp
 type Spring = { x: number; v: number; to: number };
@@ -64,7 +104,7 @@ const moving = (s: Spring, eps = 0.05) => Math.abs(s.to - s.x) > eps || Math.abs
 // and the dot and card spring to it, the other rows dim, and (Android) the phone gives a
 // light tick. At the end of the list the card rests just below the last row (REST), above
 // the pager, and the last row gets its turn as the card settles.
-export default function PostList({ posts, phase, direction }: Props) {
+export default function PostList({ posts, phase, direction, sort, onSort }: Props) {
   const zoneRef = useRef<HTMLDivElement>(null);
   const dotRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -399,12 +439,33 @@ export default function PostList({ posts, phase, direction }: Props) {
 
   return (
     <div ref={zoneRef} className={styles.zone}>
-      <div className={styles.head} aria-hidden="true">
-        <span className="label">No</span>
-        <span className="label">Title</span>
-        <span className="label">Category</span>
+      <div className={styles.head}>
+        <SortHead
+          label="No"
+          on={sort === "no" || sort === "no-desc"}
+          up={sort === "no-desc"}
+          // Already 001 first before anything is picked, so the first press flips it
+          onClick={() => onSort(sort === "no-desc" ? "no" : "no-desc")}
+        />
+        <SortHead
+          label="Title"
+          on={sort === "title" || sort === "title-desc"}
+          up={sort === "title-desc"}
+          onClick={() => onSort(sort === "title" ? "title-desc" : "title")}
+        />
+        <SortHead
+          label="Category"
+          on={sort === "category" || sort === "category-desc"}
+          up={sort === "category-desc"}
+          onClick={() => onSort(sort === "category" ? "category-desc" : "category")}
+        />
         <span className="label">Tags</span>
-        <span className="label">Date</span>
+        <SortHead
+          label="Date"
+          on={sort === "date" || sort === "date-asc"}
+          up={sort === "date-asc"}
+          onClick={() => onSort(sort === "date" ? "date-asc" : "date")}
+        />
       </div>
       <div
         data-swap
@@ -424,7 +485,11 @@ export default function PostList({ posts, phase, direction }: Props) {
           >
             <span className={styles.no}>{String(post.id).padStart(3, "0")}</span>
             <span className={styles.main}>
-              <span className={styles.title}>{post.title}</span>
+              <span className={styles.titleRow}>
+                <span className={styles.title}>{post.title}</span>
+                {/* Phones: the NO column is gone; it sits top right, over the date */}
+                <span className={`label ${styles.subNo}`}>{String(post.id).padStart(3, "0")}</span>
+              </span>
               {/* Category and tags (and the date on phones) under the title, below 1024 */}
               <span className={styles.sub}>
                 <span className="label">{label(post.category)}</span>

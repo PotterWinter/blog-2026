@@ -1,5 +1,5 @@
 ---
-id: 18
+id: 13
 title: "ISR without the magic"
 excerpt: "Cache, then revalidate."
 section: blog

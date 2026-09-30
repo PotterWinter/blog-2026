@@ -1,5 +1,5 @@
 ---
-id: 16
+id: 15
 title: "Reading log — July"
 excerpt: "Four books, one abandoned."
 section: blog

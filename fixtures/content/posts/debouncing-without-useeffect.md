@@ -1,5 +1,5 @@
 ---
-id: 11
+id: 29
 title: "Debouncing without useEffect"
 excerpt: "Eight keystrokes, one request — and not a single useEffect in the file."
 section: blog

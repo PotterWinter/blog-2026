@@ -58,6 +58,26 @@
   }
 }
 
+/* The grid and its CardDot: the dot moves in this box, above the cards */
+.box {
+  position: relative;
+}
+
+.dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--ink);
+  pointer-events: none;
+  z-index: 5;
+  transform: scale(0);
+  will-change: transform;
+}
+
 .empty {
   margin: 0 var(--page-x);
   padding: 22px 0 44px;

@@ -1,5 +1,5 @@
 ---
-id: 25
+id: 6
 title: "Markdown is a database schema"
 excerpt: "Frontmatter as columns."
 section: blog

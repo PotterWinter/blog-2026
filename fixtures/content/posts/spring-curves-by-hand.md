@@ -1,5 +1,5 @@
 ---
-id: 17
+id: 14
 title: "Spring curves by hand"
 excerpt: "Damping ratio on graph paper."
 section: blog

@@ -1,5 +1,5 @@
 ---
-id: 2
+id: 20
 title: "Probability for UI timing"
 excerpt: "Why 250ms feels right, statistically."
 section: blog

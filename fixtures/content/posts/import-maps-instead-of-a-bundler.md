@@ -1,5 +1,5 @@
 ---
-id: 6
+id: 24
 title: "Import maps instead of a bundler"
 excerpt: "Further than expected, honestly."
 section: blog

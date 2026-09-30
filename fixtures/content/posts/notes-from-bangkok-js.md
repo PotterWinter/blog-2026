@@ -1,5 +1,5 @@
 ---
-id: 24
+id: 7
 title: "บันทึกจากงาน Bangkok JS"
 excerpt: "สามเรื่องที่จดกลับมา"
 section: blog

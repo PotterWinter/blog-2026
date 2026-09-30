@@ -1,5 +1,5 @@
 ---
-id: 26
+id: 5
 title: "Images: one pipeline, no CDN"
 excerpt: "WebP, two sizes, done."
 section: blog
