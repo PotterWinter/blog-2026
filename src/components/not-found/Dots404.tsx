@@ -13,7 +13,8 @@ type Dot = { hx: number; hy: number; x: number; y: number; vx: number; vy: numbe
 // 10 · "404" drawn in dots (v4 _dots404one): the digits are set in the display face on
 // a hidden canvas, sampled on a staggered grid, and each sample becomes a dot that
 // sways about its home and is drawn toward the pointer. Dots rise 40px into place on
-// load. Grid step 15px, 12 below 800 wide, 9 below 500; dot = step / 5 radius.
+// load. Grid step 15px, 12 below 800 wide, 7 below 500 (v4: 9, which left the phone's
+// thin strokes two dots wide and the 4's tails zigzagging 2-1-2-1); dot = step / 5 radius.
 export default function Dots404() {
   const boxRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,19 +67,39 @@ export default function Dots404() {
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText("404", W / 2, H / 2 + size * 0.04);
-      const step = W < 500 ? 9 : W < 800 ? 12 : 15;
+      const step = W < 500 ? 7 : W < 800 ? 12 : 15;
       radius = step / 5;
       const px = g.getImageData(0, 0, W, H).data;
+      const alpha = (x: number, y: number) =>
+        x < 0 || y < 0 || x >= W || y >= H ? 0 : px[((Math.floor(y) * W + Math.floor(x)) << 2) + 3];
       const old = dots;
       dots = [];
       for (let y = step / 2; y < H; y += step) {
         // Every other row shifts half a step: a staggered grid
         for (let x = step / 2 + (Math.floor(y / step) % 2) * (step / 2); x < W; x += step) {
-          if (px[((Math.floor(y) * W + Math.floor(x)) << 2) + 3] > 140) {
+          if (alpha(x, y) > 140) {
             dots.push({ hx: x, hy: y, x, y: still ? y : y + 40, vx: 0, vy: 0 });
           }
         }
       }
+      // Drop stray samples: a sharp corner of a digit (the last 4's spur where the
+      // diagonal meets the bar) can leave a dot hanging off the shape. Such a dot sits
+      // on the glyph's edge (not all of 0.3 step around it is ink) and touches at most
+      // two others (on the staggered grid a dot's neighbours sit within 1.12 steps).
+      const near = step * 1.15;
+      const reach = step * 0.3;
+      const onEdge = (d: Dot) =>
+        [
+          [reach, 0],
+          [-reach, 0],
+          [0, reach],
+          [0, -reach],
+        ].some(([dx, dy]) => alpha(d.hx + dx, d.hy + dy) <= 40);
+      const neighbours = (d: Dot) =>
+        dots.filter((e) => e !== d && Math.hypot(e.hx - d.hx, e.hy - d.hy) < near).length;
+      // Only on the coarse 15px grid, where the spur shows up; on the finer grids the
+      // same test clips the ends of the 4's tails and bar instead
+      if (step === 15) dots = dots.filter((d) => !(onEdge(d) && neighbours(d) <= 2));
       // A resize keeps the dots where they are and lets them travel to the new shape
       if (old.length) {
         dots.forEach((d, i) => {

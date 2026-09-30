@@ -49,7 +49,7 @@ export default function SiteNav() {
           {item.label}
         </Link>
       ))}
-      <Dot ref={dotRef} />
+      <Dot ref={dotRef} solid />
     </nav>
   );
 }

@@ -49,6 +49,11 @@ export default function CardDot({ phase }: Props) {
 
     const tick = () => {
       raf = 0;
+      // The label is still easing into place (on phones its row drops 6px as the dot
+      // arrives, 0.42s): carry the dot along with it. Moving down the page the card
+      // above shrinking cancels that drop; moving up nothing did, so the dot landed
+      // 6px high and was pulled down after — the hitch the owner saw (30 Sep 69).
+      const drift = follow();
       S.vx = (S.vx + (S.tx - S.x) * PULL) * DAMP;
       S.x += S.vx;
       S.vy = (S.vy + (S.ty - S.y) * PULL) * DAMP;
@@ -67,7 +72,8 @@ export default function CardDot({ phase }: Props) {
         Math.abs(S.ty - S.y) > 0.05 ||
         Math.abs(S.vx) + Math.abs(S.vy) > 0.05 ||
         Math.abs(S.ts * press - S.s) > 0.002 ||
-        Math.abs(S.vs) > 0.002
+        Math.abs(S.vs) > 0.002 ||
+        drift
       )
         raf = requestAnimationFrame(tick);
     };
@@ -76,14 +82,25 @@ export default function CardDot({ phase }: Props) {
     };
 
     // The dot's centre: 4px into where the label starts (less any step aside still
-    // easing out), halfway down it. Layout offsets, not the drawn box, so a card still
-    // rising in with its reveal or page swap doesn't pull the dot off its place.
-    const dock = (next: HTMLElement, label: HTMLElement) => {
+    // easing out), halfway down it. Measured from the drawn box, less the translates of
+    // the label and the card around it, so a card still rising in with its reveal or
+    // page swap doesn't pull the dot off its place. (Not offsetTop: it rounds to whole
+    // pixels, and as the cards' rows ease the dot stepped 1px a frame.)
+    const dock = (label: HTMLElement) => {
+      const b = box.getBoundingClientRect();
+      const r = label.getBoundingClientRect();
+      let dx = 0;
+      let dy = 0;
+      for (let el: HTMLElement | null = label; el && el !== box; el = el.parentElement) {
+        const t = getComputedStyle(el).transform;
+        if (t && t !== "none") {
+          const m = new DOMMatrixReadOnly(t);
+          dx += m.m41;
+          dy += m.m42;
+        }
+      }
       const stepped = parseFloat(getComputedStyle(label).marginLeft) || 0;
-      return [
-        next.offsetLeft + label.offsetLeft - stepped + DOT / 2,
-        next.offsetTop + label.offsetTop + label.offsetHeight / 2,
-      ];
+      return [r.left - b.left - dx - stepped + DOT / 2, r.top - b.top - dy + r.height / 2];
     };
 
     const enter = (next: HTMLElement) => {
@@ -92,7 +109,7 @@ export default function CardDot({ phase }: Props) {
       const label = next.querySelector<HTMLElement>("[data-card-label]");
       if (!label) return;
       card?.removeAttribute("data-dot");
-      const [x, y] = dock(next, label);
+      const [x, y] = dock(label);
       // Coming from nothing it appears in place; from another card it travels
       if (S.s < 0.05) Object.assign(S, { x, y, vx: 0, vy: 0 });
       Object.assign(S, { tx: x, ty: y, ts: 1 });
@@ -106,11 +123,26 @@ export default function CardDot({ phase }: Props) {
     const redock = () => {
       const label = card?.querySelector<HTMLElement>("[data-card-label]");
       if (!card || !label) return;
-      const [x, y] = dock(card, label);
+      const [x, y] = dock(label);
       S.x += x - S.tx;
       S.y += y - S.ty;
       Object.assign(S, { tx: x, ty: y });
       run();
+    };
+    // Shift dot and target together by however far the label has moved since the last
+    // frame, so the spring's own motion is untouched. True while it's still moving.
+    const follow = () => {
+      const label = card?.querySelector<HTMLElement>("[data-card-label]");
+      if (!card || !label) return false;
+      const [x, y] = dock(label);
+      const dx = x - S.tx;
+      const dy = y - S.ty;
+      if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return false;
+      S.x += dx;
+      S.y += dy;
+      S.tx = x;
+      S.ty = y;
+      return true;
     };
     const hide = () => {
       clearTimeout(hideTimer);

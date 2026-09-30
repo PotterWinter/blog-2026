@@ -15,8 +15,9 @@
   width: var(--slot, 13px);
 }
 
-/* Outer span travels (transform); solid ink, not a white difference blend — the
-   sticky header is its own stacking context, so a blend vanishes below it */
+/* Outer span travels (transform). Drawn in difference (data-blend) so it turns light
+   over anything dark (owner, 30 Sep 69) — except the nav's: the sticky header is its
+   own stacking context, so there a blend vanishes below it; that one stays solid ink */
 .dot {
   position: absolute;
   top: 0;
@@ -31,6 +32,14 @@
 
 .dot[data-ready] {
   opacity: 1;
+}
+
+.dot[data-blend] {
+  mix-blend-mode: difference;
+}
+
+.dot[data-blend] .ink {
+  background: var(--ink-inverse);
 }
 
 /* Inner span takes the press, so it shrinks around its own centre */

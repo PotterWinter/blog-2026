@@ -1,0 +1,1093 @@
+/* 04 Post detail (v4) */
+
+/* ---------- Cover: 2:1 across the page (up to the frame) ----------
+   Below 1024: edge to edge. From 1024 it stops at the page margins, in line with the rules
+   of Category · Published · Tags below — v4 ran it edge to edge everywhere, which the
+   owner found a touch too big (30 Sep 69) */
+.cover {
+  position: relative;
+  max-width: var(--frame);
+  margin: 0 auto;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.coverImage {
+  object-fit: cover;
+}
+
+/* ---------- Back link, title, excerpt ---------- */
+/* Phones: tighter round "Back to Blog" than v4 (56 + its 15px tap band each side —
+   the owner found it too far, 30 Sep 69) */
+.head {
+  padding: 29px var(--page-x) 56px;
+}
+
+/* Optically even: 46px from the cover to the caps of BACK TO BLOG, and 46 from their
+   baseline to the title's caps (the boxes differ; the big title carries space above
+   its capitals) */
+.back {
+  display: flex;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+/* Phones: a 15px band above and below to tap (v4) */
+.backLink {
+  display: inline-block;
+  padding: 15px 0;
+  font-size: 12px;
+  color: var(--ink);
+  opacity: 0.45;
+  transition: opacity 0.28s ease;
+}
+
+.backLink svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+@media (hover: hover) {
+  .backLink:hover {
+    opacity: 1;
+  }
+}
+
+.title {
+  font-size: var(--fs-post-title);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: var(--track-display);
+}
+
+.excerpt {
+  max-width: 40ch;
+  margin-top: 28px;
+  font-family: var(--ff-serif);
+  font-size: var(--fs-lead);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Facts: Category · Published · Tags ---------- */
+/* Phones: one row each, label 96px then the value, grey rules between */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 var(--page-x);
+  border-top: var(--rule-section);
+  border-bottom: var(--rule-section);
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
+  padding: 16px 0;
+}
+
+.fact + .fact {
+  border-top: var(--rule-row);
+}
+
+.fact dd {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.updated {
+  display: block;
+  color: var(--muted);
+}
+
+/* The tag links carry their own 12px tap bands on phones */
+.tagsFact {
+  padding: 4px 0;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+
+.tagItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sep {
+  color: var(--muted);
+}
+
+/* v4 .navl: an ink line draws under the tag on hover */
+.tag {
+  position: relative;
+  display: inline-block;
+  padding: 12px 0;
+  line-height: 1.2;
+}
+
+.tag::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 9px;
+  left: 0;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.36s var(--ease-draw);
+}
+
+@media (hover: hover) {
+  .tag:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+/* ---------- Body: one column, 960px at 1280 growing to 1120 at 1680 ----------
+   (v4: 880. Wider on the owner's call, 30 Sep 69; beyond ~110 characters a line gets
+   hard to follow back, so it stops at 1120.) The body is the container a "full" image
+   measures itself against. */
+.body {
+  position: relative;
+  margin-top: 24px;
+  padding: 56px 0 64px;
+  container-type: inline-size;
+}
+
+/* ---------- Contents rail (v4 .tocr) ----------
+   Held at the middle of the screen while the article is on it. Below 1280 the page
+   margin is too narrow for it, so it shrinks and hugs the screen's edge (v4 hid it;
+   the owner wanted it everywhere, 30 Sep 69). */
+/* The rail's range: the header and the article, so it never runs past the top rule of
+   Previous | Next */
+.railZone {
+  position: relative;
+}
+
+/* From the top of the post to the end of the article */
+.rail {
+  position: absolute;
+  top: 0;
+  right: 8px; /* clear of the phone's own scroll indicator at the very edge */
+  /* Clear of the top rule of Previous | Next. Phones: far enough that a finger on the
+     rail (its grip reaches 16px below) doesn't land on Previous | Next when the page's
+     end pushes the rail up against it (owner, 30 Sep 69) */
+  --rail-end: 24px;
+  bottom: var(--rail-end);
+  pointer-events: none;
+  /* Sizes, shared by the rail and its dot layer */
+  --rail-w: 12px;
+  --tick: 8px;
+  --tick-sub: 5px;
+  --tick-on: 12px;
+  --tick-sub-on: 8px;
+  /* Shut, tick to tick; open they spread to .toc's gap (ContentsRail moves them) */
+  --pitch-shut: 8px;
+}
+
+.toc {
+  --tick-c: var(--line);
+  --tick-c-on: var(--ink);
+  /* Held mid-screen by a top ContentsRail measures (not translateY(-50%): sticky places
+     the untransformed box, which made the rail stop against the end of the article
+     ~half its height early and slide under the pointer) */
+  position: sticky;
+  top: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  /* Open spacing. v4 spread the ticks 4 → 12 on hover about the rail's top, which moved
+     the one under the pointer away just as it was clicked; here they spread from it */
+  gap: 10px;
+  width: var(--rail-w);
+  margin-left: auto;
+  padding: 6px 0;
+  pointer-events: auto;
+  touch-action: none; /* a finger on the rail scrubs it, not the page */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shut: drawn in difference, so the ticks and dot turn light where they cross anything
+   dark (owner, 30 Sep 69). Their colours are the inverse of --line / --ink, which
+   difference over white paper turns back into exactly those. The rail is sticky, a
+   stacking context of its own, so the blend has to be on it, not on the ticks. */
+.toc[data-blend] {
+  --tick-c: var(--line-inverse);
+  --tick-c-on: var(--ink-inverse);
+  mix-blend-mode: difference;
+}
+
+/* The blend and the colours swap in one frame, with no fade between */
+.toc[data-snap] .tick {
+  transition: none;
+}
+
+/* A wider grip than the ticks themselves, reaching into the margin on the left */
+.toc::before {
+  content: "";
+  position: absolute;
+  inset: -16px -4px -16px -28px;
+}
+
+/* Open: the names can be pressed */
+.toc[data-open] .tocLabel {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.toc a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* iOS greyed the entry under the finger */
+}
+
+.toc[data-ready] a {
+  transition: transform 0.36s var(--ease-draw);
+}
+
+/* Moving with the page as it scrolls: at once, not easing behind */
+.toc[data-follow] a,
+.toc[data-follow] + .tocDots .tocDot {
+  transition: none;
+}
+
+.tick {
+  display: block;
+  width: var(--tick);
+  height: 1px;
+  background: var(--tick-c);
+  transition:
+    background 0.25s,
+    width 0.36s var(--ease-draw);
+}
+
+.toc a[data-sub] .tick {
+  width: var(--tick-sub);
+}
+
+.toc a[data-on] .tick {
+  width: var(--tick-on);
+  background: var(--tick-c-on);
+}
+
+.toc a[data-sub][data-on] .tick {
+  width: var(--tick-sub-on);
+}
+
+.tocLabel {
+  position: absolute;
+  right: 100%;
+  max-width: calc(100vw - 80px);
+  margin-right: 10px;
+  padding: 5px 8px;
+  overflow: hidden;
+  background: var(--paper);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateX(8px);
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.36s var(--ease-draw),
+    color 0.25s;
+}
+
+.toc[data-open] .tocLabel {
+  opacity: 1;
+  transform: none;
+}
+
+.toc a:hover .tocLabel,
+.toc a[data-on] .tocLabel {
+  color: var(--ink);
+}
+
+.tocDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-inverse);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s,
+    transform 0.36s var(--ease-draw);
+}
+
+/* The dot's layer: over the rail exactly (ContentsRail sets top, height and a margin
+   pulling it up), always drawn in difference */
+.tocDots {
+  position: sticky;
+  width: var(--rail-w);
+  margin-left: auto;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+/* While scrubbing, the dot follows at once rather than easing behind */
+.toc[data-drag] + .tocDots .tocDot {
+  transition: opacity 0.3s;
+}
+
+@media (min-width: 1024px) {
+  .cover {
+    margin: 0 var(--page-x);
+  }
+}
+
+@media (pointer: coarse) {
+  .rail {
+    --rail-end: 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .rail {
+    right: var(--page-x);
+    --rail-w: 32px;
+    --tick: 20px;
+    --tick-sub: 12px;
+    --tick-on: 32px;
+    --tick-sub-on: 20px;
+    --pitch-shut: 10px;
+  }
+}
+
+.prose {
+  /* The column's width, measured on .body (the container), so images can size to it */
+  --col: min(clamp(960px, calc(960px + (100vw - 1280px) * 0.4), 1120px), 100cqw - 2 * var(--inset));
+  /* The tallest any image gets: a 16:10 carousel's height (owner, 30 Sep 69) */
+  --img-max: calc(var(--col) * 0.625);
+  width: var(--col);
+  margin: 0 auto;
+}
+
+.prose p {
+  margin-bottom: 20px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+/* A new section: 64px from the last one, as v4's section blocks */
+.prose h2 {
+  margin: 44px 0 24px;
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  line-height: var(--lh-h2);
+  letter-spacing: var(--track-display);
+}
+
+.prose h3 {
+  margin: 48px 0 12px;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--track-display);
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+/* Inline code */
+.prose code {
+  padding: 1px 5px;
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  background: var(--surface);
+}
+
+/* ---------- Code frame (v4): grey bar over ink ---------- */
+.code {
+  margin-bottom: 28px;
+  border: var(--rule-row);
+}
+
+/* An Output frame (or any second frame) straight after another joins onto it */
+.code + .code {
+  margin-top: -28px;
+  border-top: 0;
+}
+
+.codeBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: var(--rule-row);
+  background: var(--surface);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.term {
+  margin: 0;
+  padding: 20px 24px;
+  overflow-x: auto;
+  background: var(--ink);
+  color: var(--line);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  line-height: 1.85;
+  white-space: pre;
+}
+
+.prose .term code {
+  padding: 0;
+  font-size: inherit;
+  background: none;
+}
+
+.dim {
+  color: var(--muted);
+}
+
+/* Copy pill: ⧉ Copy → ✓ Copied (v4 .pill.cpy) */
+.copy {
+  position: relative;
+  margin-left: auto;
+  padding: 9px 13px; /* phones: a little roomier than the 5 / 12 from 768 */
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ff-sans);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease-draw),
+    border-color 0.3s,
+    color 0.3s;
+}
+
+@media (hover: hover) {
+  .copy:hover {
+    border-color: var(--ink);
+  }
+}
+
+.copy[data-done] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.copyWord {
+  display: inline-flex;
+  align-items: baseline;
+  margin: -2px 0;
+  padding: 2px 0;
+  overflow: hidden;
+}
+
+.copySym {
+  display: inline-grid;
+  align-self: center;
+  margin-right: 6px;
+}
+
+.copyIcon,
+.copyTick {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.4s var(--ease-settle),
+    opacity 0.25s;
+}
+
+.copyTick {
+  transform: translateY(100%) scale(0.4);
+  opacity: 0;
+}
+
+.copy[data-done] .copyIcon {
+  transform: translateY(-100%) scale(0.4);
+  opacity: 0;
+}
+
+.copy[data-done] .copyTick {
+  transform: none;
+  opacity: 1;
+}
+
+.ch {
+  display: inline-block;
+  white-space: pre;
+}
+
+.chY {
+  max-width: 1em;
+  transition:
+    transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s,
+    max-width 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.copy[data-done] .chY {
+  max-width: 0;
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.chL {
+  max-width: 0;
+  transform: translate(-5px, 100%);
+  opacity: 0;
+  transition:
+    transform 0.4s var(--ease-settle),
+    opacity 0.22s,
+    max-width 0.3s var(--ease-panel);
+  transition-delay: calc((2 - var(--i)) * 30ms);
+}
+
+.copy[data-done] .chL {
+  max-width: 1em;
+  transform: none;
+  opacity: 1;
+  transition-delay: calc(30ms + var(--i) * 40ms);
+}
+
+/* ---------- Note (v4): a grey box, NOTE beside the text (above it on phones) ---------- */
+.note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 28px;
+  padding: 18px 20px 20px;
+  background: var(--surface);
+}
+
+.note > :global(.label) {
+  color: var(--ink);
+}
+
+.prose .note p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.prose .note p + p {
+  margin-top: 10px;
+}
+
+/* ---------- YouTube facade ---------- */
+.video {
+  margin: 36px 0 28px;
+}
+
+.videoBox {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.videoBox iframe,
+.videoPoster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.videoPoster {
+  padding: 0;
+  background: var(--ink) center / cover no-repeat;
+  cursor: pointer;
+}
+
+.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -24px 0 0 -34px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (hover: hover) {
+  .videoPoster:hover .play {
+    transform: scale(1.12);
+  }
+}
+
+.videoCaption {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.videoTime {
+  font-family: var(--ff-mono);
+  color: var(--ink);
+}
+
+/* An ink hairline under the text; the background greys on hover. External links
+   carry a small arrow. */
+.link {
+  margin: 0 -2px;
+  padding: 0 2px 1px;
+  background-image: linear-gradient(var(--ink), var(--ink));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+  transition: background-color 0.25s ease;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    background-color: var(--surface);
+  }
+}
+
+.out {
+  display: inline-block;
+  margin-left: 5px;
+  overflow: visible;
+}
+
+/* Lists: a grey dash, or a mono 01 / 02 / 03 */
+.ul,
+.ol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  list-style: none;
+}
+
+.ul > li,
+.ol > li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 4px;
+}
+
+.ul > li::before {
+  content: "—";
+  color: var(--muted);
+}
+
+.ol {
+  margin-bottom: 28px;
+  counter-reset: item;
+}
+
+/* The number sits on the first line's baseline, whatever the text size (a fixed
+   28px line only lined up with 16px text) */
+.ol > li {
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: baseline;
+  counter-increment: item;
+}
+
+.ol > li::before {
+  content: counter(item, decimal-leading-zero);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ul > li p,
+.ol > li p {
+  margin: 0;
+}
+
+/* Pull quote (a markdown > quote) */
+.prose blockquote {
+  margin: 44px 0 64px;
+  font-family: var(--ff-serif);
+  font-size: var(--fs-h2);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.prose blockquote p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.prose hr {
+  height: 0;
+  margin: 44px 0 56px;
+  border: 0;
+  border-top: var(--rule-section);
+}
+
+.tableWrap {
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tableWrap thead tr {
+  border-top: var(--rule-section);
+}
+
+.tableWrap th,
+.tableWrap td {
+  padding: 12px 16px 12px 0;
+  border-bottom: var(--rule-row);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.tableWrap th {
+  font-size: var(--fs-label);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.figure {
+  margin: 36px 0;
+}
+
+/* Single image: the column's width, its own ratio (EDITOR-SPEC "fit width"); a tall
+   one stops at --img-max and narrows to keep its ratio, centred. The figure shrinks to
+   the image, so the caption starts at the image's left edge. */
+.figure:not(.full) {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.figure img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: var(--img-max);
+  margin: 0 auto;
+  background: var(--line);
+}
+
+/* <!-- fit height -->: as tall as images get (--img-max; EDITOR-SPEC said 560), its
+   own ratio, centred — for tall photos */
+.fitHeight img {
+  width: auto;
+  max-width: 100%;
+  height: var(--img-max);
+  margin: 0 auto;
+}
+
+.fitHeight figcaption {
+  text-align: center;
+}
+
+/* <!-- full -->: the column's full width always (owner, 30 Sep 69 — not edge to edge
+   as EDITOR-SPEC had it); past --img-max it crops rather than narrowing */
+.full img {
+  width: 100%;
+  max-height: var(--img-max);
+  object-fit: cover;
+}
+
+/* <!-- two 4:5 --> / <!-- two 16:10 -->: side by side, cropped to the ratio */
+.two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 36px 0;
+}
+
+.two img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--line);
+}
+
+.two[data-ratio="16:10"] img {
+  aspect-ratio: 16 / 10;
+}
+
+.two figcaption {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* <!-- carousel --> (16:10, the column's width) / <!-- carousel 4:5 --> (560 tall,
+   centred): one image in view, sliding 0.7s (v4) */
+.carousel {
+  margin: 36px 0;
+  outline-offset: 4px;
+}
+
+.stage {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--line);
+  touch-action: pan-y;
+}
+
+.carousel[data-ratio="4:5"] .stage {
+  width: min(100%, 448px);
+  margin: 0 auto;
+  aspect-ratio: 4 / 5;
+}
+
+.track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.7s cubic-bezier(0.6, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.track img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.slideCaption {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.slideCount {
+  font-family: var(--ff-mono);
+  color: var(--ink);
+}
+
+.slideNav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+  border-top: var(--rule-row);
+}
+
+/* The pointer becomes v4's long arrow (at 2×) over Previous / Next */
+.slideNav button {
+  padding: 12px 24px 20px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M26 7H2M7 1.5 1 7l6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
+      26 14,
+    w-resize;
+  transition: color 0.25s ease;
+}
+
+.slideNav button + button {
+  padding: 12px 0 20px 24px;
+  text-align: right;
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M0 7h24M19 1.5 25 7l-6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
+      26 14,
+    e-resize;
+}
+
+.slideNav svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+@media (hover: hover) {
+  .slideNav button:hover {
+    color: var(--ink);
+  }
+}
+
+.figure figcaption {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- 768 up: the facts sit in three columns ---------- */
+@media (min-width: 768px) {
+  .head {
+    padding-top: 56px;
+  }
+
+  .back {
+    margin-bottom: 56px;
+  }
+
+  .backLink {
+    padding: 0;
+  }
+
+  .copy {
+    padding: 5px 12px;
+  }
+
+  .note {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fact {
+    display: block;
+    padding: 22px 24px 26px;
+  }
+
+  .fact:first-child {
+    padding-left: 0;
+  }
+
+  .fact:last-child {
+    padding-right: 0;
+  }
+
+  /* Column divider: a 1px grey line inset 18px from top and bottom */
+  .fact + .fact {
+    border-top: 0;
+    background: linear-gradient(var(--line), var(--line)) left 0 top 18px / 1px calc(100% - 36px)
+      no-repeat;
+  }
+
+  .fact dt {
+    margin-bottom: 12px;
+  }
+
+  .tagsFact {
+    padding: 22px 0 26px 24px;
+  }
+
+  .tag {
+    padding: 0 0 3px;
+  }
+
+  .tag::after {
+    bottom: 0;
+  }
+}
+
+/* ---------- Previous | Next (v4) ---------- */
+.postNav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  margin: 0 var(--page-x);
+  border-top: var(--rule-section);
+}
+
+.prev,
+.next {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 12px 24px 0;
+}
+
+.prev svg,
+.next svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+/* Phones: a grey divider between the two, inset 18px */
+.next {
+  align-items: flex-end;
+  padding: 24px 0 24px 12px;
+  text-align: right;
+  background: linear-gradient(var(--line), var(--line)) left 0 top 18px / 1px calc(100% - 36px)
+    no-repeat;
+}
+
+.navTitle {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: var(--track-display);
+  text-wrap: pretty;
+}
+
+/* The pointer becomes v4's long arrow (at 2×) */
+.prev {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M26 7H2M7 1.5 1 7l6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
+      26 14,
+    w-resize;
+}
+
+.next {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M0 7h24M19 1.5 25 7l-6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
+      26 14,
+    e-resize;
+}
+
+@media (min-width: 768px) {
+  .postNav {
+    align-items: center;
+  }
+
+  .prev {
+    padding: 36px 32px 36px 0;
+  }
+
+  .next {
+    padding: 36px 0 36px 32px;
+    background: none;
+  }
+
+  .navTitle {
+    font-size: var(--fs-h2);
+    font-weight: 500;
+    line-height: 1.02;
+  }
+}

@@ -15,8 +15,10 @@ const mono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
 });
 
+// 600 for bold in posts: without it the browser fakes bold by thickening 500, which
+// came out much heavier than the Latin beside it
 const thai = IBM_Plex_Sans_Thai({
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   subsets: ["thai"],
   variable: "--font-plex-thai",
 });

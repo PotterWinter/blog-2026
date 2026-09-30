@@ -6,6 +6,10 @@
   --line: #dcdad6;
   --surface: #e8e8e7;
   --paper: #ffffff;
+  /* White − ink / line: drawn in mix-blend-mode: difference, they show as --ink /
+     --line on paper and turn light over anything dark (the moving dots, the rail) */
+  --ink-inverse: #eeeeef;
+  --line-inverse: #232529;
   --error: #d23a2e;
   --success: #22a355;
 
@@ -128,6 +132,17 @@ select {
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/* A post's contents rail stands in for the page's scroll bar on phones */
+@media (pointer: coarse) {
+  html[data-rail] {
+    scrollbar-width: none;
+  }
+
+  html[data-rail]::-webkit-scrollbar {
+    display: none;
   }
 }
 

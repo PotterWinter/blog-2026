@@ -71,7 +71,9 @@
   height: 8px;
   margin: -4px 0 0 -4px;
   border-radius: 50%;
-  background: var(--ink);
+  /* Difference: over a dark photo it turns light where it crosses (owner, 30 Sep 69) */
+  background: var(--ink-inverse);
+  mix-blend-mode: difference;
   pointer-events: none;
   z-index: 5;
   transform: scale(0);
