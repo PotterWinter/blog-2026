@@ -1,0 +1,138 @@
+/* 10 · Not found (v4). The dots box is 200 / 400 / 480 / 560px tall at 390 / 768 /
+   1024 / 1280, 24px (40px from 768) under the header. */
+.dots {
+  position: relative;
+  height: 200px;
+  margin: 24px var(--page-x) 0;
+  font-family: var(--ff-sans); /* the canvas reads it for the digits */
+  color: var(--ink);
+  cursor: default;
+  touch-action: pan-y;
+}
+
+.dots canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The message, then "Try instead" and three links: stacked below 1024, side by side
+   (links bottom-aligned with the message) from 1024 */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: end;
+  padding: 24px var(--page-x) 72px;
+}
+
+.title {
+  max-width: 16ch;
+  font-size: var(--fs-display);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: pretty;
+}
+
+.try {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Phones: the links wrap, each with a 12px band above and below to tap (padding,
+   with the underline lifted to stay 3px under the text) */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+/* v4 .dlink: a grey hairline under the link; on hover an ink one draws across */
+.link {
+  --tap: 12px;
+  position: relative;
+  display: inline-block;
+  padding: var(--tap) 0 calc(var(--tap) + 3px);
+  color: var(--ink);
+}
+
+.link::before,
+.link::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: var(--tap);
+  left: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.link::after {
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.36s var(--ease-draw);
+}
+
+@media (hover: hover) {
+  .link:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (min-width: 768px) {
+  .dots {
+    height: 400px;
+    margin-top: 40px;
+  }
+
+  .body {
+    padding-bottom: 96px;
+  }
+
+  .try {
+    gap: 12px;
+  }
+
+  .links {
+    flex-wrap: nowrap;
+    gap: 28px;
+  }
+
+  .link {
+    --tap: 0px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dots {
+    height: 480px;
+  }
+
+  .body {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 40px;
+    padding-bottom: 112px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dots {
+    height: 560px;
+  }
+
+  .body {
+    padding-bottom: 120px;
+  }
+}

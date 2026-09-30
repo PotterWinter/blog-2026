@@ -5,7 +5,7 @@ excerpt: "The ocean is still not a metaphor."
 section: blog
 category: reading
 tags: [sci-fi, essays]
-cover: ../media/2026/solaris.webp
+cover: ../media/2026/interior-22.webp
 coverAlt: "Placeholder cover for Reading Solaris after fifteen years"
 status: published
 publishedAt: 2026-08-12

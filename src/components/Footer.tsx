@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import styles from "./Footer.module.css";
 
 const groups = [
@@ -25,22 +28,26 @@ const groups = [
 ];
 
 export default function Footer() {
+  // About has its own, fuller contact section: the groups would only repeat it
+  const withGroups = usePathname() !== "/about";
   return (
     <footer>
-      <div className={styles.groups}>
-        {groups.map((group) => (
-          <div key={group.label} className={styles.group}>
-            <div className="label">{group.label}</div>
-            <div className={`${styles.links} ${group.inline ? styles.inline : ""}`}>
-              {group.links.map((link) => (
-                <a key={link.text} href={link.href}>
-                  {link.text}
-                </a>
-              ))}
+      {withGroups && (
+        <div className={styles.groups}>
+          {groups.map((group) => (
+            <div key={group.label} className={styles.group}>
+              <div className="label">{group.label}</div>
+              <div className={`${styles.links} ${group.inline ? styles.inline : ""}`}>
+                {group.links.map((link) => (
+                  <a key={link.text} href={link.href}>
+                    {link.text}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       <div className={styles.bottom}>
         <span className={styles.name}>Korn Natthanat</span>
         <Link href="/login" className={`${styles.dotLink} ${styles.muted}`}>

@@ -5,7 +5,7 @@ excerpt: "Further than expected, honestly."
 section: blog
 category: engineering
 tags: [workflow, ci]
-cover: ../media/2026/import-maps.webp
+cover: ../media/2026/interior-25.webp
 coverAlt: "Placeholder cover for Import maps instead of a bundler"
 status: published
 publishedAt: 2026-07-19

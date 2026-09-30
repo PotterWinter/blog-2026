@@ -5,7 +5,7 @@ excerpt: "Twelve columns, three breakpoints."
 section: blog
 category: engineering
 tags: [css-grid, workflow]
-cover: ../media/2026/css-grid.webp
+cover: ../media/2026/interior-23.webp
 coverAlt: "Placeholder cover for A CSS grid I actually reuse"
 status: published
 publishedAt: 2026-08-04

@@ -8,7 +8,7 @@ import { buzz } from "@/lib/buzz";
 import { shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
-import type { Sort } from "@/lib/sort";
+import { nextSort, type Sort } from "@/lib/sort";
 import styles from "./PostList.module.css";
 
 const DOT = 8;
@@ -43,8 +43,8 @@ type Props = {
 };
 
 // A column head that sorts (v4 06B). Reads as the plain grey label it was; once
-// pressed it turns ink and an arrow hangs beside it (down = NO 001 / A / newest
-// first, turned over = the other way). Only the head in use has one.
+// pressed it turns ink and an arrow hangs beside it: down = low → high (NO 001, A,
+// oldest first), turned over = the other way. Only the head in use has one.
 function SortHead({
   label,
   on,
@@ -444,27 +444,26 @@ export default function PostList({ posts, phase, direction, sort, onSort }: Prop
           label="No"
           on={sort === "no" || sort === "no-desc"}
           up={sort === "no-desc"}
-          // Already 001 first before anything is picked, so the first press flips it
-          onClick={() => onSort(sort === "no-desc" ? "no" : "no-desc")}
+          onClick={() => onSort(nextSort(sort, "no"))}
         />
         <SortHead
           label="Title"
           on={sort === "title" || sort === "title-desc"}
           up={sort === "title-desc"}
-          onClick={() => onSort(sort === "title" ? "title-desc" : "title")}
+          onClick={() => onSort(nextSort(sort, "title"))}
         />
         <SortHead
           label="Category"
           on={sort === "category" || sort === "category-desc"}
           up={sort === "category-desc"}
-          onClick={() => onSort(sort === "category" ? "category-desc" : "category")}
+          onClick={() => onSort(nextSort(sort, "category"))}
         />
         <span className="label">Tags</span>
         <SortHead
           label="Date"
-          on={sort === "date" || sort === "date-asc"}
-          up={sort === "date-asc"}
-          onClick={() => onSort(sort === "date" ? "date-asc" : "date")}
+          on={sort === "date" || sort === "date-desc"}
+          up={sort === "date-desc"}
+          onClick={() => onSort(nextSort(sort, "date"))}
         />
       </div>
       <div

@@ -5,7 +5,7 @@ excerpt: "Section drawings and component trees."
 section: blog
 category: reading
 tags: [drawing, essays]
-cover: ../media/2026/architecture-state.webp
+cover: ../media/2026/interior-21.webp
 coverAlt: "Placeholder cover for What architecture school taught me about state"
 status: published
 publishedAt: 2026-08-21

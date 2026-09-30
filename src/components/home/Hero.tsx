@@ -1,36 +1,42 @@
+import type { ReactNode } from "react";
 import styles from "./Hero.module.css";
 
-// 01 hero, per the v4 frames:
-//   < 1024   "Hello, I am Korn." with the intro on the next line
-//   1024+    the intro beside it on the same line
+type Props = {
+  first: string; // "Hello, I am"
+  second: string; // "Korn."
+  intro: ReactNode;
+};
+
+// Page hero (01 home, 02 Project), per the v4 frames:
+//   < 1024   the two words, with the intro on the next line
+//   1024+    the intro beside them on the same line
 //   1280+    the three-column grid
-export default function Hero() {
+export default function Hero({ first, second, intro }: Props) {
   return (
     <section className={styles.hero}>
       <h1 className={styles.title}>
         <span className={styles.word} data-reveal>
-          Hello, I am
+          {first}
         </span>{" "}
         <span className={styles.word} data-reveal data-d="90">
-          Korn.
+          {second}
         </span>
       </h1>
       {/* Below 1024, forces the intro onto its own line. flex-basis 100% alone isn't
           enough: max-width 640 lets the intro squeeze in beside the words at ~800–1000px. */}
-      {/* 768–1023: stands in for the right half, so "Korn." centres in the space
-          between "Hello, I am" and the middle of the page (as it does beside the intro
-          from 1024) */}
+      {/* 768–1023: stands in for the right half, so the second word centres in the
+          space between the first and the middle of the page (as it does beside the
+          intro from 1024) */}
       <span className={styles.half} aria-hidden="true" />
       <span className={styles.break} aria-hidden="true" />
-      {/* Phrases that read badly split across lines are kept whole with .keep */}
       <p className={styles.intro} data-reveal data-d="160">
-        I graduated in architecture, <span className={styles.keep}>ended up</span> building
-        software, and write here about how things are{" "}
-        <span className={styles.keep}>put together.</span> This is{" "}
-        <span className={styles.keep}>a notebook,</span>{" "}
-        <span className={styles.keep}>not a publication.</span> Posts go up when something breaks
-        and <span className={styles.keep}>I finally understand why.</span>
+        {intro}
       </p>
     </section>
   );
+}
+
+// Phrases that read badly split across lines are kept whole
+export function Keep({ children }: { children: ReactNode }) {
+  return <span className={styles.keep}>{children}</span>;
 }

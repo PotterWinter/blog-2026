@@ -5,7 +5,7 @@ excerpt: "Eight keystrokes, one request — and not a single useEffect in the fi
 section: blog
 category: engineering
 tags: [react, typescript]
-cover: ../media/2026/debounce.webp
+cover: ../media/2026/interior-20.webp
 coverAlt: "Placeholder cover for Debouncing without useEffect"
 status: published
 publishedAt: 2026-08-30

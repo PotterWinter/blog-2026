@@ -1,4 +1,10 @@
-export default function AboutPage() {
-  return <main style={{ padding: "var(--inset) var(--page-x)" }}>About</main>;
+import type { Metadata } from "next";
+import About from "@/components/about/About";
 
+export const metadata: Metadata = {
+  title: "About · Code by Korn Natthanat",
+};
+
+export default function AboutPage() {
+  return <About />;
 }

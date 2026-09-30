@@ -6,16 +6,16 @@
   border-top: var(--rule-section);
 }
 
+/* Phones: each link already carries 14px of tap room above and below, so the group
+   adds little of its own — 20px from the rule to the label, 6px under the last link
+   (+14 = 20 to the next rule), 4px from the label to the first link's tap area.
+   (467px tall before, 315 now — the owner found it too tall, 30 Sep 69) */
 .group {
-  padding: 22px 0;
-}
-
-.group:first-child {
-  padding-top: 26px;
+  padding: 20px 0 6px;
 }
 
 .group:last-child {
-  padding-bottom: 30px;
+  padding-bottom: 16px;
 }
 
 .group + .group {
@@ -26,7 +26,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-top: 16px;
+  margin-top: 4px;
   font-size: var(--fs-ui);
 }
 
@@ -146,6 +146,7 @@
 
   .group:last-child {
     padding-right: 0;
+    padding-bottom: 30px;
   }
 
   /* Column divider: a 1px grey line inset 18px from top and bottom */
@@ -157,6 +158,7 @@
 
   .links {
     gap: 9px;
+    margin-top: 16px;
   }
 
   .links a {

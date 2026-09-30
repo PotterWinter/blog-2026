@@ -1,38 +1,39 @@
 import type { PostMeta } from "./content";
 import { categories } from "./site";
 
-// The 01B column heads: NO, title, category or date; each flips when pressed again
-// ("-asc" / "-desc" mark the second press). null = nothing picked yet: NO from 001
-// up, with no head marked.
-export type Sort =
-  "no" | "no-desc" | "title" | "title-desc" | "category" | "category-desc" | "date" | "date-asc";
-export const SORTS: Sort[] = [
-  "no",
-  "no-desc",
-  "title",
-  "title-desc",
-  "category",
-  "category-desc",
-  "date",
-  "date-asc",
-];
+// The 01B column heads, one rule for all four:
+//   nothing picked (null)  newest first — the grid's order, no head marked
+//   first press            that column low → high: NO 001 first, A–Z, oldest first (↓)
+//   press again            the other way ("-desc", ↑)
+// So the first press always changes what's on screen.
+export const SORT_KEYS = ["no", "title", "category", "date"] as const;
+export type SortKey = (typeof SORT_KEYS)[number];
+export type Sort = SortKey | `${SortKey}-desc`;
 
-export const isSort = (value: string | undefined): value is Sort => SORTS.includes(value as Sort);
+export const isSort = (value: string | undefined): value is Sort =>
+  SORT_KEYS.some((key) => value === key || value === `${key}-desc`);
 
 const categoryLabel = (slug: string) => categories.find((c) => c.slug === slug)?.label ?? slug;
 
 const text = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
-const ORDERS: Record<string, (a: PostMeta, b: PostMeta) => number> = {
+
+// Each column, low → high
+const ORDERS: Record<SortKey, (a: PostMeta, b: PostMeta) => number> = {
   no: (a, b) => a.id - b.id,
   title: (a, b) => text(a.title, b.title),
   category: (a, b) => text(categoryLabel(a.category), categoryLabel(b.category)),
-  date: (a, b) => b.publishedAt.localeCompare(a.publishedAt),
+  date: (a, b) => a.publishedAt.localeCompare(b.publishedAt) || a.id - b.id,
 };
 
-// Ties keep the order the posts arrive in (newest first): sort is stable, and the
-// flipped order flips only the key, so posts in one category stay newest first
+// Posts arrive newest first, and ties keep that order (sort is stable, and "-desc"
+// flips the comparison, not the list), so posts in one category stay newest first
 export function sortPosts(posts: PostMeta[], sort: Sort | null) {
-  const [key, flip] = (sort ?? "no").split("-");
+  if (!sort) return posts;
+  const [key, desc] = sort.split("-") as [SortKey, string | undefined];
   const order = ORDERS[key];
-  return [...posts].sort((a, b) => (flip ? -order(a, b) : order(a, b)));
+  return [...posts].sort((a, b) => (desc ? -order(a, b) : order(a, b)));
 }
+
+// The press on a head: low → high first, then back and forth
+export const nextSort = (current: Sort | null, key: SortKey): Sort =>
+  current === key ? `${key}-desc` : key;

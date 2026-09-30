@@ -1,0 +1,176 @@
+/* 02 Project rows (v4 .prow). Columns by width:
+   390    one column, the cover on top
+   768    text 1fr · cover .87fr, gap 32 (48 from 1024)
+   1280   text 430 · cover 373, gap 76, centred on the page
+   Rows with data-flip put the cover first (every other pair). */
+.list {
+  padding: 0 var(--page-x) 8px;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 24px 0;
+  border-top: var(--rule-section);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+}
+
+/* Category · date over a grey rule; hovering the row draws an ink one across it */
+.meta {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: var(--rule-row);
+}
+
+.meta :global(.label) {
+  color: var(--ink);
+}
+
+.meta::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.36s var(--ease-draw);
+}
+
+@media (hover: hover) {
+  .row:hover .meta::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.row:focus-visible .meta::after {
+  transform: scaleX(1);
+}
+
+.date {
+  margin-left: auto;
+}
+
+.excerpt {
+  font-family: var(--ff-serif);
+  font-size: var(--fs-body);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.more {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.more svg {
+  display: inline-block;
+  overflow: visible;
+}
+
+.cover {
+  position: relative;
+  order: -1;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.image {
+  object-fit: cover;
+}
+
+/* ---------- Case studies ---------- */
+.cases {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin: 72px var(--page-x) 0;
+  padding: 34px 0 56px;
+  border-top: var(--rule-section);
+}
+
+.casesTitle {
+  font-size: var(--fs-display);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.casesText {
+  font-family: var(--ff-serif);
+  font-size: var(--fs-lead);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+@media (min-width: 768px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.87fr);
+    gap: 32px;
+  }
+
+  .row[data-flip] {
+    grid-template-columns: minmax(0, 0.87fr) minmax(0, 1fr);
+  }
+
+  .cover {
+    order: 0;
+  }
+
+  .row[data-flip] .cover {
+    order: -1;
+  }
+
+  .cases {
+    gap: 20px;
+    margin-top: 88px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .row {
+    gap: 48px;
+  }
+
+  .cases {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 56px;
+    margin-top: 104px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .row {
+    grid-template-columns: minmax(0, 430px) minmax(0, 373px);
+    justify-content: center;
+    gap: 76px;
+  }
+
+  .row[data-flip] {
+    grid-template-columns: minmax(0, 373px) minmax(0, 430px);
+  }
+}

@@ -5,7 +5,7 @@ excerpt: "Margins from a third re-read."
 section: blog
 category: reading
 tags: [sci-fi, notation]
-cover: ../media/2026/dispossessed.webp
+cover: ../media/2026/interior-24.webp
 coverAlt: "Placeholder cover for The Dispossessed, annotated"
 status: published
 publishedAt: 2026-07-28

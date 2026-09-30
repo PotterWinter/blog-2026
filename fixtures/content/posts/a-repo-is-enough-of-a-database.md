@@ -5,7 +5,7 @@ excerpt: "Writing a blog with git as the database."
 section: blog
 category: engineering
 tags: [git, markdown]
-cover: ../media/2026/repo-database.webp
+cover: ../media/2026/interior-19.webp
 coverAlt: "Placeholder cover for A repo is enough of a database"
 status: published
 publishedAt: 2026-09-06

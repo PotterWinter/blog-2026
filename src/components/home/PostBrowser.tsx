@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
-import type { CategorySlug } from "@/lib/site";
+import { categories, type CategorySlug } from "@/lib/site";
 import { sortPosts, type Sort } from "@/lib/sort";
 import CardDot from "./CardDot";
 import CategoryFilter from "./CategoryFilter";
@@ -229,8 +229,15 @@ export default function PostBrowser({ posts, initial }: Props) {
     <>
       <div ref={filterRef}>
         <CategoryFilter
+          options={[
+            { value: null, label: "All", count: categoryCounts.all },
+            ...categories.map((c) => ({
+              value: c.slug,
+              label: c.label,
+              count: categoryCounts[c.slug] ?? 0,
+            })),
+          ]}
           value={state.category}
-          counts={categoryCounts}
           // Picked tags that the new category doesn't use are dropped, not left stuck on
           onChange={(category) =>
             update({ category, tags: state.tags.filter((t) => tagsIn(category).has(t)) })

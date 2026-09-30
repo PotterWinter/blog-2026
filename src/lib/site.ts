@@ -7,6 +7,18 @@ export const categories = [
   { slug: "reading", label: "Reading" },
 ] as const;
 
+// 02 Project filter, in this order (no "All": one category shows at a time)
+export const projectCategories = [
+  { slug: "development", label: "Development" },
+  { slug: "design", label: "Design" },
+] as const;
+
+export type ProjectCategory = (typeof projectCategories)[number]["slug"];
+
+export function isProjectCategory(value: unknown): value is ProjectCategory {
+  return projectCategories.some((c) => c.slug === value);
+}
+
 export type CategorySlug = (typeof categories)[number]["slug"];
 
 export function isCategory(value: unknown): value is CategorySlug {
