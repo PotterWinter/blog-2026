@@ -47,3 +47,27 @@
 - production: `npm run auth-secrets` (ค่าออกแค่ใน terminal) หรือ `-- --out <ไฟล์>` เขียนลงไฟล์ที่เจ้าของอ่านได้คนเดียว ไม่แสดงค่า → ใส่ในแอป authenticator + Vercel (Secret) แล้วลบไฟล์
   - 1 ต.ค. 69 สร้างไว้ที่ `~/Desktop/blog-secrets.txt` (Claude ไม่ได้เห็นค่า)
   - เปลี่ยน `SESSION_SECRET` = ทุกเครื่องหลุด · เปลี่ยน `TOTP_SECRET` = ต้องเพิ่มบัญชีในแอปใหม่
+
+---
+
+## 06 Admin publishing hub (`/admin`) — 5.2a–c
+
+- `app/admin/layout.tsx` — ทุกหน้าใต้ `/admin`: เช็ก `currentSession()` + header ของ admin (`AdminNav`)
+  - Posts · Media · Settings · Sign out มีเส้นใต้หน้าปัจจุบัน (v4 `.navl`) · มือถือเมนูลงแถวใต้โลโก้
+  - Media / Settings ยังเป็น 404 จนกว่าจะทำ 5.4 / 5.5
+- `components/admin/Hub.tsx` — ข้อมูลทั้งหมดจาก `index.json` (รวม draft, blog + project)
+  - "Publishing" + จำนวนทั้งหมด · ปุ่ม New post (ยังไม่ทำงาน — 5.3)
+  - ตัวเลข: Published · Drafts · Images (ตอนนี้ = ปก + รูปในบทความ จนกว่าจะมี `media.json` ใน 5.4) · Tags in use
+  - แท็บ All / Published / Draft · ช่องค้นหาค้นทุกบทความ (ชื่อ, excerpt, tags) ไม่ใช่แค่หน้าที่แสดง (mock ค้นแค่ 24 ใบ)
+  - หน้าละ 24 · "Showing 1–24 of N · sorted by …" · เปลี่ยนตัวกรอง = กลับหน้า 1 + เลือกการ์ดใบแรก
+  - แถบดำท้ายหน้า: repo · branch · sha · commit ล่าสุดกี่นาทีก่อน (`getRepoHead`, cache 60 วิ) · dev = "fixtures/content · local"
+- `FilterPanel.tsx` — กางด้วยความสูง 0.52s · Category (มีบทความ) + Health "issues" · Month ของปีล่าสุด (12 เดือน 2 คอลัมน์) · Sort (Newest / Oldest / A–Z / Z–A, วงกลม เลือกอันเดียว)
+  - ตัวเลขข้างแต่ละตัวเลือก = ถ้าติ๊กจะเหลือกี่เรื่อง (คิดจากตัวกรองอื่นที่เลือกอยู่) · SELECTED สรุปสิ่งที่เลือก · CLEAR ALL
+- `lib/checks.ts` — "issues" ตอนนี้จาก index: ไม่มีปก · ปกไม่มี alt · excerpt เกิน 200 ตัว · project ไม่มี role — ชื่อการ์ดเป็นสีแดง
+  - 5.3 Editor เพิ่ม checks ที่เหลือของ EDITOR-SPEC (ลิงก์, ไฟล์, ขนาดรูป/คลิป, TODO)
+- `AdminCards.tsx` — 3 คอลัมน์ ≥1280 · 2 คอลัมน์ต่ำกว่า · คลิก / ลูกศร = เลือก: กล่องเทาวิ่งตามแบบสปริง (v4 `_gAim` .08 / .74, เผื่อ 6px) + จุดดันเลข 14px · Enter / ดับเบิลคลิก = "เปิด" กล่องดำ ตัวหนังสือขาว 1.25 วิ (เปิด Editor ใน 5.3)
+  - เลข = post id 3 หลัก (v4 นับ 01–24 ต่อหน้า) · Edit → `/admin/posts/[slug]` (5.3) · View เปิดหน้าจริงแท็บใหม่ · Publish ยังไม่ทำงาน
+- `Details.tsx` — ปก · ชื่อ · excerpt · Checks (แดง) · Post · Dates · Content (คำ, เวลาอ่าน, รูป, วิดีโอ, กรอบโค้ด) · File (ขนาด, commit ล่าสุด, revisions, path)
+  - ≥1024 อยู่ข้างการ์ด sticky (280 / 1280: 320) · ต่ำกว่า = sheet ขึ้นจากล่างเมื่อแตะการ์ด ปิดด้วย ×
+  - Publish / Unpublish / Delete draft แสดงแต่ยังไม่ทำงาน — ต้องเขียน .md + index.json ใน commit เดียว ทำพร้อม Editor (5.3)
+- `index.json` เพิ่ม: `images` · `videos` · `codeBlocks` · `bytes` · `lastCommit` (จาก git ใน `rebuild-index`)

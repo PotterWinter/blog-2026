@@ -234,10 +234,20 @@
 /* ---------- Phones (v4 390) ---------- */
 @media (max-width: 599px) {
   .page {
-    --seg: 44px;
-    --pitch: 52px;
     --code-size: 26px;
-    --input-w: 320px;
+  }
+
+  /* The six slots span the column, 8px apart, lined up with the centred button (v4's
+     fixed 44px left the right side empty once the Paste button went) */
+  .row {
+    container-type: inline-size;
+  }
+
+  .slots {
+    --seg: calc((100cqw - 40px) / 6);
+    --pitch: calc(var(--seg) + 8px);
+    --input-w: 100cqw;
+    width: 100%;
   }
 
   .main {

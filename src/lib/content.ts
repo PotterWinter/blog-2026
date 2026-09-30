@@ -127,6 +127,22 @@ export async function getMedia(parts: string[]): Promise<{ body: ArrayBuffer; ty
   return res && { body: await res.arrayBuffer(), type };
 }
 
+// The content repo's latest commit, for the admin's status line (06). Cached a minute.
+export async function getRepoHead(): Promise<{ repo: string; branch: string; sha: string; date: string } | null> {
+  if (LOCAL_DIR) return null;
+  const res = await fetch(`https://api.github.com/repos/${REPO}/commits/${BRANCH}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(TOKEN && { Authorization: `Bearer ${TOKEN}` }),
+    },
+    next: { revalidate: 60, tags: ["content"] },
+  });
+  if (!res.ok) return null;
+  const c = (await res.json()) as { sha: string; commit: { committer: { date: string } } };
+  return { repo: REPO, branch: BRANCH, sha: c.sha.slice(0, 7), date: c.commit.committer.date };
+}
+
 // ---------- writing (the admin, step 5) ----------
 // Every write is a commit to the content repo (on disk in dev). Read with readFresh
 // first: on GitHub its sha must come back with the write, so a file changed in between

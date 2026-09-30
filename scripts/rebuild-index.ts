@@ -25,10 +25,12 @@ const files: SourceFile[] = readdirSync(postsDir)
     const slug = name.slice(0, -3);
     const file: SourceFile = { slug, text: readFileSync(path.join(postsDir, name), "utf8") };
     if (isRepo) {
-      const dates = git("log", "--follow", "--format=%aI", "--", `posts/${name}`).trim().split("\n").filter(Boolean);
-      if (dates.length) {
-        file.createdAt = dates.at(-1); // log lists newest first
-        file.revisions = dates.length;
+      const log = git("log", "--follow", "--format=%h %aI", "--", `posts/${name}`).trim().split("\n").filter(Boolean);
+      if (log.length) {
+        const [sha, date] = log[0].split(" "); // log lists newest first
+        file.lastCommit = `${sha} · ${date}`;
+        file.createdAt = log.at(-1)!.split(" ")[1];
+        file.revisions = log.length;
       }
     }
     return file;

@@ -113,7 +113,23 @@ export type IndexEntry = PostMeta & {
   revisions: number; // commits that touched it
   words: number;
   readMinutes: number;
+  // What's in the body, for the admin (06 counts, the details pane)
+  images: number;
+  videos: number;
+  codeBlocks: number;
+  bytes: number; // size of the .md
+  lastCommit: string | null; // "a1b2c3d · 2026-09-30T14:16:21+07:00", from git
 };
+
+// Images and clips are both ![](…) lines; a clip is .mp4 / .webm / .mov. Code blocks are
+// fenced (```), "output" frames included.
+const VIDEO = /\.(mp4|webm|mov)(\s|\)|")/i;
+function contentCounts(body: string) {
+  const media = body.match(/!\[[^\]]*\]\([^)]*\)/g) ?? [];
+  const videos = media.filter((m) => VIDEO.test(m)).length;
+  const fences = body.match(/^```/gm)?.length ?? 0;
+  return { images: media.length - videos, videos, codeBlocks: Math.floor(fences / 2) };
+}
 
 // nextId: the id a new post gets; never lowered, so an id is never used twice
 export type ContentIndex = { nextId: number; posts: IndexEntry[] };
@@ -124,13 +140,14 @@ export type SourceFile = {
   // From git, when the folder is a repo; otherwise the publish date and 1
   createdAt?: string;
   revisions?: number;
+  lastCommit?: string;
 };
 
 // Every .md checked and summarised, newest id first. Throws on a bad file or two posts
 // sharing an id, naming the file.
 export function buildIndex(files: SourceFile[], previousNextId = 1): ContentIndex {
   const seen = new Map<number, string>();
-  const posts = files.map(({ slug, text, createdAt, revisions }): IndexEntry => {
+  const posts = files.map(({ slug, text, createdAt, revisions, lastCommit }): IndexEntry => {
     const { data, body } = splitFrontmatter(text, slug);
     const meta = toMeta(data, slug);
     const twin = seen.get(meta.id);
@@ -143,6 +160,9 @@ export function buildIndex(files: SourceFile[], previousNextId = 1): ContentInde
       revisions: revisions ?? 1,
       words,
       readMinutes: readMinutes(words),
+      ...contentCounts(body),
+      bytes: new TextEncoder().encode(text).length,
+      lastCommit: lastCommit ?? null,
     };
   });
   posts.sort((a, b) => b.id - a.id);
