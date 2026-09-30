@@ -12,7 +12,7 @@ const items = [
   {
     href: "/project",
     label: "Project",
-    match: (p: string) => p === "/project" || p.startsWith("/projects/"),
+    match: (p: string) => p === "/project" || p.startsWith("/project/"),
   },
   { href: "/about", label: "About", match: (p: string) => p === "/about" },
 ];

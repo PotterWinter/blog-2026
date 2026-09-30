@@ -20,9 +20,9 @@ const IDLE = 3000;
 // the middle of the screen while the article is on it. The tick of the section being
 // read is long and ink, with a 6px dot beside it that arcs over when the section
 // changes. Hover (or a drag) opens the headings' names to the left.
-// Press and drag along the rail (mouse or finger) to scrub through the article like a
-// scroll bar — the page follows, section to section. A click jumps to an entry; by
-// touch, one tap opens the names and a tap on one goes there.
+// Press and drag along the rail (mouse or finger): reaching a tick, the page slides to
+// that heading. A click jumps to an entry; by touch, one tap opens the names and a tap
+// on one goes there.
 // From 1280 it sits in the page margin; below that it shrinks to the screen's edge.
 export default function ContentsRail() {
   const navRef = useRef<HTMLElement>(null);
@@ -271,16 +271,6 @@ export default function ContentsRail() {
       }
       return Math.max(0, h.getBoundingClientRect().top + window.scrollY - OFFSET);
     };
-    // Page positions to scrub between: each entry, then the bottom of the page
-    const stops = () => {
-      const tops = heads.map((_, k) => topOf(k));
-      const bottom = document.documentElement.scrollHeight - window.innerHeight;
-      return [...tops, Math.max(bottom, tops[tops.length - 1])];
-    };
-    // Pointer height → page position: between two ticks, the page moves proportionally
-    // between their two headings
-    // While scrubbing, the lit entry is the tick under the pointer (the 35% line can't
-    // light a short section like 02.1); it stays lit after letting go
     // The ticks' heights are taken once, as a drag starts, where they'll be once
     // spread — not live. Live, they were still easing apart from 8px (a few px of finger
     // crossed the whole article), and at the end of the page sticky pushes the rail up
@@ -298,25 +288,21 @@ export default function ContentsRail() {
       });
       return k;
     };
-    const scrub = (clientY: number) => {
-      const ys = [...ticks];
-      const k = held(clientY);
-      pin = { k, y: null };
-      if (k !== cur) place(k, true);
-      const gap = ys.length > 1 ? ys[1] - ys[0] : 20;
-      ys.push(ys[ys.length - 1] + gap);
-      const at = stops();
-      let top = at[0];
-      if (clientY >= ys[ys.length - 1]) top = at[at.length - 1];
-      else if (clientY > ys[0]) {
-        const i = ys.findIndex((v, n) => clientY >= v && clientY < ys[n + 1]);
-        const f = (clientY - ys[i]) / (ys[i + 1] - ys[i]);
-        top = at[i] + f * (at[i + 1] - at[i]);
-      }
-      window.scrollTo({ top, behavior: "instant" });
+    // A drag doesn't scrub the page through the article (by finger it crept along, and
+    // on the desktop the owner wanted the same, 30 Sep 69): reaching a tick, the page
+    // slides to that heading, as a click would. The tick the drag started on isn't a
+    // choice (shut, they're 8px apart: a finger meaning 01 often lands on 02.1) — only
+    // reaching another one is.
+    let slid = -1;
+    const startSlide = (y: number) => {
+      holdTicks();
+      slid = held(y);
     };
-    const endScrub = () => {
-      if (pin) pin.y = window.scrollY;
+    const slideTo = (y: number) => {
+      const k = held(y);
+      if (k === slid) return;
+      slid = k;
+      jump(k);
     };
     // The entry whose tick (and name) sits nearest a height on screen
     const nearest = (clientY: number) => {
@@ -362,9 +348,9 @@ export default function ContentsRail() {
       }, 150);
     };
 
-    // Mouse: hover opens the names, a click jumps, a drag scrubs.
+    // Mouse: hover opens the names, a click jumps, a drag slides heading to heading.
     // Touch: a tap opens the names, a tap on one jumps there; they fold after IDLE
-    // untouched. A finger dragged along the rail scrubs, as the mouse does (owner,
+    // untouched. A finger dragged along the rail slides as the mouse does (owner,
     // 30 Sep 69 — for a while it was taps only), so the rail doesn't scroll the page.
     let hoverTimer = 0;
     let idleTimer = 0;
@@ -413,17 +399,17 @@ export default function ContentsRail() {
         nav.setAttribute("data-drag", "");
         clearTimeout(hoverTimer);
         setOpen(true, nearest(press.y));
-        holdTicks();
+        startSlide(press.y);
       }
-      scrub(e.clientY);
+      slideTo(e.clientY);
     };
     const onUp = (e: PointerEvent) => {
       if (!press || e.pointerId !== press.id) return;
       const { dragging, target } = press;
       press = null;
       nav.removeAttribute("data-drag");
-      if (dragging) endScrub();
-      else jump(entryAt(target, e.clientY)); // a click on a tick or a name
+      // (A drag's slide settles the pin itself)
+      if (!dragging) jump(entryAt(target, e.clientY)); // a click on a tick or a name
       if (!nav.matches(":hover")) {
         clearTimeout(hoverTimer);
         hoverTimer = window.setTimeout(() => setOpen(false), 160);
@@ -435,7 +421,7 @@ export default function ContentsRail() {
     };
 
     // Touch: a tap (moving under TAP_SLOP) opens the rail, or — open — jumps to the
-    // entry under it. Moving further is a drag: it opens the names and scrubs.
+    // entry under it. Moving further is a drag: it opens the names and slides.
     let touch: {
       y: number;
       wasOpen: boolean;
@@ -471,20 +457,10 @@ export default function ContentsRail() {
         nav.setAttribute("data-drag", "");
         byTouch = true;
         setOpen(true, nearest(touch.y));
-        holdTicks();
-        // The tick the finger came down on isn't a choice (shut, they're 8px apart: a
-        // finger meaning 01 often lands on 02.1) — only reaching another one is
-        slid = held(touch.y);
+        startSlide(touch.y);
       }
-      // A finger doesn't scrub the page through the article (it crept along, owner
-      // 30 Sep 69): reaching a tick, the page slides to that heading, as a tap would
-      const k = held(y);
-      if (k !== slid) {
-        slid = k;
-        jump(k);
-      }
+      slideTo(y);
     };
-    let slid = -1;
     const onTouchEnd = (e: TouchEvent) => {
       if (!touch) return;
       const t = touch;

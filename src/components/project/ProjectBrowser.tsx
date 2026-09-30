@@ -35,6 +35,7 @@ export default function ProjectBrowser({ projects, initial }: Props) {
   return (
     <>
       <CategoryFilter
+        spread={false}
         options={projectCategories.map((c) => ({
           value: c.slug as ProjectCategory,
           label: c.label,

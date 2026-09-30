@@ -70,6 +70,172 @@
   letter-spacing: -0.01em;
 }
 
+/* ---------- 04B title block: links beside a preview (v4) ----------
+   390   one column; the links three across; no preview
+   768   one column; the preview half-width, centred under the links
+   1024  title · links | preview 500, 56 apart, level at the bottom
+   1280+ the text column stops at 636; the preview centres in what's left */
+.lead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  align-items: end;
+}
+
+.seeLive {
+  display: block;
+  margin-top: 44px;
+  color: var(--ink);
+}
+
+.links {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+.projectLink {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 22px 0 24px;
+  color: var(--ink);
+}
+
+/* The label and ↗; pointed at, the label steps right for the dot */
+.linkName {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1;
+  transition: padding-left 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.linkName [data-name] {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.linkName svg {
+  flex: none;
+  overflow: visible;
+}
+
+.projectLink[data-on] .linkName {
+  padding-left: 16px;
+}
+
+.linkRule {
+  display: block;
+  height: 1px;
+  background: var(--ink);
+}
+
+/* Drawn in difference like every moving dot */
+.linkDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ink-inverse);
+  mix-blend-mode: difference;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.links[data-live] .linkDot {
+  opacity: 1;
+}
+
+.preview {
+  position: relative;
+  display: none;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+/* Each link's screenshot, faded (and eased down from 1.04) in while it's pointed at */
+.shot {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity 0.45s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.shot[data-on] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (min-width: 768px) {
+  .lead {
+    gap: 40px;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 80px;
+  }
+
+  .projectLink {
+    min-width: 150px;
+  }
+}
+
+/* Hover shows the previews, so only a mouse gets the panel */
+@media (min-width: 768px) and (hover: hover) {
+  .preview {
+    display: block;
+    width: 50%;
+    justify-self: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lead {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 500px);
+    gap: 56px;
+  }
+}
+
+@media (min-width: 1024px) and (hover: hover) {
+  .preview {
+    width: auto;
+    justify-self: stretch;
+  }
+}
+
+/* Wider than 1280 the text stops growing at v4's 636 and the preview (500) sits in
+   the middle of the room between it and the page's edge, rather than out against the
+   edge with a widening gap before it (owner, 30 Sep 69) — but never nearer the text
+   than v4's 56, so at 1280 it's still flush right as in v4 */
+@media (min-width: 1280px) {
+  .lead {
+    grid-template-columns: minmax(0, 636px) minmax(556px, 1fr);
+    gap: 0;
+  }
+}
+
+@media (min-width: 1280px) and (hover: hover) {
+  .preview {
+    width: 500px;
+    justify-self: end;
+    margin-right: min((100% - 500px) / 2, 100% - 556px);
+  }
+}
+
 /* ---------- Facts: Category · Published · Tags ---------- */
 /* Phones: one row each, label 96px then the value, grey rules between */
 .facts {
@@ -1014,6 +1180,23 @@
   .tag::after {
     bottom: 0;
   }
+}
+
+/* ---------- 04B foot: Back to Projects (v4) ---------- */
+.projectEnd {
+  display: flex;
+  justify-content: center;
+  margin: 0 var(--page-x);
+  border-top: var(--rule-section);
+}
+
+.projectBack {
+  display: inline-block;
+  padding: 20px 0;
+  font-size: var(--fs-h2);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: var(--track-display);
 }
 
 /* ---------- Previous | Next (v4) ---------- */

@@ -8,7 +8,9 @@ import { parse } from "yaml";
 // everything that imports from here keeps working because the shapes stay the same.
 const CONTENT_DIR = path.resolve(process.cwd(), process.env.CONTENT_DIR ?? "../blog-content");
 
-export type PostLink = { label: string; url: string };
+// A project's link (04B): up to 3. `preview` is a screenshot of where it goes, shown
+// beside the links on hover; without one the cover stands in.
+export type PostLink = { label: string; url: string; preview: string | null };
 
 export type PostMeta = {
   id: number;
@@ -67,8 +69,22 @@ function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
   if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string")) {
     throw new Error(`${where}: "tags" must be a list like [react, css]`);
   }
-  const links = (data.links ?? []) as PostLink[];
-  if (!Array.isArray(links) || links.length > 3) throw new Error(`${where}: "links" takes up to 3`);
+  const rawLinks = data.links ?? [];
+  if (!Array.isArray(rawLinks) || rawLinks.length > 3) {
+    throw new Error(`${where}: "links" takes up to 3`);
+  }
+  const links = rawLinks.map((link, i): PostLink => {
+    const { label, url, preview } = (link ?? {}) as Record<string, unknown>;
+    const at = `${where}: links[${i}]`;
+    if (typeof label !== "string" || label === "" || label.length > 24) {
+      throw new Error(`${at}: "label" must be text, up to 24 characters`);
+    }
+    if (typeof url !== "string" || !/^https:\/\//.test(url)) {
+      throw new Error(`${at}: "url" must be a full https:// link`);
+    }
+    if (preview != null && typeof preview !== "string") throw new Error(`${at}: "preview" must be a path`);
+    return { label, url, preview: preview ? preview.replace(/^\.\.\//, "") : null };
+  });
 
   const cover = text("cover", true);
   return {

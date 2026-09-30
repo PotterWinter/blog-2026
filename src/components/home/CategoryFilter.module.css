@@ -50,9 +50,14 @@
    part of the test, not just the width: a computer window squeezed to 375 has a
    scrollbar eating 15px and would collide, so it gets the plain wrapping row. */
 @media (max-width: 479px) and (pointer: coarse) {
-  /* spread the four across the row: All flush left, the last flush right.
-     14px is only the minimum gap; space-between hands out whatever is left over */
+  /* Flush left, the numbers hanging in the gaps */
   .row {
+    column-gap: 20px;
+  }
+
+  /* data-spread: across the row, the first flush left, the last flush right.
+     14px is only the minimum gap; space-between hands out whatever is left over */
+  .row[data-spread] {
     justify-content: space-between;
     column-gap: 14px;
   }
@@ -70,7 +75,7 @@
 
   /* The last category leaves room for its hanging number, so the number, not the
      word, is what lines up with the right edge */
-  .item:has(+ :not(.item)) {
+  .row[data-spread] .item:has(+ :not(.item)) {
     margin-right: 9px;
   }
 }

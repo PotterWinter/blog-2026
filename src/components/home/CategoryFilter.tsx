@@ -12,17 +12,33 @@ type Props<T> = {
   value: T;
   onChange: (value: T) => void;
   children?: ReactNode; // the rest of the row: Tags toggle, search
+  // Phones: spread the labels across the row (01's four) — or keep them flush left
+  // (02's two, owner 30 Sep 69)
+  spread?: boolean;
 };
 
 // A row of big category labels with counts and the travel dot: 01's All 134 ·
 // Engineering 72 · Math 38 · Reading 24, 02's Development 2 · Design 4.
 // There's room above this row, so its dot hops upward (the nav's hops down).
-export default function CategoryFilter<T>({ options, value, onChange, children }: Props<T>) {
+export default function CategoryFilter<T>({
+  options,
+  value,
+  onChange,
+  children,
+  spread = true,
+}: Props<T>) {
   const active = options.findIndex((o) => o.value === value);
   const { dotRef, itemRef, boing } = useTravelDot(active, "up");
 
   return (
-    <div className={styles.row} role="group" aria-label="Category" data-reveal data-d="180">
+    <div
+      className={styles.row}
+      role="group"
+      aria-label="Category"
+      data-spread={spread || undefined}
+      data-reveal
+      data-d="180"
+    >
       {options.map((option, i) => (
         <button
           key={option.label}

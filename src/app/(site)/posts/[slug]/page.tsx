@@ -29,7 +29,7 @@ export default async function PostPage({ params }: PageProps<"/posts/[slug]">) {
   return (
     <main data-post>
       {/* The contents rail runs from the top of the post to the end of the article — it
-          lists the title as 00 and Previous | Next as its last entry, "End" */}
+          lists the title first and Previous | Next last, as "End" */}
       <div className={styles.railZone}>
         <PostHeader post={post} />
         <PostBody markdown={post.body} />
