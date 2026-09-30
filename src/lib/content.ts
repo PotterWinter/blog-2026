@@ -25,14 +25,14 @@ export type { Post, PostLink, PostMeta, IndexEntry } from "./schema.ts";
 const LOCAL_DIR = process.env.CONTENT_DIR
   ? path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.CONTENT_DIR)
   : null;
-const REPO = process.env.CONTENT_REPO ?? "";
+// The repo isn't a secret, so it has a default; the variable can point elsewhere
+const REPO = process.env.CONTENT_REPO || "PotterWinter/blog-content-2026";
 const BRANCH = process.env.CONTENT_BRANCH ?? "main";
 const TOKEN = process.env.GITHUB_TOKEN ?? "";
 export const CONTENT_TTL = 3600;
 
 // One file from the content repo, null if it isn't there
 async function fromGitHub(file: string, tags: string[]): Promise<Response | null> {
-  if (!REPO) return null; // not set up yet: an empty site, not a crash
   const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=${BRANCH}`, {
     headers: {
       Accept: "application/vnd.github.raw+json",
