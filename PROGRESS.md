@@ -95,7 +95,9 @@
   - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
   - [ ] 5.3f Checks ตรวจจริง
   - [ ] 5.3g 07P preview
-- [ ] 5.4 Media (08)
+- [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
+  - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)
+  - [ ] 5.4b รูปในเนื้อหา · 5.4c หน้า Media · 5.4d คลิป (Vercel Blob)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
@@ -133,4 +135,5 @@
   - [04-post.md](notes/04-post.md) — หน้าบทความ, project detail, สารบัญ
   - [content.md](notes/content.md) — อ่านบทความจากไหน, index.json, cache
   - [admin.md](notes/admin.md) — login, session, secret
+  - [media.md](notes/media.md) — อัปโหลดรูป, ย่อรูป, คลิป
   - [dev.md](notes/dev.md) — รัน dev, วัด v4, ทดสอบ Chrome / Safari / iPhone

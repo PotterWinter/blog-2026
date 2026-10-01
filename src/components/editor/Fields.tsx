@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PostLink } from "@/lib/schema";
+import type { Waiting } from "./waiting";
 import styles from "./Editor.module.css";
 
 // ---------- Tags (v4 07: chips, × to drop one, Manage opens every tag to tick) ----------
@@ -253,13 +254,23 @@ export function CoverField({
   cover,
   alt,
   onChange,
+  onUpload,
+  uploading,
+  waiting,
 }: {
   cover: string | null;
   alt: string;
   onChange: (cover: string | null, alt: string) => void;
+  // Upload / Replace and dropping a file on the box (5.4): the editor sends it
+  onUpload: (file: File) => void;
+  uploading: boolean;
+  waiting?: Waiting; // an image picked, not saved yet: shown from memory
 }) {
-  const size = useMeasure(cover);
+  const measured = useMeasure(waiting ? null : cover);
+  const size = waiting ? { ...waiting, src: cover! } : measured;
   const off = size && Math.abs(size.width / size.height - 2) > 0.06;
+  const pickRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
   return (
     <div className={`${styles.field} ${styles.cover}`}>
       <span className={styles.labelRow}>
@@ -269,28 +280,64 @@ export function CoverField({
         <span className={styles.coverSize} data-off={off || undefined} title={off ? "Covers are 2:1 — this one will be cropped" : undefined}>
           {!cover ? RECOMMENDED : size ? `${size.bytes ? `${kb(size.bytes)} · ` : ""}${size.width} × ${size.height}${off ? " · not 2:1" : ""}` : "…"}
         </span>
-        {cover && (
-          <button type="button" className={styles.remove} onClick={() => onChange(null, alt)}>
-            Remove
+        <span className={styles.coverActs}>
+          <button type="button" className={styles.replace} disabled={uploading} onClick={() => pickRef.current?.click()}>
+            {cover ? "Replace" : "Upload"}
           </button>
-        )}
+          {cover && (
+            <button type="button" className={styles.remove} onClick={() => onChange(null, alt)}>
+              Remove
+            </button>
+          )}
+        </span>
+        <input
+          ref={pickRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ""; // the same file again still counts as a change
+            if (file) onUpload(file);
+          }}
+        />
       </span>
-      <span className={styles.coverBox}>
-        {cover ? (
+      <span
+        className={styles.coverBox}
+        data-over={over || undefined}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          const file = e.dataTransfer.files[0];
+          if (file?.type.startsWith("image/")) onUpload(file);
+        }}
+      >
+        {waiting ? (
+          // Not in the repo yet: from memory (next/image can't optimise a blob: URL)
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={waiting.url} alt="" className={`${styles.coverImg} ${styles.coverWaiting}`} />
+        ) : cover ? (
           <Image src={`/${cover}`} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className={styles.coverImg} />
         ) : (
           <span className={styles.coverEmpty}>
             No cover · {RECOMMENDED}
             <br />
-            type its path below for now (upload comes with Media, 5.4)
+            drop an image here, or Upload
           </span>
         )}
+        {uploading && <span className={styles.coverBusy}>Uploading · making a WebP…</span>}
       </span>
       <label className={styles.inline}>
         <span className="label">File</span>
         <input
           className={`${styles.input} ${styles.mono}`}
-          value={cover ?? ""}
+          value={waiting ? "named on Save · media/<year>/<id>-cover.webp" : (cover ?? "")}
+          readOnly={!!waiting}
           placeholder="media/2026/name.webp"
           spellCheck={false}
           onChange={(e) => onChange(e.target.value.trim().replace(/^\.\.\/|^\//, "") || null, alt)}

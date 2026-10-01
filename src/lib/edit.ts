@@ -33,7 +33,8 @@ export type PostInput = {
   body: string;
 };
 
-export type Change = { path: string; text: string | null }; // null = remove the file
+// text null = remove the file · base64 = a binary file (an image), in place of text
+export type Change = { path: string; text: string | null; base64?: string };
 // slugs: the posts whose pages change (their cache is cleared)
 export type Plan = { changes: Change[]; message: string; index: ContentIndex; entry: IndexEntry | null; slugs: string[] };
 
@@ -102,9 +103,24 @@ function written(meta: PostMeta, body: string, before: IndexEntry | null, now: D
   return { entry, changes, slugs };
 }
 
+// The post's own images: media files named after its id ("media/2026/003-cover.webp")
+// that a text points at. Images named for another post are never counted as its own.
+export function ownMedia(id: number, text: string): Set<string> {
+  const own = new RegExp(`media/\\d{4}/${String(id).padStart(3, "0")}-[a-z0-9-]+\\.webp`, "g");
+  return new Set(text.match(own) ?? []);
+}
+
+// Its own images it no longer points at go in the same commit (owner, 1 Oct 69): a
+// replaced cover, an image taken out of the text
+const dropped = (id: number, before: string, after: string): Change[] => {
+  const kept = ownMedia(id, after);
+  return [...ownMedia(id, before)].filter((p) => !kept.has(p)).map((path) => ({ path, text: null }));
+};
+
 // Save (Save draft, or a published post's edits): a new post gets the next id and
 // starts as a draft; a slug change moves the file. Status, number and publish date stay.
-export function planSave(index: ContentIndex, input: PostInput, now: Date): Plan {
+// previous: the .md as it was, to see which of its images it has stopped using.
+export function planSave(index: ContentIndex, input: PostInput, now: Date, previous = ""): Plan {
   if (!SLUG.test(input.slug)) throw new Error("Slug: lowercase letters, numbers and single dashes");
   // /admin/posts/new is the editor for a post not made yet
   if (input.slug === "new") throw new Error('Slug "new" is taken by the editor — pick another');
@@ -125,6 +141,7 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date): Plan
   };
   const message = commitMessage(now, before?.status === "published" ? "Edit" : "Draft", id);
   const { entry, changes, slugs } = written(meta, body, before, now, message);
+  changes.push(...dropped(id, previous, `${meta.cover ?? ""}\n${body}`));
   return { changes, message, index: withEntry(index, id, entry, before ? index.nextId : id + 1), entry, slugs };
 }
 
@@ -168,12 +185,13 @@ export function planUnpublish(index: ContentIndex, id: number, file: string, now
 
 // Delete: drafts only (a published post is unpublished first). The id is never given
 // out again; the file stays in git's history.
-export function planDelete(index: ContentIndex, id: number, now: Date): Plan {
+// Its own images go with it.
+export function planDelete(index: ContentIndex, id: number, now: Date, file = ""): Plan {
   const before = find(index, id);
   if (before.status !== "draft") throw new Error(`#${id} is published: unpublish it first`);
   const message = commitMessage(now, "Delete", id);
   return {
-    changes: [{ path: before.file, text: null }],
+    changes: [{ path: before.file, text: null }, ...dropped(id, file, "")],
     message,
     index: withEntry(index, id, null),
     entry: null,

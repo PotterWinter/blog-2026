@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { publish, remove, save, unpublish, type Result } from "@/app/admin/actions";
+import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, slugify, toRaw, type PostInput } from "@/lib/edit";
 import { postFile, type IndexEntry, type Post } from "@/lib/schema";
@@ -12,6 +12,8 @@ import TransitionLink from "../TransitionLink";
 import { CoverField, LinksField, TagsField } from "./Fields";
 import MetaRow from "./MetaRow";
 import RawBox from "./RawBox";
+import { UPLOAD, type Waiting } from "./waiting";
+import { shrinkForUpload } from "./shrink";
 import styles from "./Editor.module.css";
 
 // 07 Admin post editor (v4 07 / EDITOR-SPEC). The form is the post: title, slug, where
@@ -114,10 +116,18 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   };
 
   const doSave = async () => {
-    const snapshot = JSON.stringify(form);
-    const result = await call("Saving", () => save({ id, ...form }));
+    // The images still waiting (5.4) that the post points at go with it
+    const sent = Object.values(pending).filter(({ key }) => (form.cover + form.body).includes(`${UPLOAD}${key}`));
+    const result = await call("Saving", () => save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 }))));
     if (!result) return null;
-    setSaved(snapshot);
+    // Where they went: the post now says their paths, and nothing waits any more
+    const swap = (text: string) =>
+      Object.entries(result.uploads ?? {}).reduce((t, [from, to]) => t.split(from).join(to), text);
+    const next = { ...form, cover: form.cover && swap(form.cover), body: swap(form.body) };
+    setForm(next);
+    setSaved(JSON.stringify(next));
+    for (const p of sent) URL.revokeObjectURL(p.url);
+    setPending((all) => Object.fromEntries(Object.entries(all).filter(([key]) => !sent.some((p) => p.key === key))));
     setSlugAuto(false);
     // A new post, or a new slug: the address follows, without reloading the page
     if (location.pathname !== `/admin/posts/${result.slug}`) {
@@ -159,6 +169,35 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
       setSaved(JSON.stringify(form)); // nothing left to lose
       go?.("/admin");
     }
+  };
+
+  // The cover (5.4): shrunk here if it's a big photo, made a WebP on the server and
+  // held here — shown in the box, not in the repo yet. Save commits it with the post.
+  const [pending, setPending] = useState<Record<string, Waiting>>({});
+  const [uploading, setUploading] = useState(false);
+  const uploadCover = async (file: File) => {
+    setUploading(true);
+    const data = new FormData();
+    data.set("role", "cover");
+    data.set("file", await shrinkForUpload(file));
+    const result = await upload(data);
+    setUploading(false);
+    if (!result.ok) {
+      setNote({ text: `Cover not added · ${result.error}`, tone: "bad" });
+      return;
+    }
+    const image = result.image;
+    const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: "image/webp" }));
+    setPending((all) => {
+      if (all[image.key]) URL.revokeObjectURL(all[image.key].url);
+      return { ...all, [image.key]: { ...image, url } };
+    });
+    set({ cover: `${UPLOAD}${image.key}` });
+    setNote({
+      text: `Cover ready · ${image.width} × ${image.height}, ${Math.round(image.bytes / 1024)} KB · goes up with ${published ? "Save changes" : "Save"}`,
+      tone: "muted",
+    });
   };
 
   // A failed save tries again on its own every 10s while there's something to save
@@ -428,6 +467,9 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
             cover={form.cover}
             alt={form.coverAlt}
             onChange={(cover, coverAlt) => set({ cover, coverAlt })}
+            onUpload={(file) => void uploadCover(file)}
+            uploading={uploading}
+            waiting={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)] : undefined}
           />
         </div>
 

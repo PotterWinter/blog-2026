@@ -5,6 +5,7 @@ import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
 import { planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { placeUploads, type Pending } from "./media";
 import { readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
 // The admin's writes (5.3b). Each action is one commit to the content repo holding the
@@ -45,10 +46,14 @@ async function readAt(sha: string, file: string): Promise<string | null> {
   return Buffer.from(data.content, "base64").toString("utf8");
 }
 
-type Reader = { index: () => Promise<ContentIndex>; file: (file: string) => Promise<string | null> };
+type Reader = {
+  index: () => Promise<ContentIndex>;
+  file: (file: string) => Promise<string | null>;
+  exists: (file: string) => Promise<boolean>;
+};
 
 // Read, work out, commit — and on GitHub, again from the top if the branch moved
-async function commit(work: (read: Reader) => Promise<Plan>): Promise<{ plan: Plan; sha: string | null }> {
+async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promise<{ plan: P; sha: string | null }> {
   if (LOCAL_DIR) {
     const dir = LOCAL_DIR;
     const plan = await work({
@@ -57,10 +62,20 @@ async function commit(work: (read: Reader) => Promise<Plan>): Promise<{ plan: Pl
         const { readFile } = await import("node:fs/promises");
         return readFile(path.join(dir, file), "utf8").catch(() => null);
       },
+      exists: async (file) => {
+        const { access } = await import("node:fs/promises");
+        return access(path.join(dir, file)).then(
+          () => true,
+          () => false,
+        );
+      },
     });
     for (const change of plan.changes) {
       const target = path.join(dir, change.path);
-      if (change.text == null) await rm(target, { force: true });
+      if (change.base64 != null) {
+        await mkdir(path.dirname(target), { recursive: true });
+        await writeFile(target, Buffer.from(change.base64, "base64"));
+      } else if (change.text == null) await rm(target, { force: true });
       else {
         await mkdir(path.dirname(target), { recursive: true });
         await writeFile(target, change.text);
@@ -80,20 +95,33 @@ async function commit(work: (read: Reader) => Promise<Plan>): Promise<{ plan: Pl
     const plan = await work({
       index: async () => readIndex(await readAt(head, "index.json")),
       file: (file) => readAt(head, file),
+      exists: async (file) => (await github(`/contents/${file}?ref=${head}`)).status === 200,
     });
     const changes: Change[] = [
       ...plan.changes,
       { path: "index.json", text: JSON.stringify(plan.index, null, 2) + "\n" },
     ];
 
+    // A binary file (an image) goes up as a blob of its own first; text goes in the tree
+    const blobs = new Map<string, string>();
+    for (const c of changes.filter((c) => c.base64 != null)) {
+      const blob = await github<{ sha: string }>("/git/blobs", {
+        method: "POST",
+        body: { content: c.base64, encoding: "base64" },
+      });
+      if (blob.status !== 201) fail(`uploading ${c.path}`, blob.status);
+      blobs.set(c.path, blob.data.sha);
+    }
     const tree = await github<{ sha: string }>("/git/trees", {
       method: "POST",
       body: {
         base_tree: parent.data.tree.sha,
         tree: changes.map((c) =>
-          c.text == null
-            ? { path: c.path, mode: "100644", type: "blob", sha: null }
-            : { path: c.path, mode: "100644", type: "blob", content: c.text },
+          blobs.has(c.path)
+            ? { path: c.path, mode: "100644", type: "blob", sha: blobs.get(c.path) }
+            : c.text == null
+              ? { path: c.path, mode: "100644", type: "blob", sha: null }
+              : { path: c.path, mode: "100644", type: "blob", content: c.text },
         ),
       },
     });
@@ -120,17 +148,38 @@ function refresh(slugs: string[]) {
   for (const slug of slugs) revalidateTag(`post:${slug}`, { expire: 0 });
 }
 
-// entry: the post as the index now has it (null once deleted)
-export type Saved = { id: number; slug: string; message: string; sha: string | null; entry: IndexEntry | null };
+// entry: the post as the index now has it (null once deleted) · uploads: where the
+// images sent with a save went ("upload:cover" → "media/2026/003-cover.webp")
+export type Saved = {
+  id: number;
+  slug: string;
+  message: string;
+  sha: string | null;
+  entry: IndexEntry | null;
+  uploads?: Record<string, string>;
+};
 
 const done = ({ plan, sha }: { plan: Plan; sha: string | null }, id: number): Saved => {
   refresh(plan.slugs);
   return { id, slug: plan.entry?.slug ?? plan.slugs[0], message: plan.message, sha, entry: plan.entry };
 };
 
-export async function savePost(input: PostInput): Promise<Saved> {
-  const result = await commit(async (read) => planSave(await read.index(), input, new Date()));
-  return done(result, result.plan.entry!.id);
+// With the images picked since the last save (5.4): they're committed with the post,
+// and where the post says "upload:<key>" it now says their path
+export async function savePost(input: PostInput, pending: Pending[] = []): Promise<Saved> {
+  let placed: Record<string, string> = {};
+  const result = await commit(async (read) => {
+    const index = await read.index();
+    const now = new Date();
+    const { changes, paths } = await placeUploads(pending, input.id ?? index.nextId, read.exists, now);
+    placed = paths;
+    const swap = (text: string) => Object.entries(paths).reduce((t, [from, to]) => t.split(from).join(to), text);
+    const before = input.id == null ? null : index.posts.find((p) => p.id === input.id);
+    const previous = before ? ((await read.file(before.file)) ?? "") : "";
+    const plan = planSave(index, { ...input, cover: input.cover && swap(input.cover), body: swap(input.body) }, now, previous);
+    return { ...plan, changes: [...changes, ...plan.changes] };
+  });
+  return { ...done(result, result.plan.entry!.id), uploads: placed };
 }
 
 async function withFile(id: number, read: Reader) {
@@ -159,6 +208,9 @@ export async function unpublishPost(id: number): Promise<Saved> {
 }
 
 export async function deletePost(id: number): Promise<Saved> {
-  const result = await commit(async (read) => planDelete(await read.index(), id, new Date()));
+  const result = await commit(async (read) => {
+    const { index, file } = await withFile(id, read);
+    return planDelete(index, id, new Date(), file);
+  });
   return done(result, id);
 }
