@@ -6,13 +6,11 @@
 
 ## ตอนนี้อยู่
 
-- ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
-- ขั้น 5.1 Login เสร็จ (1 ต.ค. 69): login บนเว็บจริงได้ · commit "Sign in · Mac · Safari" ลง content repo · Firewall ตั้งแล้ว
-- 5.2 Admin hub เสร็จ (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin
-- push ถึง `ae7faa4` แล้ว (1 ต.ค. 69 คืน): admin + Editor (RAW .MD) + login ด้วย Redis ขึ้นเว็บจริง
-- กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
+- push ถึง `86b9282` แล้ว (2 ต.ค. 69): admin hub (5.2) · Editor + RAW .MD (5.3a–c) · login ด้วย Redis · อัปโหลดภาพปก (5.4a)
+- **ถัดไป 5.4b**: แทรกรูปในเนื้อหา (ปุ่มใน RAW) + รูปในหน้าบทความคมขึ้น → [notes/media.md](notes/media.md) · แล้ว 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
+- repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีปก — เจ้าของจะใส่เองผ่าน Editor)
 - login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost กับ fixtures ใช้ `111111`
-- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · ทดสอบกับ GitHub จริง = เพิ่มบรรทัด `CONTENT_DIR=` ใน `.env.development.local` (token อยู่ในไฟล์แล้ว) แล้วใช้รหัส Authenticator — 111111 ใช้ได้กับ fixtures เท่านั้น
+- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · `.env.development.local` มีบรรทัด `# CONTENT_DIR=` — ลบ `#` = ใช้ repo จริง (ต้องรหัส Authenticator, 111111 ใช้ไม่ได้) · token ใหม่ regenerate แล้ว 2 ต.ค. 69
 
 ## ทำต่อ
 
