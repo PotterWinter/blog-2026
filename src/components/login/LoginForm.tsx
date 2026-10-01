@@ -13,33 +13,53 @@ const LENGTH = 6;
 // again clears the red. v4's Paste button is gone: browsers ask before a page may read
 // the clipboard (Safari showed nothing at all), and a long-press paste or the iPhone's
 // suggested code already does the job (owner, 1 Oct 69).
+// Any character goes in, not only digits, and the keyboard is the ordinary one — a
+// number pad would tell anyone watching what the code is made of (owner, 2 Oct 69).
+// The cursor always sits after the last character, wherever the row is clicked; after
+// a wrong code, the first key replaces the lot (Backspace clears it) — no deleting
+// six characters one at a time (owner, 2 Oct 69).
 export default function LoginForm({ next, aside }: { next: string; aside: React.ReactNode }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const segsRef = useRef<HTMLSpanElement[]>([]);
+  const caretRef = useRef<HTMLSpanElement>(null);
   const realRef = useRef(""); // the digits; the field only ever shows • and the newest
   const checkRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const input = inputRef.current;
-    if (!input) return;
+    const caret = caretRef.current;
+    if (!input || !caret) return;
     let show = -1; // the one digit still showing
     let timer = 0;
     let alerted = false;
     let busy = false;
+    let stale = false; // the code just turned down: the next edit starts over
 
-    const draw = (caret?: number) => {
+    // Our own caret (the browser's sits in the wide gaps, and not at all once six are
+    // in): a blinking bar in the slot the next character goes to, or just after the
+    // last one when all six are in. Solid while typing, blinking again after.
+    const place = () => {
+      const a = input.selectionStart ?? 0;
+      const b = input.selectionEnd ?? 0;
+      caret.style.setProperty("--at", String(Math.min(a, realRef.current.length)));
+      caret.toggleAttribute("data-on", document.activeElement === input && a === b);
+      caret.style.animation = "none";
+      void caret.offsetWidth;
+      caret.style.animation = "";
+    };
+    const draw = (at?: number) => {
       const real = realRef.current;
       input.value = [...real].map((c, i) => (i === show ? c : "•")).join("");
       input.scrollLeft = 0;
-      input.style.caretColor = real.length >= LENGTH ? "transparent" : "";
-      if (caret != null) input.setSelectionRange(caret, caret);
+      if (at != null) input.setSelectionRange(at, at);
+      place();
     };
-    const set = (digits: string, caret: number, reveal: number) => {
+    const set = (digits: string, at: number, reveal: number) => {
       realRef.current = digits.slice(0, LENGTH);
       show = reveal;
       clearTimeout(timer);
-      draw(Math.min(caret, realRef.current.length));
+      draw(Math.min(at, realRef.current.length));
       if (reveal >= 0) {
         timer = window.setTimeout(() => {
           show = -1;
@@ -83,6 +103,7 @@ export default function LoginForm({ next, aside }: { next: string; aside: React.
         return;
       }
       busy = false;
+      stale = true;
       segs.forEach((g, i) => {
         g.dataset.state = "wrong";
         g.animate(
@@ -107,12 +128,13 @@ export default function LoginForm({ next, aside }: { next: string; aside: React.
     // Every edit goes through here, so the field never holds the real digits
     const onBeforeInput = (e: InputEvent) => {
       e.preventDefault();
-      const s = input.selectionStart ?? 0;
-      const en = input.selectionEnd ?? s;
       const real = realRef.current;
+      const s = stale ? 0 : (input.selectionStart ?? 0);
+      const en = stale ? real.length : (input.selectionEnd ?? s);
+      stale = false;
       if (e.inputType.startsWith("insert")) {
         const src = e.data ?? e.dataTransfer?.getData("text") ?? "";
-        const d = src.replace(/\D/g, "");
+        const d = src.replace(/\s/g, "");
         if (!d) return;
         const r = (real.slice(0, s) + d + real.slice(en)).slice(0, LENGTH);
         const c = Math.min(s + d.length, LENGTH);
@@ -129,6 +151,15 @@ export default function LoginForm({ next, aside }: { next: string; aside: React.
       }
     };
     const onScroll = () => (input.scrollLeft = 0);
+    // A click anywhere on the row: the cursor to the end (after the browser has put it
+    // where the click was). A drag that selects is left alone.
+    const toEnd = () =>
+      window.setTimeout(() => {
+        if (input.selectionStart === input.selectionEnd) {
+          const end = realRef.current.length;
+          input.setSelectionRange(end, end);
+        }
+      });
     // The browser's own highlight would run across the gaps and past the last slot, so
     // it's hidden (CSS) and the selected slots turn grey instead
     const onSelect = () => {
@@ -136,17 +167,22 @@ export default function LoginForm({ next, aside }: { next: string; aside: React.
       const b = input.selectionEnd ?? 0;
       const on = document.activeElement === input && b > a;
       segs.forEach((g, i) => g.toggleAttribute("data-sel", on && i >= a && i < b));
+      place();
     };
 
     input.addEventListener("keydown", onKey);
     input.addEventListener("beforeinput", onBeforeInput);
     input.addEventListener("scroll", onScroll);
+    input.addEventListener("pointerup", toEnd);
+    input.addEventListener("focus", toEnd);
     input.addEventListener("blur", onSelect);
     document.addEventListener("selectionchange", onSelect);
     return () => {
       input.removeEventListener("keydown", onKey);
       input.removeEventListener("beforeinput", onBeforeInput);
       input.removeEventListener("scroll", onScroll);
+      input.removeEventListener("pointerup", toEnd);
+      input.removeEventListener("focus", toEnd);
       input.removeEventListener("blur", onSelect);
       document.removeEventListener("selectionchange", onSelect);
       clearTimeout(timer);
@@ -173,12 +209,14 @@ export default function LoginForm({ next, aside }: { next: string; aside: React.
               }}
             />
           ))}
+          <span ref={caretRef} className={styles.caret} aria-hidden="true" />
           <input
             ref={inputRef}
             className={styles.input}
-            inputMode="numeric"
             autoComplete="one-time-code"
-            aria-label="6-digit code"
+            autoCapitalize="off"
+            autoCorrect="off"
+            aria-label="Access code"
             spellCheck={false}
             autoFocus
           />

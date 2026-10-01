@@ -47,11 +47,23 @@
 
 - (สมัย sessions.json: หลัง login GitHub ส่งไฟล์เก่ามาไม่กี่วินาที → เด้งกลับ /login · หมดปัญหาเมื่อย้ายไป Redis)
 
+## หน้า login (ปรับ 2 ต.ค. 69 ตามเจ้าของ)
+
+- พิมพ์อะไรก็ได้ (ตัวอักษรด้วย) · คีย์บอร์ดธรรมดา ไม่ใช่แป้นตัวเลข — ไม่บอกคนแอบดูว่ารหัสเป็นเลข
+- คลิกตรงไหนของแถว cursor ไปอยู่หลังตัวสุดท้ายเสมอ (ลากเลือกยังได้)
+- cursor วาดเอง (`.caret`) กระพริบกลางช่องถัดไป · ครบ 6 = อยู่หลังตัวสุดท้าย · ของ browser ซ่อน (มันไปอยู่ในช่องว่างระหว่างช่อง และหายตอนครบ 6)
+- รหัสผิด (กล่องแดง): ปุ่มแรกที่กดแทนทั้งหมด · Backspace ครั้งเดียว = ล้างหมด
+
 ## Secret
 
 - dev: `.env.development` มี `TOTP_SECRET` / `SESSION_SECRET` สำหรับเครื่องนี้เท่านั้น
   - **localhost ใช้รหัส `111111` ได้เสมอ** (แบบรหัสทดสอบของ v4, เจ้าของเลือก 1 ต.ค. 69) — เฉพาะ `next dev` (`NODE_ENV=development`) บนเว็บจริงไม่มีผล
   - รหัสจากแอป Authenticator ใช้ได้เฉพาะเว็บจริง (key คนละตัวกับ dev)
+  - **รหัสไหนใช้ที่ไหน** (2 ต.ค. 69):
+    - localhost + fixtures (`# CONTENT_DIR=`) → `111111`
+    - localhost + repo จริง (`CONTENT_DIR=` ว่าง) → แอป บัญชี **Code by Korn (dev)** (key ใน `.env.development`)
+    - เว็บจริง → แอป บัญชี **Code by Korn**
+  - key เว็บจริงบน Vercel เป็น Sensitive (ดูค่าไม่ได้แล้ว) → เลยเพิ่ม key dev เข้าแอปเป็นบัญชีที่สองแทน · `.env.development.local` ไม่มี `TOTP_SECRET` / `SESSION_SECRET` (ใช้ของ `.env.development`)
 - production: `npm run auth-secrets` (ค่าออกแค่ใน terminal) หรือ `-- --out <ไฟล์>` เขียนลงไฟล์ที่เจ้าของอ่านได้คนเดียว ไม่แสดงค่า → ใส่ในแอป authenticator + Vercel (Secret) แล้วลบไฟล์
   - 1 ต.ค. 69 สร้างไว้ที่ `~/Desktop/blog-secrets.txt` (Claude ไม่ได้เห็นค่า)
   - เปลี่ยน `SESSION_SECRET` = ทุกเครื่องหลุด · เปลี่ยน `TOTP_SECRET` = ต้องเพิ่มบัญชีในแอปใหม่

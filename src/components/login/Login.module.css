@@ -118,7 +118,39 @@
   font-size: var(--code-size);
   letter-spacing: calc(var(--pitch) - 1ch);
   color: var(--ink);
-  caret-color: var(--ink);
+  caret-color: transparent; /* .caret draws it */
+}
+
+/* The caret: centred in the slot the next character goes to (--at, 0–5); at 6, just
+   after the last character */
+.caret {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: calc(min(var(--at, 0), 5) * var(--pitch) + var(--seg) / 2 - 1px);
+  width: 2px;
+  height: 1.1em;
+  font-family: var(--ff-mono);
+  font-size: var(--code-size);
+  background: var(--ink);
+  transform: translate(calc(clamp(0, var(--at, 0) - 5, 1) * (0.5ch + 4px)), -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.caret[data-on] {
+  animation: blink 1.06s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .input::selection {
