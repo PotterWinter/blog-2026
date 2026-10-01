@@ -1,9 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { memo, useLayoutEffect, useRef } from "react";
 import styles from "./Admin.module.css";
 
-export type Sort = "new" | "old" | "az" | "za";
+// The panel offers date and title; the list's heads (06B) sort by every column, each
+// one way then the other ("-r"): No. 001 first, Status Draft first, Cat. A first.
+// null = nothing picked yet: No. high → low, nothing ticked, no head marked
+export type Sort = "new" | "old" | "az" | "za" | "no" | "no-r" | "status" | "status-r" | "cat" | "cat-r";
 export type Picks = { cat: string[]; mon: string[]; iss: boolean };
 export type Option = { value: string; label: string; n: number };
 
@@ -14,7 +17,7 @@ type Props = {
   year: string;
   months: Option[]; // all twelve, in order
   picks: Picks;
-  sort: Sort;
+  sort: Sort | null;
   onPicks: (picks: Picks) => void;
   onSort: (sort: Sort) => void;
 };
@@ -31,7 +34,8 @@ const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x
 // 06 Filter panel (v4 data-af-panel): opens by easing its height (0.52s). Category and
 // Health (posts with issues) and Month tick on and off, any mix; Sort picks one. Each
 // count is what that tick would show, given the others.
-export default function FilterPanel({ open, categories, issues, year, months, picks, sort, onPicks, onSort }: Props) {
+// memo: Hub re-renders on every card selection; the panel only cares about the filters
+export default memo(function FilterPanel({ open, categories, issues, year, months, picks, sort, onPicks, onSort }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
@@ -110,4 +114,4 @@ export default function FilterPanel({ open, categories, issues, year, months, pi
       </div>
     </div>
   );
-}
+});

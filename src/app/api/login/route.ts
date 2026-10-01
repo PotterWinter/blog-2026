@@ -8,7 +8,10 @@ export async function POST(request: Request) {
   const secret = process.env.TOTP_SECRET;
   if (!secret) return Response.json({ error: "Login isn't set up" }, { status: 503 });
   const { code } = (await request.json().catch(() => ({}))) as { code?: unknown };
-  const step = typeof code === "string" ? verifyTotp(secret, code) : null;
+  // On this machine (next dev only — never a build) 111111 always signs in, as v4's
+  // test code did, so no authenticator is needed locally (owner, 1 Oct 69)
+  const devCode = process.env.NODE_ENV === "development" && code === "111111";
+  const step = devCode ? "dev" : typeof code === "string" ? verifyTotp(secret, code) : null;
   if (step == null) return Response.json({ error: "Wrong code" }, { status: 401 });
   const city = decodeURIComponent(request.headers.get("x-vercel-ip-city") ?? "");
   const ok = await signIn(step, deviceName(request.headers.get("user-agent") ?? ""), city);

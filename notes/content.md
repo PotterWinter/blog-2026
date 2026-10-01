@@ -50,6 +50,22 @@ npm run rebuild-index -- ../blog-content
 - ต้องใช้ Node 22 (`nvm use` — มี `.nvmrc`) · script ใช้ `src/lib/schema.ts` ตัวเดียวกับเว็บ
   - ไฟล์ผิด schema หรือ id ซ้ำ = หยุดพร้อมบอกชื่อไฟล์
 
+## เลข No. (ตัดสินใจ 2 ต.ค. 69 · ทำใน 5.3)
+
+- แยกเป็น 2 ค่า:
+  - `id` — primary key: อยู่ใน frontmatter ของ .md แล้ว (`id: 26`), ได้ตอนสร้าง (draft ก็มี) จาก `nextId` · กระโดดได้ ไม่ใช้ซ้ำ · ไม่โชว์ผู้อ่าน
+  - `no` — เลขที่ผู้อ่านเห็น เก็บใน frontmatter เหมือนกัน (`no: 12`) · **นับแยกต่อ section** (blog 001, 002… · project นับของตัวเอง, admin โชว์ P01…) → เลข blog ไม่กระโดดเพราะ project
+- `no` ได้ตอน **publish ครั้งแรก** = เลขสูงสุดใน section + 1 → publish ใหม่ = เลขใหม่เสมอ, เลขเรียงตรงกับวันที่
+  - draft ยังไม่มี `no` (admin โชว์ "—", อยู่บนสุดของลำดับเริ่มต้น เรียงตามวันสร้าง)
+  - แก้บทความ = เลขและวันที่ไม่เปลี่ยน ไม่ขยับตำแหน่ง
+  - unpublish แล้ว publish ใหม่ = ได้เลขเดิม (ไม่ออกเลขใหม่)
+- ไม่ย้ายงานจากพอร์ตเก่า: เจ้าของเขียนใหม่ผ่าน admin ทั้งหมด → ทุกเลขมาจาก publish
+- เผื่อย้ายไป homelab database (อนาคต):
+  - .md คือต้นฉบับ (frontmatter มี `id`, `no` ครบ) · `index.json` สร้างใหม่จาก .md ได้เสมอ → ย้าย = อ่าน .md ทุกไฟล์แล้ว insert
+  - ตาราง: `id` = primary key · `(section, no)` = unique (no ว่างได้สำหรับ draft) · ออกเลข = `max(no) + 1` ใน transaction
+  - ตอนนี้ (git) กันออกเลขชนด้วย sha ของ `index.json`: commit ซ้อน = 409 → อ่านใหม่แล้วลองอีกที
+- ลำดับ: ผู้อ่าน = วันที่ใหม่สุดก่อน · admin = draft ก่อน แล้ว `no` มากไปน้อย
+
 ## โค้ด
 
 - `src/lib/schema.ts` — ชนิดข้อมูล, ตรวจ frontmatter, `buildIndex` (ไม่มี import ฝั่ง server ใช้ใน script ได้)

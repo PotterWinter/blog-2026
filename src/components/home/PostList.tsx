@@ -44,17 +44,20 @@ type Props = {
 
 // A column head that sorts (v4 06B). Reads as the plain grey label it was; once
 // pressed it turns ink and an arrow hangs beside it: down = low → high (NO 001, A,
-// oldest first), turned over = the other way. Only the head in use has one.
-function SortHead({
+// oldest first), turned over = the other way. Only the head in use has one. Also the
+// admin list's heads (06B), which sort on phones too.
+export function SortHead({
   label,
   on,
   up,
   onClick,
+  phones = false,
 }: {
   label: string;
   on: boolean;
   up: boolean;
   onClick: () => void;
+  phones?: boolean;
 }) {
   return (
     <button
@@ -63,8 +66,8 @@ function SortHead({
       data-on={on || undefined}
       aria-label={`Sort by ${label.toLowerCase()}`}
       aria-pressed={on}
-      // Phones keep the one plain Title head: no sorting there
-      onClick={() => !window.matchMedia("(max-width: 767px)").matches && onClick()}
+      // Phones keep the one plain Title head: no sorting there (01B)
+      onClick={() => (phones || !window.matchMedia("(max-width: 767px)").matches) && onClick()}
     >
       {label}
       <span className={styles.arrow} data-up={up || undefined} aria-hidden="true">

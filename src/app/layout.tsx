@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_Thai, Newsreader } from "next/font/google";
+import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
 const serif = Newsreader({
@@ -46,7 +47,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
       </head>
-      <body>{children}</body>
+      {/* The page transition (panel + Korn Natthanat 0–100%) wraps every page, so it
+          plays in the admin and between the admin and the site too (owner, 2 Oct 69) */}
+      <body>
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }

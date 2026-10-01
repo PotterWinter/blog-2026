@@ -8,12 +8,14 @@
 
 - ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
 - ขั้น 5.1 Login เสร็จ (1 ต.ค. 69): login บนเว็บจริงได้ · commit "Sign in · Mac · Safari" ลง content repo · Firewall ตั้งแล้ว
-- 5.2 Admin hub: 5.2a–c เสร็จ (โครงหน้า, Filter, การ์ด, แผงรายละเอียด) · ถัดไป 5.2d รายการ 06B
+- 5.2 Admin hub เสร็จ + commit แล้ว (2 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin · **ยังไม่ push**
+- กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
+- login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost ใช้ `111111`
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] 5.2d มุมมองรายการ 06B
+- [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
 - [ ] rebuild `index.json` ใน content repo (ช่องใหม่: images, videos, codeBlocks, bytes, lastCommit) แล้ว push
 
 ---
@@ -75,19 +77,20 @@
   - [x] TOTP เขียนเอง · session cookie + `sessions.json` · `proxy.ts` กัน `/admin`
   - [x] หน้า `/login` ตาม v4 (ช่องรหัส 6 ช่อง, Paste, Continue)
   - [x] token Read and write · `TOTP_SECRET` / `SESSION_SECRET` บน Vercel · กฎ Firewall "Login rate limit" (POST `/api/login`, 5 ครั้ง / 600 วิ ต่อ IP → 429)
-- [ ] 5.2 Admin hub (06 / 06B) → [notes/admin.md](notes/admin.md)
+- [x] 5.2 Admin hub (06 / 06B) → [notes/admin.md](notes/admin.md)
   - [x] 5.2a header ของ admin · หัวข้อ · ตัวเลข · แท็บ · ค้นหา
   - [x] 5.2b แผง Filter (Category, issues, Month, Sort)
   - [x] 5.2c การ์ด + เลือก + แผงรายละเอียด (sheet บนมือถือ) + pager + แถบ repo
-  - [ ] 5.2d รายการ 06B
+  - [x] 5.2d รายการ 06B · ปรับ grid: ไม่เลือกเอง, คลิกซ้ำยกเลิก, แผงติดขวา, Checks ครบ + ป้าย hover, ลูกศรเลื่อนหน้าตาม
 - [ ] 5.3 Editor (07) + preview (07P)
+  - [ ] เลข No. แยกต่อ section ได้ตอน publish ครั้งแรก (`id` ภายใน + `no` ผู้อ่าน) → [notes/content.md](notes/content.md)
 - [ ] 5.4 Media (08)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
-## ขั้น 5.5 · ย้ายพอร์ตเก่า
+## ขั้น 5.5 · เลิกพอร์ตเก่า
 
-- [ ] ย้ายเนื้อหา korn-natthanat.vercel.app → หน้า 02 / 03
+- ไม่ย้ายเนื้อหาจาก korn-natthanat.vercel.app — เจ้าของเขียนใหม่เองผ่าน Admin (2 ต.ค. 69)
 - [ ] ปิดโปรเจกต์ Vercel เก่า 3 ตัว (เช็ก env vars ของ personal-blog-api ก่อน)
 - [ ] ผูก korn-natthanat.vercel.app เข้ากับ blog-2026-vercel (เลือก Redirect old domain to new)
 - [ ] ใส่ลิงก์จริง: LinkedIn, Behance, CV, วิดีโอ walkthrough ในหน้า Login (ตอนนี้เป็น `#`)
@@ -97,6 +100,7 @@
 ## อนาคต (มี homelab database แล้ว)
 
 - [ ] ย้าย rate limit + sessions จาก Firewall / `sessions.json` ไป database
+- [ ] ย้ายบทความไป database (ถ้าทำ): .md เป็นต้นฉบับ มี `id` + `no` ครบ → [notes/content.md](notes/content.md)
 - [ ] Dashboard ยอดคนอ่านต่อบทความ, บทความยอดนิยม, ประวัติ login
 
 ## ขั้น 6 · Dark mode

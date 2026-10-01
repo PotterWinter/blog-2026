@@ -1,7 +1,10 @@
 /* Admin (v4 06–09): header, 06 publishing hub */
 
 /* ---------- Header ---------- */
-.header {
+/* header.header: element + class, to win over Header.module.css's .header (same
+   weight, loaded later), which kept its 26px gap and 7px padding here — 127px tall on
+   phones where v4 is 86 */
+header.header {
   gap: 32px;
 }
 
@@ -205,12 +208,13 @@
   color: var(--muted);
 }
 
+/* With the pills on phones too (owner, 2 Oct 69); search and GRID / LIST below */
 .filterToggle {
   display: flex;
   flex: none;
   align-items: center;
   gap: 8px;
-  order: 3;
+  margin-left: 6px;
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -219,35 +223,37 @@
   font-size: 14px;
   color: var(--muted);
   cursor: pointer;
+  transition: color 0.25s ease;
 }
 
-/* + that turns to − as the panel opens */
+/* v4 tint: dark while open or under the mouse */
+.filterToggle[aria-expanded="true"] {
+  color: var(--ink);
+}
+
+@media (hover: hover) {
+  .filterToggle:hover {
+    color: var(--ink);
+  }
+}
+
+/* + that turns to − as the panel opens. An SVG whose bar turns inside it: Safari
+   paints that where it really is each frame, where a turning box got its own layer
+   snapped to whole pixels and slid sideways into place as the turn ended */
 .plus {
-  position: relative;
   display: block;
   flex: none;
-  width: 9px;
-  height: 9px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
 }
 
-.plus::before,
-.plus::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 0;
-  width: 9px;
-  height: 1px;
-  background: currentColor;
-}
-
-.plus::after {
-  transform: rotate(90deg);
+/* Turned by Hub, 90° clockwise every press, never back (v4) */
+.plus path:last-child {
+  transform-box: view-box;
+  transform-origin: 4.5px 4.5px;
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.filterToggle[aria-expanded="true"] .plus::after {
-  transform: none;
 }
 
 .break {
@@ -461,6 +467,8 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  /* Arrow keys scroll a card into view: clear of the header (40) and the grey box (6) */
+  scroll-margin: 64px 0 24px;
   cursor: pointer;
   transition: color 0.3s ease;
 }
@@ -568,6 +576,32 @@
   color: var(--ink);
 }
 
+/* Hover: an ink line draws in over the grey one from the left and leaves to the right
+   (as the post page's tags; owner, 2 Oct 69). Publish isn't a link yet: no line */
+.cardActs > a {
+  position: relative;
+}
+
+.cardActs > a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.36s var(--ease-draw);
+}
+
+@media (hover: hover) {
+  .cardActs > a:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
 .cardActs [aria-disabled] {
   cursor: default;
 }
@@ -586,13 +620,47 @@
   overflow-y: auto;
   border-top: 1px solid var(--ink);
   background: var(--paper);
-  box-shadow: 0 -12px 32px rgb(17 17 16 / 0.08);
   transform: translateY(100%);
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Put away, it's hidden (once it has slid out): parked below the screen, its shadow
+     showed as a pale band at the bottom and iOS Safari tinted its toolbar from it */
+  visibility: hidden;
+  transition:
+    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s linear 0.5s;
 }
 
 .pane[data-open] {
+  box-shadow: 0 -12px 32px rgb(17 17 16 / 0.08);
   transform: none;
+  visibility: visible;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Its scroll stays its own: reaching the end doesn't carry on into the page */
+.pane {
+  overscroll-behavior: contain;
+}
+
+/* Behind the sheet: the page dims, so it reads as something on top that a tap on the
+   page (or a pull down) puts away (owner, 2 Oct 69) */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: rgb(17 17 16 / 0.32);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s linear 0.5s;
+}
+
+.scrim[data-open] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .sheetBar {
@@ -617,6 +685,7 @@
 }
 
 .paneBody {
+  --pane-top: 56px; /* header (40) + 16 */
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -653,35 +722,99 @@
   line-height: 1.4;
 }
 
+/* v4 data-dp-iss: always there; the rule and head go red when something needs fixing */
 .checks {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-top: 12px;
-  border-top: 1px solid var(--error);
+  border-top: 1px solid var(--ink);
+}
+
+.checks[data-bad] {
+  border-top-color: var(--error);
 }
 
 .checksHead {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  color: var(--error);
 }
 
 .checksHead :global(.label) {
-  color: var(--error);
+  color: var(--ink);
 }
 
 .checksHead .mono {
   margin-left: auto;
+}
+
+.checks[data-bad] .checksHead :global(.label),
+.checks[data-bad] .checksHead .mono {
   color: var(--error);
 }
 
+/* Two columns that stack on their own: a note under one item doesn't push a gap
+   into the item beside it (owner, 1 Oct 69) */
 .checksList {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px 12px;
+  gap: 12px;
   font-size: 14px;
+  align-items: start;
+}
+
+.checksCol {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* 7px square: black = fine, red = fix, an outline = not checked yet (comes with 5.3) */
+.check {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  cursor: default;
+}
+
+.checkBox {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  transform: translateY(-1px);
+}
+
+.check[data-state="bad"] {
+  color: var(--error);
+}
+
+.check[data-state="bad"] .checkBox {
+  background: var(--error);
+}
+
+.check[data-state="later"] {
+  color: var(--muted);
+}
+
+.check[data-state="later"] .checkBox {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+.checkText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.checkNote {
+  font-family: var(--ff-mono);
+  font-size: 11px;
 }
 
 .mono {
@@ -698,6 +831,16 @@
   padding-top: 12px;
   border-top: 1px solid var(--line);
   font-size: 14px;
+}
+
+/* v4: Published in 600, Draft in grey */
+.status {
+  font-weight: 600;
+}
+
+.status[data-draft] {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .factsHead {
@@ -764,10 +907,224 @@
   color: var(--muted);
 }
 
-.soon {
-  padding: 24px 0;
-  border-top: 0.5px solid var(--ink);
+/* v4: why only drafts can be deleted */
+.dangerNote {
+  margin-left: auto;
+  font-family: var(--ff-mono);
+  font-size: 11px;
   color: var(--muted);
+}
+
+/* The hover tip (useHoverTip, v4 .pname): on <body>, placed by transform */
+.tip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  box-sizing: border-box;
+  max-width: 320px;
+  padding: 9px 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.tip[data-on] {
+  opacity: 1;
+}
+
+/* Too long for one line: wraps at 320 with softer corners */
+.tip[data-wrap] {
+  border-radius: 10px;
+  white-space: normal;
+}
+
+.tip > span {
+  display: block;
+}
+
+.tipProbe {
+  visibility: hidden;
+  max-width: none;
+  width: auto;
+}
+
+.check[data-tip],
+.checksHead [data-tip] {
+  cursor: default;
+}
+
+/* ---------- 06B list ---------- */
+.list {
+  min-width: 0;
+  padding-bottom: 36px;
+}
+
+/* The head and the rows share one set of columns. Phones (v4 390): No. · Title · Status
+   · Date, no file or Cat. v4's 64 / 60px wrapped "30 AUG 26" in our type: 66 / 66
+   fit the widest ("Published" 65.8, a date 64.6) */
+.listGrid {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 66px 66px;
+  column-gap: 12px;
+  align-items: center;
+}
+
+.listGrid > * {
+  white-space: nowrap;
+}
+
+.listHead {
+  padding-bottom: 14px;
+}
+
+.wide,
+.rowCat,
+.rowFile {
+  display: none;
+}
+
+.rows {
+  position: relative;
+  outline: none;
+}
+
+/* The grey bar behind the selected row, 12px past it each side (v4 hl) */
+.bar {
+  position: absolute;
+  top: 0;
+  right: -12px;
+  left: -12px;
+  z-index: 0;
+  height: 0;
+  background: var(--surface);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bar[data-open] {
+  background: var(--ink);
+}
+
+/* Takes the selected row's number's place; difference, so it shows on the black bar */
+.rowDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 999px;
+  background: var(--ink-inverse);
+  mix-blend-mode: difference;
+  pointer-events: none;
+  transform: scale(0);
+  will-change: transform;
+}
+
+.row {
+  position: relative;
+  z-index: 1;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--ink);
+  /* Arrow keys scroll a row into view: clear of the header */
+  scroll-margin: 64px 0 24px;
+  cursor: pointer;
+}
+
+.row * {
+  transition: color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rowNo {
+  justify-self: start;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--muted);
+  transform-origin: left center;
+  transition:
+    opacity 0.22s ease,
+    transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.row[data-sel] .rowNo {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.tcol {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rowTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.45;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rowTitle[data-issues] {
+  color: var(--error);
+}
+
+.rowFile {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* v4: Published in 600, Draft in grey */
+.rowStatus {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rowStatus[data-draft] {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.row :global(.label) {
+  color: var(--ink);
+}
+
+/* Opened: white on the black bar, the title steps in */
+.row[data-open] * {
+  color: var(--paper) !important;
+}
+
+.row[data-open] .tcol {
+  transform: translateX(14px);
 }
 
 /* ---------- Pages, repo line ---------- */
@@ -851,6 +1208,33 @@
 
 /* ---------- 768 up ---------- */
 @media (min-width: 768px) {
+  /* v4 768: the file and Cat. come in */
+  .listGrid {
+    grid-template-columns: 32px minmax(0, 1fr) 84px 36px 84px;
+    column-gap: 20px;
+  }
+
+  .wide {
+    display: block;
+  }
+
+  .rowCat {
+    display: inline;
+  }
+
+  .rowFile {
+    display: block;
+  }
+
+  .rowTitle {
+    flex: none;
+    max-width: 70%;
+  }
+
+  .row {
+    padding: 11px 0;
+  }
+
   .top {
     padding: 64px var(--page-x) 36px;
   }
@@ -892,7 +1276,6 @@
   }
 
   .filterToggle {
-    order: 0;
     min-height: 0;
     margin-left: 10px;
   }
@@ -932,26 +1315,63 @@
 
 /* From 1024 the details sit beside the cards, held in view as the page scrolls */
 @media (min-width: 1024px) {
+  .listGrid {
+    grid-template-columns: 32px minmax(0, 1fr) 84px 36px 76px;
+    column-gap: 16px;
+  }
+
   .split {
     grid-template-columns: minmax(0, 1fr) 280px;
     gap: 32px;
     align-items: start;
   }
 
+  /* The column runs the cards' full height with its rule at the top, which stays put;
+     only the details (from the cover down) are held in view, just under the header,
+     as tall as they need up to the window and scrolling inside past that (owner,
+     1 Oct 69). The column's end — the pager's rule — stops them. */
   .pane {
-    position: sticky;
-    top: 64px;
+    position: static;
     z-index: auto;
+    align-self: stretch;
     max-height: none;
     padding: 16px 0 0;
     overflow: visible;
     border-top: 0.5px solid var(--ink);
     box-shadow: none;
     transform: none;
+    visibility: visible;
     transition: none;
   }
 
+  .pane[data-open] {
+    box-shadow: none;
+  }
+
+  /* The cover scrolls the pane up to the header while it's below it (Details) */
+  .pane[data-lift] .paneCover {
+    cursor: pointer;
+  }
+
+  .paneBody {
+    position: sticky;
+    top: var(--pane-top);
+    max-height: calc(100svh - var(--pane-top) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* A flex column with a max-height would squeeze its parts (the cover to nothing):
+     they keep their size and the box scrolls instead */
+  .paneBody > * {
+    flex-shrink: 0;
+  }
+
   .sheetBar {
+    display: none;
+  }
+
+  .scrim {
     display: none;
   }
 
@@ -969,6 +1389,11 @@
 }
 
 @media (min-width: 1280px) {
+  .listGrid {
+    grid-template-columns: 40px minmax(0, 1fr) 84px 36px 84px;
+    column-gap: 24px;
+  }
+
   .split {
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 40px;
@@ -989,14 +1414,14 @@
 
 /* ---------- Phones: the links drop to a row under the logo ---------- */
 @media (max-width: 767px) {
-  .header {
+  header.header {
     flex-wrap: wrap;
     gap: 0 16px;
     padding-top: 0;
     padding-bottom: 0;
   }
 
-  .header > :first-child {
+  header.header > :first-child {
     padding: 12px 0;
   }
 
@@ -1017,5 +1442,11 @@
 
   .signOut {
     margin-left: auto;
+  }
+
+  /* Scrolled into view under the two-row header (87px) */
+  .card,
+  .row {
+    scroll-margin-top: 100px;
   }
 }

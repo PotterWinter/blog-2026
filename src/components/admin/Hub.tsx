@@ -6,6 +6,7 @@ import type { IndexEntry } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { ViewToggle, type View } from "../home/Filters";
 import AdminCards from "./AdminCards";
+import AdminList from "./AdminList";
 import Details from "./Details";
 import FilterPanel, { type Picks, type Sort } from "./FilterPanel";
 import styles from "./Admin.module.css";
@@ -27,13 +28,20 @@ const minutesAgo = (iso: string) => {
 // Published · Draft, Filter, search over every post (not just the page shown — the
 // mock's was), GRID / LIST; the cards 24 to a page beside the selected post's details,
 // and the content repo's latest commit at the foot.
+// "Posts" in the header, pressed while already here, starts it over: a fresh hub —
+// grid, no filters, page 1, nothing selected (owner, 2 Oct 69; PageSlot remounts it).
 export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHead }) {
   const [status, setStatus] = useState<Status>("all");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("grid");
-  const [filterOpen, setFilterOpen] = useState(false);
+  // Presses of Filter: odd = open. The plus turns 90° clockwise on every press, never
+  // back (v4 _deg += 90)
+  const [filterTurns, setFilterTurns] = useState(0);
+  const filterOpen = filterTurns % 2 === 1;
   const [picks, setPicks] = useState<Picks>({ cat: [], mon: [], iss: false });
-  const [sort, setSort] = useState<Sort>("new");
+  // null = nothing pressed: No. high → low, the order posts were made in, so a new
+  // draft is on top (owner, 2 Oct 69; the public pages go by date)
+  const [sort, setSort] = useState<Sort | null>(null);
   // Page and selection are remembered for one listing; change what's listed and they
   // start again (page 1, the first card) without an extra render
   const [paging, setPaging] = useState({ key: "", page: 1 });
@@ -72,22 +80,50 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   const shown = useMemo(() => {
     const list = posts.filter((p) => passes(p));
     const byDate = (a: IndexEntry, b: IndexEntry) => a.publishedAt.localeCompare(b.publishedAt) || a.id - b.id;
-    if (sort === "new") list.sort((a, b) => byDate(b, a));
-    if (sort === "old") list.sort(byDate);
-    if (sort === "az") list.sort((a, b) => a.title.localeCompare(b.title));
-    if (sort === "za") list.sort((a, b) => b.title.localeCompare(a.title));
+    const catLabel = (p: IndexEntry) =>
+      [...categories, ...projectCategories].find((c) => c.slug === p.category)?.label ?? p.category;
+    // One way; "-r" the other. Only the column's own order turns over: posts that tie on
+    // it (Status, Cat.) stay newest first either way
+    const key: Record<string, (a: IndexEntry, b: IndexEntry) => number> = {
+      date: byDate,
+      title: (a, b) => a.title.localeCompare(b.title),
+      no: (a, b) => a.id - b.id,
+      status: (a, b) => (a.status === b.status ? 0 : a.status === "draft" ? -1 : 1),
+      cat: (a, b) => catLabel(a).localeCompare(catLabel(b)),
+    };
+    const [col, flip] = (sort ? {
+      new: ["date", true],
+      old: ["date", false],
+      az: ["title", false],
+      za: ["title", true],
+      no: ["no", false],
+      "no-r": ["no", true],
+      status: ["status", false],
+      "status-r": ["status", true],
+      cat: ["cat", false],
+      "cat-r": ["cat", true],
+    }[sort] : ["no", true]) as [string, boolean];
+    list.sort((a, b) => (flip ? -1 : 1) * key[col](a, b) || byDate(b, a));
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, status, query, picks, sort, issueIds]);
 
-  const categoryOptions = [...categories, ...projectCategories]
-    .filter((c) => posts.some((p) => p.category === c.slug))
-    .map((c) => ({ value: c.slug, label: c.label, n: posts.filter((p) => p.category === c.slug && passes(p, "cat")).length }));
-  const monthOptions = MONTHS.map((label, i) => {
-    const value = `${year}-${pad2(i + 1)}`;
-    return { value, label, n: posts.filter((p) => month(p) === value && passes(p, "mon")).length };
-  });
-  const issueCount = posts.filter((p) => issueIds.has(p.id) && passes(p, "iss")).length;
+  // The panel's options and counts change only with the filters, not with the selection:
+  // kept the same between moves so the (memo) panel sits out each arrow key
+  const { categoryOptions, monthOptions, issueCount } = useMemo(
+    () => ({
+      categoryOptions: [...categories, ...projectCategories]
+        .filter((c) => posts.some((p) => p.category === c.slug))
+        .map((c) => ({ value: c.slug, label: c.label, n: posts.filter((p) => p.category === c.slug && passes(p, "cat")).length })),
+      monthOptions: MONTHS.map((label, i) => {
+        const value = `${year}-${pad2(i + 1)}`;
+        return { value, label, n: posts.filter((p) => month(p) === value && passes(p, "mon")).length };
+      }),
+      issueCount: posts.filter((p) => issueIds.has(p.id) && passes(p, "iss")).length,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [posts, status, query, picks, issueIds, year],
+  );
 
   const listKey = JSON.stringify([status, query, picks, sort]);
   const page = paging.key === listKey ? paging.page : 1;
@@ -95,8 +131,9 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   const pages = Math.max(1, Math.ceil(shown.length / PER_PAGE));
   const pageItems = shown.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  // Always a card selected: the one picked while it's on the page, else the first
-  const selected = pageItems.some((p) => p.id === picked) ? picked : (pageItems[0]?.id ?? null);
+  // Nothing selected until a card is picked (the details pane shows just its rule —
+  // owner, 1 Oct 69; v4 picked the first); a pick holds while its card is on the page
+  const selected = pageItems.some((p) => p.id === picked) ? picked : null;
   const current = posts.find((p) => p.id === selected) ?? null;
 
   // How many cards to a row, for ↑ ↓ (3 from 1280, else 2)
@@ -108,7 +145,18 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
     return () => mq.removeEventListener("change", set);
   }, []);
 
-  const sortedBy = { new: "newest first", old: "oldest first", az: "title A–Z", za: "title Z–A" }[sort];
+  const sortedBy = {
+    new: "newest first",
+    old: "oldest first",
+    az: "title A–Z",
+    za: "title Z–A",
+    no: "number, 001 first",
+    "no-r": "number, latest first",
+    status: "status, drafts first",
+    "status-r": "status, published first",
+    cat: "category A–Z",
+    "cat-r": "category Z–A",
+  }[sort ?? "no-r"];
 
   const pills: { value: Status; label: string; n: number }[] = [
     { value: "all", label: "All", n: counts.all },
@@ -119,15 +167,15 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   return (
     <main className={styles.hub}>
       <div className={styles.top}>
-        <h1 className={styles.title} data-reveal>
+        <h1 className={styles.title}>
           Publishing<span className={styles.sup}>{counts.all}</span>
         </h1>
-        <button type="button" className={styles.newPost} data-reveal data-d="140">
+        <button type="button" className={styles.newPost}>
           New post
         </button>
       </div>
 
-      <dl className={styles.stats} data-reveal>
+      <dl className={styles.stats}>
         <div className={styles.stat}>
           <dt className="label">Published</dt>
           <dd>{counts.published}</dd>
@@ -149,7 +197,7 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
         </div>
       </dl>
 
-      <div className={styles.controls} data-reveal>
+      <div className={styles.controls}>
         {pills.map((p) => (
           <button
             key={p.value}
@@ -165,12 +213,15 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
           type="button"
           className={styles.filterToggle}
           aria-expanded={filterOpen}
-          onClick={() => setFilterOpen((o) => !o)}
+          onClick={() => setFilterTurns((n) => n + 1)}
         >
           Filter
-          <span className={styles.plus} aria-hidden="true" />
+          <svg className={styles.plus} width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
+            <path d="M0 4.5h9" />
+            <path d="M0 4.5h9" style={{ transform: `rotate(${90 + filterTurns * 90}deg)` }} />
+          </svg>
         </button>
-        {/* Phones: search, Filter and GRID / LIST go to a row of their own */}
+        {/* Phones: search and GRID / LIST go to a row of their own */}
         <span className={styles.break} aria-hidden="true" />
         <label className={styles.search}>
           <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
@@ -210,14 +261,26 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
               columns={columns}
               onSelect={(id) => {
                 setSelected(id);
-                setSheet(true);
+                setSheet(id != null);
               }}
               onOpen={(id) => setSelected(id)}
             />
           ) : (
-            <p className={styles.soon}>The list view (06B) comes next.</p>
+            <AdminList
+              posts={pageItems}
+              selected={selected}
+              sort={sort}
+              onSort={setSort}
+              onSelect={(id) => {
+                setSelected(id);
+                setSheet(id != null);
+              }}
+              onOpen={(id) => setSelected(id)}
+            />
           )}
-          <Details post={current} sheetOpen={sheet} onClose={() => setSheet(false)} />
+          {/* The sheet (phones) only while something's selected: a sort or filter that takes
+              the post off the page closes it rather than leaving it up empty */}
+          <Details post={current} sheetOpen={sheet && current != null} onClose={() => setSheet(false)} />
         </div>
 
         <div className={styles.pager}>

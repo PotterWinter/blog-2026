@@ -1,6 +1,8 @@
 /* Page change: an e8 panel rises over the page, the new page swaps in under it,
    then the panel drops back down. z-index 39 keeps it under the sticky header (40),
-   so the nav and its dot stay in view the whole time. */
+   so the nav and its dot stay in view the whole time. Hidden between page changes:
+   parked below the screen it still touched its bottom edge, and iOS Safari tinted its
+   toolbar e8 from it (a grey band under the address bar). */
 .panel {
   position: fixed;
   inset: 0;
@@ -9,6 +11,7 @@
   place-items: center;
   background: var(--surface);
   transform: translateY(100%);
+  visibility: hidden;
   pointer-events: none;
 }
 

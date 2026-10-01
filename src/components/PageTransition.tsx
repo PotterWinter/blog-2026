@@ -21,7 +21,7 @@ const GIVE_UP_MS = 8000; // still not there (a server error, a dev rebuild): loa
 
 type PageTransitionApi = {
   target: string | null; // where we're headed while the panel is up
-  go: ((href: string) => void) | null; // null outside the site (login, admin)
+  go: ((href: string) => void) | null; // null only outside the provider (it wraps every page)
   ready: boolean; // the page is (or is about to be) visible: no panel, or it's dropping
   round: number; // bumps when the current page is pressed again — see PageSlot
 };
@@ -89,6 +89,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
     }
     setTarget(href);
     router.prefetch(href);
+    panel.style.visibility = "visible";
     drawLoader(loader, 0);
     countTo(loader, 90, COUNT_MS, (t) => 1 - (1 - t) ** 3); // eases out, saves 10% for "loaded"
     await panel.animate([{ transform: "translateY(100%)" }, { transform: "translateY(0)" }], {
@@ -132,6 +133,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       )
       .then(() => {
         panel.getAnimations().forEach((animation) => animation.cancel());
+        panel.style.visibility = "";
         setCovered(false);
         setTarget(null);
       });

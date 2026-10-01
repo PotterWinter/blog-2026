@@ -90,12 +90,15 @@ export function deviceName(ua: string): string {
 
 // A code that passed TOTP at `step`: refuse it if that step (or a later one) was used
 // already, else add this device and set the cookie. false = code reused.
-export async function signIn(step: number, device: string, city: string): Promise<boolean> {
+// "dev" = the local test code, which can't be reused against anything, so no check.
+export async function signIn(step: number | "dev", device: string, city: string): Promise<boolean> {
   const { file, sha } = await readList();
-  if (step <= file.lastStep) return false;
+  if (step !== "dev") {
+    if (step <= file.lastStep) return false;
+    file.lastStep = step;
+  }
   const id = randomBytes(18).toString("base64url");
   const expires = Date.now() + DAYS * 24 * 3600 * 1000;
-  file.lastStep = step;
   file.sessions.push({ id, device, city, createdAt: new Date().toISOString() });
   await writeList(file, sha, `Sign in · ${device}`);
   (await cookies()).set(COOKIE, `${id}.${expires}.${sign(`${id}.${expires}`)}`, {
