@@ -1,5 +1,6 @@
 ---
 id: 18
+no: 18
 title: "Server actions are just forms"
 excerpt: "A POST by any other name."
 section: blog

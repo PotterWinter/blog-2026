@@ -1,5 +1,6 @@
 ---
 id: 33
+no: 4
 title: "Chana"
 excerpt: "Identity for a boxing gym in Nonthaburi. A wordmark cut from stencil forms, applied across hand wraps, signage and printed matter."
 section: project

@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useRef } from "react";
 import { postIssues } from "@/lib/checks";
-import { shortDate } from "@/lib/format";
+import { postNo, shortDate } from "@/lib/format";
 import type { IndexEntry } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { SortHead } from "../home/PostList";
@@ -185,7 +185,7 @@ export default function AdminList({ posts, selected, sort, onSort, onSelect, onO
     <div className={styles.list}>
       <div className={`${styles.listGrid} ${styles.listHead}`}>
         {/* Every head sorts, as 01B's: nothing pressed = No. high → low and no arrow; the first
-            press low → high (↓: 001, A, Draft, oldest), again the other way (owner, 2 Oct 69) */}
+            press low → high (↓: 001, A, Draft, oldest), again the other way (owner, 1 Oct 69) */}
         <SortHead
           label="No."
           on={sort === "no" || sort === "no-r"}
@@ -258,7 +258,7 @@ const Row = memo(function Row({ p, selected }: { p: IndexEntry; selected: boolea
       data-id={p.id}
       data-sel={selected || undefined}
     >
-      <span className={styles.rowNo}>{String(p.id).padStart(3, "0")}</span>
+      <span className={styles.rowNo}>{postNo(p, true)}</span>
       <span className={styles.tcol}>
         <span className={styles.rowTitle} data-issues={postIssues(p).length > 0 || undefined}>
           {p.title}

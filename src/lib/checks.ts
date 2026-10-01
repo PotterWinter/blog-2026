@@ -1,4 +1,4 @@
-import type { IndexEntry } from "./schema.ts";
+import type { PostMeta } from "./schema.ts";
 
 // The details pane's Checks (v4 06): the same list for every post, a black square when
 // fine, red when it needs attention. Cover, Excerpt and Alt text (and Role for a
@@ -6,7 +6,10 @@ import type { IndexEntry } from "./schema.ts";
 // sizes, which the editor (5.3) brings — until then they show as not checked (ok: null).
 export type Check = { label: string; ok: boolean | null; note: string; tip: string };
 
-export function postChecks(p: IndexEntry): Check[] {
+// What it reads of a post: the editor passes the form as it stands
+type Checked = Pick<PostMeta, "cover" | "coverAlt" | "excerpt" | "section" | "role">;
+
+export function postChecks(p: Checked): Check[] {
   const later = (label: string, tip: string): Check => ({ label, ok: null, note: "in editor", tip });
   const excerptNote = !p.excerpt ? "missing" : p.excerpt.length > 200 ? `${p.excerpt.length} chars` : "";
   const out: Check[] = [
@@ -32,4 +35,4 @@ export function postChecks(p: IndexEntry): Check[] {
 }
 
 // The ones that need fixing — 06's "issues" filter and the red card titles
-export const postIssues = (p: IndexEntry) => postChecks(p).filter((c) => c.ok === false);
+export const postIssues = (p: Checked) => postChecks(p).filter((c) => c.ok === false);

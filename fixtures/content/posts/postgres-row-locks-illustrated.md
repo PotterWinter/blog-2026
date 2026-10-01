@@ -1,5 +1,6 @@
 ---
 id: 22
+no: 22
 title: "Postgres row locks, illustrated"
 excerpt: "Six diagrams that made it stick."
 section: blog

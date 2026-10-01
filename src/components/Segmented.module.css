@@ -1,0 +1,53 @@
+/* v4 .seg (as GRID / LIST in Filters.module.css), at the editor's size: 12px, 7 × 15 */
+.seg {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-self: flex-start;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.pill[data-ready] {
+  transition:
+    transform 0.39s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.39s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.item {
+  position: relative;
+  padding: 7px 15px;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  line-height: normal;
+  text-transform: uppercase;
+  color: var(--paper);
+  mix-blend-mode: difference;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.item:active {
+  transform: scale(0.96);
+}
+
+.item[aria-disabled] {
+  opacity: 0.35;
+  cursor: default;
+}

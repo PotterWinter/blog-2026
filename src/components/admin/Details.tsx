@@ -34,7 +34,7 @@ export default function Details({ post, sheetOpen, onClose }: Props) {
 
   // Beside the cards (1024 up) the details can be cut off two ways, and then the cover
   // takes a click (data-lift, a tip under the mouse says what it does) that scrolls the
-  // page just enough to show them whole (owner, 2 Oct 69):
+  // page just enough to show them whole (owner, 1 Oct 69):
   // - down: the page sits above the pane, its rule below the header and the details
   //   running off the bottom. The page scrolls down until the pane's rule lands on the
   //   header's bottom line — the two read as one.
@@ -89,7 +89,7 @@ export default function Details({ post, sheetOpen, onClose }: Props) {
   // The sheet (below 1024): a finger pulls it down from its top (the bar, or the
   // details scrolled to their start) and it follows; let go past a third of the way, or
   // with a flick, and it closes, else it springs back. The page behind dims, and a tap
-  // there closes it too (owner, 2 Oct 69).
+  // there closes it too (owner, 1 Oct 69).
   const scrimRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function Details({ post, sheetOpen, onClose }: Props) {
   }, [post?.id]);
 
   // While the sheet is up, only the sheet scrolls: the page behind stays put, with a
-  // mouse wheel or the page's scrollbar too (owner, 2 Oct 69). Not when the window is
+  // mouse wheel or the page's scrollbar too (owner, 1 Oct 69). Not when the window is
   // wide enough for the pane to sit beside the cards again.
   useEffect(() => {
     const sheet = window.matchMedia("(max-width: 1023px)");
@@ -235,7 +235,7 @@ export default function Details({ post, sheetOpen, onClose }: Props) {
 
             {/* Edit and View right under the title, where a pick lands (v4 had them at the
               foot, out of sight once the details scroll); Unpublish / Delete stay at the
-              foot, away from them (owner, 2 Oct 69) */}
+              foot, away from them (owner, 1 Oct 69) */}
             <div className={styles.paneActs}>
               <Link href={`/admin/posts/${post.slug}`} className={styles.btnm}>
                 Edit post

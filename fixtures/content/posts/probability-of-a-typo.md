@@ -1,5 +1,6 @@
 ---
 id: 1
+no: 1
 title: "The probability of a typo"
 excerpt: "Counting keystrokes, badly."
 section: blog

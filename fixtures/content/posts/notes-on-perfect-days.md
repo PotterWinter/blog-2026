@@ -1,5 +1,6 @@
 ---
 id: 23
+no: 23
 title: "Notes on Perfect Days"
 excerpt: "Wenders and the dignity of routine."
 section: blog

@@ -1,5 +1,6 @@
 ---
 id: 4
+no: 4
 title: "Invisible Cities, sketched"
 excerpt: "Fifty-five cities, twelve drawings."
 section: blog

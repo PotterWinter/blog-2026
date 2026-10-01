@@ -31,7 +31,7 @@ Header · footer · nav · page transition · travel dot · จุดกลั�
 - แผ่น #e8e8e7 ขึ้นคลุมใต้ navbar → เปลี่ยน/โหลดหน้าใต้แผ่น → แผ่นเลื่อนกลับลง
 - loader "Korn Natthanat ——— %"
 - เปลี่ยนหน้าค้างเกิน 8 วินาที → โหลดหน้าเต็มให้เอง (กันค้างที่ 90% ตอน dev rebuild)
-- อยู่ใน root layout (2 ต.ค. 69): เล่นทุกหน้า รวม admin (Posts / Media / Settings, Sign out) และข้ามระหว่าง admin ↔ เว็บ · กดหน้าเดิมซ้ำ = เริ่มหน้าใหม่ (`PageSlot` ทั้งใน (site) และ admin)
+- อยู่ใน root layout (1 ต.ค. 69): เล่นทุกหน้า รวม admin (Posts / Media / Settings, Sign out) และข้ามระหว่าง admin ↔ เว็บ · กดหน้าเดิมซ้ำ = เริ่มหน้าใหม่ (`PageSlot` ทั้งใน (site) และ admin)
 - iOS Safari 26 ย้อมสีแถบ URL จาก element fixed ที่แตะขอบล่าง → ของที่จอดไว้ใต้จอต้อง `visibility: hidden` ตอนไม่ใช้ (แผ่น transition, sheet + เงา, scrim) ไม่งั้นเห็นแถบเทา / ขาวใต้ URL
 
 ### Footer บนมือถือ

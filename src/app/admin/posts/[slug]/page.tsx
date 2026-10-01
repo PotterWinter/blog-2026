@@ -1,0 +1,19 @@
+import { notFound } from "next/navigation";
+import Editor from "@/components/editor/Editor";
+import { getPost, getPosts } from "@/lib/content";
+
+// 07 Admin post editor. /admin/posts/new is a post not made yet: it gets its id (and
+// its file) on the first save, and the address becomes /admin/posts/<slug> — the same
+// route, so the editor on screen stays as it is (two routes swapped it for a fresh
+// one, losing what was on it). Read straight after a save: every write clears this
+// post's cache (post:<slug>) and the list's (index).
+export default async function EditPostPage({ params }: PageProps<"/admin/posts/[slug]">) {
+  const { slug } = await params;
+  const posts = await getPosts({ drafts: true });
+  const allTags = [...new Set(posts.flatMap((p) => p.tags))].sort();
+  if (slug === "new") return <Editor post={null} entry={null} allTags={allTags} />;
+  const post = await getPost(slug);
+  if (!post) notFound();
+  const entry = posts.find((p) => p.id === post.id) ?? null;
+  return <Editor post={post} entry={entry} allTags={allTags} />;
+}

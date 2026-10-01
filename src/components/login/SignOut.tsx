@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { usePageTransition } from "../PageTransition";
 
 // Signs this device out (its entry leaves sessions.json) and leaves for the blog's
-// front page (owner, 2 Oct 69)
+// front page (owner, 1 Oct 69)
 export default function SignOut({ className }: { className?: string }) {
   const router = useRouter();
   const { go } = usePageTransition();

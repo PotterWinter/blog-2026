@@ -1,5 +1,6 @@
 ---
 id: 36
+no: 1
 title: "Wattarin House"
 excerpt: "Thesis project at KMITL — a narrow house organised around a north-lit stair. Drawings, model, and the book that came out of it."
 section: project

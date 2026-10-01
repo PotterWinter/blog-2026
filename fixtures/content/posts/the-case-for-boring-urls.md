@@ -1,5 +1,6 @@
 ---
 id: 12
+no: 12
 title: "The case for boring URLs"
 excerpt: "Slugs that outlive the site."
 section: blog

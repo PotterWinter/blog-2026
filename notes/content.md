@@ -50,7 +50,7 @@ npm run rebuild-index -- ../blog-content
 - ต้องใช้ Node 22 (`nvm use` — มี `.nvmrc`) · script ใช้ `src/lib/schema.ts` ตัวเดียวกับเว็บ
   - ไฟล์ผิด schema หรือ id ซ้ำ = หยุดพร้อมบอกชื่อไฟล์
 
-## เลข No. (ตัดสินใจ 2 ต.ค. 69 · ทำใน 5.3)
+## เลข No. (ตัดสินใจ 1 ต.ค. 69 · ทำใน 5.3)
 
 - แยกเป็น 2 ค่า:
   - `id` — primary key: อยู่ใน frontmatter ของ .md แล้ว (`id: 26`), ได้ตอนสร้าง (draft ก็มี) จาก `nextId` · กระโดดได้ ไม่ใช้ซ้ำ · ไม่โชว์ผู้อ่าน
@@ -64,7 +64,8 @@ npm run rebuild-index -- ../blog-content
   - .md คือต้นฉบับ (frontmatter มี `id`, `no` ครบ) · `index.json` สร้างใหม่จาก .md ได้เสมอ → ย้าย = อ่าน .md ทุกไฟล์แล้ว insert
   - ตาราง: `id` = primary key · `(section, no)` = unique (no ว่างได้สำหรับ draft) · ออกเลข = `max(no) + 1` ใน transaction
   - ตอนนี้ (git) กันออกเลขชนด้วย sha ของ `index.json`: commit ซ้อน = 409 → อ่านใหม่แล้วลองอีกที
-- ลำดับ: ผู้อ่าน = วันที่ใหม่สุดก่อน · admin = draft ก่อน แล้ว `no` มากไปน้อย
+- ลำดับ: ผู้อ่าน = วันที่ใหม่สุดก่อน · admin = draft ก่อน (สร้างใหม่สุดก่อน) แล้วที่ publish ล่าสุด (blog / project นับเลขแยก → ข้าม section เรียงตามวันที่ publish)
+- ทำแล้ว (5.3a): `no` ใน frontmatter + `PostMeta` · ไม่มี `no` แต่ published = ใช้ `id` (hello-world ใน repo จริง, index.json เก่า) · `(section, no)` ซ้ำ = buildIndex หยุด · แสดงด้วย `postNo()` (`012`, admin `P01`, draft `—`)
 
 ## โค้ด
 

@@ -1,5 +1,6 @@
 ---
 id: 26
+no: 26
 title: "A CSS grid I actually reuse"
 excerpt: "Twelve columns, three breakpoints."
 section: blog

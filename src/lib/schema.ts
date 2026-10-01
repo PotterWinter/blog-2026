@@ -9,7 +9,11 @@ import { countWords, readMinutes } from "./words.ts";
 export type PostLink = { label: string; url: string; preview: string | null };
 
 export type PostMeta = {
-  id: number;
+  id: number; // primary key: given when the post is made (drafts too), never reused, not shown
+  // The number readers see: counted per section, given on the first publish (the
+  // section's highest + 1), kept through unpublish / publish. null = a draft never
+  // published. Decided 1 Oct 69 → notes/content.md
+  no: number | null;
   slug: string;
   title: string;
   excerpt: string;
@@ -42,7 +46,7 @@ export function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
   const where = `posts/${slug}.md`;
   const text = (key: string, optional = false): string => {
     const value = data[key];
-    if (value == null && optional) return "";
+    if ((value == null || value === "") && optional) return "";
     if (typeof value !== "string" || value === "") throw new Error(`${where}: "${key}" must be text`);
     return value;
   };
@@ -61,6 +65,12 @@ export function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
 
   const id = data.id;
   if (typeof id !== "number" || !Number.isInteger(id)) throw new Error(`${where}: "id" must be a whole number`);
+  const status = oneOf("status", ["draft", "published"] as const);
+  if (data.no != null && (typeof data.no !== "number" || !Number.isInteger(data.no) || data.no < 1)) {
+    throw new Error(`${where}: "no" must be a whole number from 1`);
+  }
+  // Written before "no" existed: a published post's number was its id
+  const no = (data.no as number | undefined) ?? (status === "published" ? id : null);
   const tags = data.tags ?? [];
   if (!Array.isArray(tags) || tags.some((t) => typeof t !== "string")) {
     throw new Error(`${where}: "tags" must be a list like [react, css]`);
@@ -85,16 +95,18 @@ export function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
   const cover = text("cover", true);
   return {
     id,
+    no,
     slug,
     title: text("title"),
-    excerpt: text("excerpt"),
+    // May be empty: a draft saves before it has one (Checks flags it)
+    excerpt: text("excerpt", true),
     section: oneOf("section", ["blog", "project"] as const),
     category: text("category"),
     tags: tags as string[],
     // In the .md the path is relative to the post ("../media/…"), so Obsidian can show it
     cover: cover ? cover.replace(/^\.\.\//, "") : null,
     coverAlt: text("coverAlt", true),
-    status: oneOf("status", ["draft", "published"] as const),
+    status,
     publishedAt: date("publishedAt"),
     updatedAt: date("updatedAt"),
     role: text("role", true) || null,
@@ -124,7 +136,7 @@ export type IndexEntry = PostMeta & {
 // Images and clips are both ![](…) lines; a clip is .mp4 / .webm / .mov. Code blocks are
 // fenced (```), "output" frames included.
 const VIDEO = /\.(mp4|webm|mov)(\s|\)|")/i;
-function contentCounts(body: string) {
+export function contentCounts(body: string) {
   const media = body.match(/!\[[^\]]*\]\([^)]*\)/g) ?? [];
   const videos = media.filter((m) => VIDEO.test(m)).length;
   const fences = body.match(/^```/gm)?.length ?? 0;
@@ -133,6 +145,15 @@ function contentCounts(body: string) {
 
 // nextId: the id a new post gets; never lowered, so an id is never used twice
 export type ContentIndex = { nextId: number; posts: IndexEntry[] };
+
+// index.json as read from the repo. One written before "no" existed has none: a
+// published post's number was its id (as toMeta reads such a .md)
+export function readIndex(text: string | null): ContentIndex {
+  if (!text) return { nextId: 1, posts: [] };
+  const index = JSON.parse(text) as ContentIndex;
+  for (const p of index.posts) p.no ??= p.status === "published" ? p.id : null;
+  return index;
+}
 
 export type SourceFile = {
   slug: string;
@@ -143,29 +164,76 @@ export type SourceFile = {
   lastCommit?: string;
 };
 
+// One .md checked and summarised for the index
+export function indexEntry({ slug, text, createdAt, revisions, lastCommit }: SourceFile): IndexEntry {
+  const { data, body } = splitFrontmatter(text, slug);
+  const meta = toMeta(data, slug);
+  const words = countWords(body);
+  return {
+    ...meta,
+    createdAt: createdAt ?? `${meta.publishedAt}T00:00:00+07:00`,
+    revisions: revisions ?? 1,
+    words,
+    readMinutes: readMinutes(words),
+    ...contentCounts(body),
+    bytes: new TextEncoder().encode(text).length,
+    lastCommit: lastCommit ?? null,
+  };
+}
+
 // Every .md checked and summarised, newest id first. Throws on a bad file or two posts
-// sharing an id, naming the file.
+// sharing an id (or a section's number), naming the file.
 export function buildIndex(files: SourceFile[], previousNextId = 1): ContentIndex {
   const seen = new Map<number, string>();
-  const posts = files.map(({ slug, text, createdAt, revisions, lastCommit }): IndexEntry => {
-    const { data, body } = splitFrontmatter(text, slug);
-    const meta = toMeta(data, slug);
+  const seenNo = new Map<string, string>();
+  const posts = files.map((file): IndexEntry => {
+    const slug = file.slug;
+    const meta = indexEntry(file);
     const twin = seen.get(meta.id);
     if (twin) throw new Error(`posts/${slug}.md: id ${meta.id} is already used by posts/${twin}.md`);
     seen.set(meta.id, slug);
-    const words = countWords(body);
-    return {
-      ...meta,
-      createdAt: createdAt ?? `${meta.publishedAt}T00:00:00+07:00`,
-      revisions: revisions ?? 1,
-      words,
-      readMinutes: readMinutes(words),
-      ...contentCounts(body),
-      bytes: new TextEncoder().encode(text).length,
-      lastCommit: lastCommit ?? null,
-    };
+    if (meta.no != null) {
+      const key = `${meta.section} ${meta.no}`;
+      const same = seenNo.get(key);
+      if (same) throw new Error(`posts/${slug}.md: ${meta.section} no ${meta.no} is already posts/${same}.md`);
+      seenNo.set(key, slug);
+    }
+    return meta;
   });
   posts.sort((a, b) => b.id - a.id);
   const top = posts.length ? posts[0].id : 0;
   return { nextId: Math.max(previousNextId, top + 1), posts };
+}
+
+// ---------- writing a post back ----------
+// The .md the admin writes: the same fields in the same order as the hand-written ones,
+// strings in double quotes (JSON's quoting is valid YAML, Thai left as it is), slugs and
+// dates bare. Paths go back to being relative to the post ("../media/…") for Obsidian.
+
+const quote = (value: string) => JSON.stringify(value);
+const bare = (value: string) => (/^[a-z0-9][a-z0-9-]*$/.test(value) ? value : quote(value));
+
+export function toMarkdown(meta: PostMeta, body: string): string {
+  const lines = [`id: ${meta.id}`];
+  if (meta.no != null) lines.push(`no: ${meta.no}`);
+  lines.push(
+    `title: ${quote(meta.title)}`,
+    `excerpt: ${quote(meta.excerpt)}`,
+    `section: ${meta.section}`,
+    `category: ${bare(meta.category)}`,
+    `tags: [${meta.tags.map(bare).join(", ")}]`,
+  );
+  if (meta.cover) lines.push(`cover: ../${meta.cover}`);
+  if (meta.coverAlt) lines.push(`coverAlt: ${quote(meta.coverAlt)}`);
+  lines.push(`status: ${meta.status}`, `publishedAt: ${meta.publishedAt}`, `updatedAt: ${meta.updatedAt}`);
+  if (meta.role) lines.push(`role: ${quote(meta.role)}`);
+  if (meta.year) lines.push(`year: ${quote(meta.year)}`);
+  if (meta.links.length) {
+    lines.push("links:");
+    for (const link of meta.links) {
+      lines.push(`  - label: ${quote(link.label)}`, `    url: ${link.url}`);
+      if (link.preview) lines.push(`    preview: ../${link.preview}`);
+    }
+  }
+  return `---\n${lines.join("\n")}\n---\n${body}`;
 }

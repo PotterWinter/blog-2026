@@ -1,5 +1,6 @@
 ---
 id: 25
+no: 25
 title: "The Dispossessed, annotated"
 excerpt: "Margins from a third re-read."
 section: blog

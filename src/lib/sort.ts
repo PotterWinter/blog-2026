@@ -19,7 +19,7 @@ const text = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivi
 
 // Each column, low → high
 const ORDERS: Record<SortKey, (a: PostMeta, b: PostMeta) => number> = {
-  no: (a, b) => a.id - b.id,
+  no: (a, b) => (a.no ?? 0) - (b.no ?? 0),
   title: (a, b) => text(a.title, b.title),
   category: (a, b) => text(categoryLabel(a.category), categoryLabel(b.category)),
   date: (a, b) => a.publishedAt.localeCompare(b.publishedAt) || a.id - b.id,

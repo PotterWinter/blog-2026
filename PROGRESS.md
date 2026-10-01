@@ -8,7 +8,7 @@
 
 - ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
 - ขั้น 5.1 Login เสร็จ (1 ต.ค. 69): login บนเว็บจริงได้ · commit "Sign in · Mac · Safari" ลง content repo · Firewall ตั้งแล้ว
-- 5.2 Admin hub เสร็จ + commit แล้ว (2 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin · **ยังไม่ push**
+- 5.2 Admin hub เสร็จ + commit แล้ว (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin · **ยังไม่ push**
 - กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
 - login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost ใช้ `111111`
 
@@ -82,15 +82,22 @@
   - [x] 5.2b แผง Filter (Category, issues, Month, Sort)
   - [x] 5.2c การ์ด + เลือก + แผงรายละเอียด (sheet บนมือถือ) + pager + แถบ repo
   - [x] 5.2d รายการ 06B · ปรับ grid: ไม่เลือกเอง, คลิกซ้ำยกเลิก, แผงติดขวา, Checks ครบ + ป้าย hover, ลูกศรเลื่อนหน้าตาม
-- [ ] 5.3 Editor (07) + preview (07P)
-  - [ ] เลข No. แยกต่อ section ได้ตอน publish ครั้งแรก (`id` ภายใน + `no` ผู้อ่าน) → [notes/content.md](notes/content.md)
+- [ ] 5.3 Editor (07) + preview (07P) → [notes/editor.md](notes/editor.md)
+  - [x] 5.3a เลข `no` แยกต่อ section (`id` ภายใน) · fixtures ใส่แล้ว · index เก่าที่ไม่มี `no` ใช้ id แทน → [notes/content.md](notes/content.md)
+  - [x] 5.3b ฝั่งเขียน: commit .md + index.json ครั้งเดียว · Save / Publish / Unpublish / Delete — ทดสอบใน dev แล้ว · **ทาง GitHub ยังไม่ได้ลองกับ repo จริง**
+  - ตัวแก้ข้อความ WRITE = Tiptap (เจ้าของเลือก 1 ต.ค. 69)
+  - [x] 5.3c หน้า Editor + โหมด RAW .MD — ใช้งานได้ใน dev (สร้าง / save / publish / unpublish / ลบ) · **รอทดสอบกับ GitHub จริง**
+  - [ ] 5.3d โหมด WRITE (ต้องเลือกตัวแก้ข้อความก่อน — แนะนำ Tiptap)
+  - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
+  - [ ] 5.3f Checks ตรวจจริง
+  - [ ] 5.3g 07P preview
 - [ ] 5.4 Media (08)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
 ## ขั้น 5.5 · เลิกพอร์ตเก่า
 
-- ไม่ย้ายเนื้อหาจาก korn-natthanat.vercel.app — เจ้าของเขียนใหม่เองผ่าน Admin (2 ต.ค. 69)
+- ไม่ย้ายเนื้อหาจาก korn-natthanat.vercel.app — เจ้าของเขียนใหม่เองผ่าน Admin (1 ต.ค. 69)
 - [ ] ปิดโปรเจกต์ Vercel เก่า 3 ตัว (เช็ก env vars ของ personal-blog-api ก่อน)
 - [ ] ผูก korn-natthanat.vercel.app เข้ากับ blog-2026-vercel (เลือก Redirect old domain to new)
 - [ ] ใส่ลิงก์จริง: LinkedIn, Behance, CV, วิดีโอ walkthrough ในหน้า Login (ตอนนี้เป็น `#`)
@@ -101,6 +108,7 @@
 
 - [ ] ย้าย rate limit + sessions จาก Firewall / `sessions.json` ไป database
 - [ ] ย้ายบทความไป database (ถ้าทำ): .md เป็นต้นฉบับ มี `id` + `no` ครบ → [notes/content.md](notes/content.md)
+- [ ] แยก backend เป็น API ของตัวเองบน homelab (ตอนนี้ Next.js ทำทั้งหน้าเว็บและ backend ใน `npm run dev` ตัวเดียว) — เปลี่ยนแค่ `lib/write.ts` + `lib/content.ts` ให้เรียก API นั้น · `lib/edit.ts` และหน้า Editor ไม่ต้องแตะ (เจ้าของ, 1 ต.ค. 69)
 - [ ] Dashboard ยอดคนอ่านต่อบทความ, บทความยอดนิยม, ประวัติ login
 
 ## ขั้น 6 · Dark mode
@@ -114,6 +122,7 @@
 - `~/Desktop/PersonalBlog2026/blog` — โค้ด (Next.js 16.3.6, React 19.2, CSS Modules, ไม่ใช้ Tailwind)
 - `~/Desktop/PersonalBlog2026/blog-content` — บทความ .md + media
 - `notes/` — รายละเอียดและการตัดสินใจของแต่ละหน้า
+  - [editor.md](notes/editor.md) — 07 Editor / 07P Preview: แผนขั้นย่อย
   - [shared.md](notes/shared.md) — header, footer, nav, page transition, travel dot, จุดกลับสี, ตัวอักษรกระโดด
   - [01-home.md](notes/01-home.md) — หน้า 01 / 01B
   - [02-03-10.md](notes/02-03-10.md) — Project, About, 404

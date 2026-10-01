@@ -1,5 +1,6 @@
 ---
 id: 34
+no: 3
 title: "Kathu"
 excerpt: "A café in Phuket old town. Signage drawn from tin-mining lettering, with menus set in a single face at three sizes."
 section: project

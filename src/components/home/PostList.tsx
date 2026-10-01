@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
 import { buzz } from "@/lib/buzz";
-import { shortDate } from "@/lib/format";
+import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
 import { nextSort, type Sort } from "@/lib/sort";
@@ -485,12 +485,12 @@ export default function PostList({ posts, phase, direction, sort, onSort }: Prop
             data-d={phase !== "in" ? i * 40 : undefined}
             style={{ "--i": i } as CSSProperties}
           >
-            <span className={styles.no}>{String(post.id).padStart(3, "0")}</span>
+            <span className={styles.no}>{postNo(post)}</span>
             <span className={styles.main}>
               <span className={styles.titleRow}>
                 <span className={styles.title}>{post.title}</span>
                 {/* Phones: the NO column is gone; it sits top right, over the date */}
-                <span className={`label ${styles.subNo}`}>{String(post.id).padStart(3, "0")}</span>
+                <span className={`label ${styles.subNo}`}>{postNo(post)}</span>
               </span>
               {/* Category and tags (and the date on phones) under the title, below 1024 */}
               <span className={styles.sub}>

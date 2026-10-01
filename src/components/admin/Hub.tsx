@@ -5,6 +5,8 @@ import { postIssues } from "@/lib/checks";
 import type { IndexEntry } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { ViewToggle, type View } from "../home/Filters";
+import { usePageTransition } from "../PageTransition";
+import TransitionLink from "../TransitionLink";
 import AdminCards from "./AdminCards";
 import AdminList from "./AdminList";
 import Details from "./Details";
@@ -29,7 +31,7 @@ const minutesAgo = (iso: string) => {
 // mock's was), GRID / LIST; the cards 24 to a page beside the selected post's details,
 // and the content repo's latest commit at the foot.
 // "Posts" in the header, pressed while already here, starts it over: a fresh hub —
-// grid, no filters, page 1, nothing selected (owner, 2 Oct 69; PageSlot remounts it).
+// grid, no filters, page 1, nothing selected (owner, 1 Oct 69; PageSlot remounts it).
 export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHead }) {
   const [status, setStatus] = useState<Status>("all");
   const [query, setQuery] = useState("");
@@ -39,8 +41,8 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   const [filterTurns, setFilterTurns] = useState(0);
   const filterOpen = filterTurns % 2 === 1;
   const [picks, setPicks] = useState<Picks>({ cat: [], mon: [], iss: false });
-  // null = nothing pressed: No. high → low, the order posts were made in, so a new
-  // draft is on top (owner, 2 Oct 69; the public pages go by date)
+  // null = nothing pressed: No. high → low — drafts on top, then the latest published
+  // (owner, 1 Oct 69; the public pages go by date)
   const [sort, setSort] = useState<Sort | null>(null);
   // Page and selection are remembered for one listing; change what's listed and they
   // start again (page 1, the first card) without an extra render
@@ -87,7 +89,17 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
     const key: Record<string, (a: IndexEntry, b: IndexEntry) => number> = {
       date: byDate,
       title: (a, b) => a.title.localeCompare(b.title),
-      no: (a, b) => a.id - b.id,
+      // In the order they went up: blog and project numbers count apart, so across
+      // both it's the publish date (then the number); drafts, never up, after them all
+      // — on top in the default (high → low), newest made first
+      no: (a, b) =>
+        a.status === "draft" || b.status === "draft"
+          ? a.status === b.status
+            ? a.createdAt.localeCompare(b.createdAt)
+            : a.status === "draft"
+              ? 1
+              : -1
+          : a.publishedAt.localeCompare(b.publishedAt) || (a.no ?? 0) - (b.no ?? 0),
       status: (a, b) => (a.status === b.status ? 0 : a.status === "draft" ? -1 : 1),
       cat: (a, b) => catLabel(a).localeCompare(catLabel(b)),
     };
@@ -136,6 +148,14 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   const selected = pageItems.some((p) => p.id === picked) ? picked : null;
   const current = posts.find((p) => p.id === selected) ?? null;
 
+  // Enter or a double-click on a card / row: its editor (07), once the black flash shows
+  const { go } = usePageTransition();
+  const openPost = (id: number) => {
+    setSelected(id);
+    const slug = posts.find((p) => p.id === id)?.slug;
+    if (slug) window.setTimeout(() => go?.(`/admin/posts/${slug}`), 250);
+  };
+
   // How many cards to a row, for ↑ ↓ (3 from 1280, else 2)
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1280px)");
@@ -170,9 +190,9 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
         <h1 className={styles.title}>
           Publishing<span className={styles.sup}>{counts.all}</span>
         </h1>
-        <button type="button" className={styles.newPost}>
+        <TransitionLink href="/admin/posts/new" className={styles.newPost}>
           New post
-        </button>
+        </TransitionLink>
       </div>
 
       <dl className={styles.stats}>
@@ -263,7 +283,7 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
                 setSelected(id);
                 setSheet(id != null);
               }}
-              onOpen={(id) => setSelected(id)}
+              onOpen={openPost}
             />
           ) : (
             <AdminList
@@ -275,7 +295,7 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
                 setSelected(id);
                 setSheet(id != null);
               }}
-              onOpen={(id) => setSelected(id)}
+              onOpen={openPost}
             />
           )}
           {/* The sheet (phones) only while something's selected: a sort or filter that takes

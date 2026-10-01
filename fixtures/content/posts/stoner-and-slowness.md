@@ -1,5 +1,6 @@
 ---
 id: 10
+no: 10
 title: "Stoner, and slowness"
 excerpt: "A quiet book about a quiet life."
 section: blog

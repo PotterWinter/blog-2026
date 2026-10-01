@@ -208,7 +208,7 @@ header.header {
   color: var(--muted);
 }
 
-/* With the pills on phones too (owner, 2 Oct 69); search and GRID / LIST below */
+/* With the pills on phones too (owner, 1 Oct 69); search and GRID / LIST below */
 .filterToggle {
   display: flex;
   flex: none;
@@ -577,7 +577,7 @@ header.header {
 }
 
 /* Hover: an ink line draws in over the grey one from the left and leaves to the right
-   (as the post page's tags; owner, 2 Oct 69). Publish isn't a link yet: no line */
+   (as the post page's tags; owner, 1 Oct 69). Publish isn't a link yet: no line */
 .cardActs > a {
   position: relative;
 }
@@ -642,7 +642,7 @@ header.header {
 }
 
 /* Behind the sheet: the page dims, so it reads as something on top that a tap on the
-   page (or a pull down) puts away (owner, 2 Oct 69) */
+   page (or a pull down) puts away (owner, 1 Oct 69) */
 .scrim {
   position: fixed;
   inset: 0;

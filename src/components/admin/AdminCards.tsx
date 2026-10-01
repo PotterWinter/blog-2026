@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo, useEffect, useRef } from "react";
 import { postIssues } from "@/lib/checks";
-import { shortDate } from "@/lib/format";
+import { postNo, shortDate } from "@/lib/format";
 import type { IndexEntry } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import styles from "./Admin.module.css";
@@ -185,7 +185,7 @@ const Card = memo(function Card({ p, selected }: { p: IndexEntry; selected: bool
         )}
       </span>
       <span className={styles.cardTop}>
-        <span className={styles.no}>{String(p.id).padStart(3, "0")}</span>
+        <span className={styles.no}>{postNo(p, true)}</span>
         <span className="label" data-draft={p.status === "draft" || undefined}>
           {p.status === "draft" ? "Draft" : "Published"}
         </span>

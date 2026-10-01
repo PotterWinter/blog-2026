@@ -1,5 +1,6 @@
 ---
 id: 11
+no: 11
 title: "Type pairing for bilingual sites"
 excerpt: "Helvetica, Newsreader, Plex Thai."
 section: blog

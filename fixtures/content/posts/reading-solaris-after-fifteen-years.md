@@ -1,5 +1,6 @@
 ---
 id: 27
+no: 27
 title: "Reading Solaris after fifteen years"
 excerpt: "The ocean is still not a metaphor."
 section: blog

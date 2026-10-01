@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import type { PostMeta } from "@/lib/content";
-import { shortDate } from "@/lib/format";
+import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
 import styles from "./PostCard.module.css";
@@ -41,7 +41,7 @@ export default function PostCard({ post, delay, reveal = true, order }: Props) {
       <span className={styles.stampHook} aria-hidden>
         <span className={styles.stampClip}>
           <span className={`label ${styles.stamp}`}>
-            <span>NO {String(post.id).padStart(3, "0")}</span>
+            <span>NO {postNo(post)}</span>
             <span>{shortDate(post.publishedAt)}</span>
           </span>
         </span>

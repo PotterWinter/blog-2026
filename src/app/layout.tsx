@@ -48,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       {/* The page transition (panel + Korn Natthanat 0–100%) wraps every page, so it
-          plays in the admin and between the admin and the site too (owner, 2 Oct 69) */}
+          plays in the admin and between the admin and the site too (owner, 1 Oct 69) */}
       <body>
         <PageTransition>{children}</PageTransition>
       </body>
