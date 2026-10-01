@@ -1,5 +1,6 @@
 import {
   indexEntry,
+  newCode,
   postFile,
   splitFrontmatter,
   toMarkdown,
@@ -133,20 +134,25 @@ const dropped = (id: number, before: string, after: string): Change[] => {
 // Save (Save draft, or a published post's edits): a new post gets the next id and
 // starts as a draft; a slug change moves the file. Status, number and publish date stay.
 // previous: the .md as it was, to see which of its images it has stopped using.
+// The slug comes from the title and nobody types it (owner, 2 Oct 69) — it names the
+// file and the editor's address; the site's address is its code. So it's
+// never refused: a title with no a–z (Thai only) gives "post-<id>", and one another
+// post has (or "new", the editor's) gets "-<id>" on the end.
 export function planSave(index: ContentIndex, input: PostInput, now: Date, previous = ""): Plan {
-  if (!SLUG.test(input.slug)) throw new Error("Slug: lowercase letters, numbers and single dashes");
-  // /admin/posts/new is the editor for a post not made yet
-  if (input.slug === "new") throw new Error('Slug "new" is taken by the editor — pick another');
+  if (input.slug && !SLUG.test(input.slug)) throw new Error("Slug: lowercase letters, numbers and single dashes");
   const before = input.id == null ? null : find(index, input.id);
   const id = before?.id ?? index.nextId;
-  const taken = index.posts.find((p) => p.slug === input.slug && p.id !== id);
-  if (taken) throw new Error(`Slug "${input.slug}" is already #${taken.id}`);
+  let slug = input.slug || `post-${id}`;
+  if (slug === "new" || index.posts.some((p) => p.slug === slug && p.id !== id)) slug = `${slug}-${id}`;
+  input = { ...input, slug };
 
   const today = bangkok(now).date;
   const { body, ...fields } = input;
   const meta: PostMeta = {
     ...fields,
     id,
+    // Its address: made on the first save (or the first since codes came in), then kept
+    code: before?.code ?? newCode(new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])))),
     no: before?.no ?? null,
     status: before?.status ?? "draft",
     publishedAt: before?.publishedAt ?? today,
@@ -173,6 +179,8 @@ export function planPublish(index: ContentIndex, id: number, file: string, now: 
     {
       ...meta,
       status: "published",
+      // A post last saved before codes gets its address now
+      code: meta.code ?? newCode(new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])))),
       no: first ? top + 1 : meta.no,
       publishedAt: first ? today : meta.publishedAt,
       updatedAt: today,
@@ -199,29 +207,41 @@ export function planUnpublish(index: ContentIndex, id: number, file: string, now
 // Delete: drafts only (a published post is unpublished first). The id is never given
 // out again; the file stays in git's history.
 // Its own images go with it.
-export function planDelete(index: ContentIndex, id: number, now: Date, file = ""): Plan {
+// The posts a delete moves down a number: those after it in its section (owner,
+// 2 Oct 69 — the numbers stay 1, 2, 3… with no gap; the site's addresses are codes,
+// so nothing a reader saved points elsewhere). Unpublish keeps the number. Their files are read for planDelete.
+export function renumbered(index: ContentIndex, id: number): IndexEntry[] {
+  const gone = find(index, id);
+  if (gone.no == null) return [];
+  return index.posts.filter((p) => p.section === gone.section && p.no != null && p.no > gone.no!);
+}
+
+// later: renumbered()'s posts with their .md, each written back a number lower
+export function planDelete(index: ContentIndex, id: number, now: Date, file = "", later: { entry: IndexEntry; text: string }[] = []): Plan {
   const before = find(index, id);
   if (before.status !== "draft") throw new Error(`#${id} is published: unpublish it first`);
   const message = commitMessage(now, "Delete", id);
-  return {
-    changes: [{ path: before.file, text: null }, ...dropped(id, file, "")],
-    message,
-    index: withEntry(index, id, null),
-    entry: null,
-    slugs: [before.slug],
-  };
+  const changes: Change[] = [{ path: before.file, text: null }, ...dropped(id, file, "")];
+  let next = withEntry(index, id, null);
+  for (const { entry, text } of later) {
+    const { data, body } = splitFrontmatter(text, entry.slug);
+    const meta = toMeta(data, entry.slug);
+    changes.push({ path: entry.file, text: toMarkdown({ ...meta, no: meta.no! - 1 }, body) });
+    next = withEntry(next, entry.id, { ...entry, no: entry.no! - 1 });
+  }
+  return { changes, message, index: next, entry: null, slugs: [before.slug, ...later.map((l) => l.entry.slug)] };
 }
 
 // ---------- the editor's text (RAW .MD) ----------
 // RAW shows the post as its .md, frontmatter included — but only the fields the editor
-// lets you change. id, no, status and the dates are the system's: they're kept out of
+// lets you change. id, code, no, status and the dates are the system's: they're kept out of
 // the text so they can't be typed over, and put back on save.
 
-const SYSTEM = /^(id|no|status|publishedAt|updatedAt):/;
+const SYSTEM = /^(id|code|no|status|publishedAt|updatedAt):/;
 const STAND_IN = { id: 1, status: "draft", publishedAt: "2000-01-01", updatedAt: "2000-01-01" };
 
 export function toRaw({ body, ...fields }: Omit<PostInput, "id">): string {
-  const meta: PostMeta = { ...fields, id: 1, no: null, status: "draft", publishedAt: "", updatedAt: "" };
+  const meta: PostMeta = { ...fields, id: 1, code: null, no: null, status: "draft", publishedAt: "", updatedAt: "" };
   const [, front, rest] = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(toMarkdown(meta, body))!;
   return `---\n${front.split("\n").filter((l) => !SYSTEM.test(l)).join("\n")}\n---\n${rest}`;
 }

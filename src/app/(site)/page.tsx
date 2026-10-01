@@ -1,6 +1,6 @@
 import Hero, { Keep } from "@/components/home/Hero";
 import PostBrowser from "@/components/home/PostBrowser";
-import { getPosts } from "@/lib/content";
+import { getPublished } from "@/lib/content";
 import { isCategory } from "@/lib/site";
 import { isSort } from "@/lib/sort";
 
@@ -13,7 +13,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const category = one(params.category);
   const tags = one(params.tags);
   const sort = one(params.sort);
-  const posts = await getPosts({ section: "blog" });
+  const posts = await getPublished("blog");
   return (
     <main>
       <Hero

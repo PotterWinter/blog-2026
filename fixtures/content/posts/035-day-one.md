@@ -1,5 +1,6 @@
 ---
 id: 35
+code: l1ctabve
 no: 2
 title: "day one"
 excerpt: "Packaging for a small-batch roaster: one grid, four origins, ink limited to two."

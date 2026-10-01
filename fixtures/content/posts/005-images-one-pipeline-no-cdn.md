@@ -1,5 +1,6 @@
 ---
 id: 5
+code: gk00rh2t
 no: 5
 title: "Images: one pipeline, no CDN"
 excerpt: "WebP, two sizes, done."

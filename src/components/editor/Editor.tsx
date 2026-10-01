@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
-import { postFile, type IndexEntry, type Post } from "@/lib/schema";
+import { postFile, postUrl, type IndexEntry, type Post } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { usePageTransition } from "../PageTransition";
 import Segmented from "../Segmented";
@@ -70,15 +70,19 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   const [form, setForm] = useState<Form>(() => (post ? fromPost(post) : blank));
   const [entry, setEntry] = useState(first);
   const [saved, setSaved] = useState(() => JSON.stringify(post ? fromPost(post) : blank));
-  const [slugAuto, setSlugAuto] = useState(!post);
   const [mode, setMode] = useState<"write" | "raw">("raw");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [note, setNoteState] = useState<Note | null>(() => notes.get(first?.id ?? "new") ?? null);
+  const [note, setNoteState] = useState<Note | null>(
+    () =>
+      notes.get(first?.id ?? "new") ??
+      (first && !first.code ? { text: "Save once to give it its address · /posts/<code>", tone: "muted" } : null),
+  );
   const [warned, setWarned] = useState(false);
-  const [asking, setAsking] = useState<"delete" | "unpublish" | null>(null);
+  const [asking, setAsking] = useState<"delete" | "unpublish" | "reset" | null>(null);
   const [rawReset, setRawReset] = useState(0);
+  const [publishing, setPublishing] = useState(false);
 
   const id = entry?.id ?? null;
   // Where it is (or will be, on the first save): posts/<id>-<slug>.md
@@ -87,17 +91,35 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     if (next) notes.set(forId ?? "new", next);
     else notes.delete(forId ?? "new");
     setNoteState(next);
+  };  // What the last press that committed said ("Saved 01:54:56 · live now"): a Reset puts
+  // it back, so after playing about you still see when it was last saved. Nothing saved
+  // since the page opened = nothing to put back (owner, 2 Oct 69).
+  const lastSaved = useRef<Note | null>(null);
+  const setSavedNote = (next: Note, forId: number | null = id) => {
+    lastSaved.current = next;
+    setNote(next, forId);
   };
+
   const published = entry?.status === "published";
-  const dirty = JSON.stringify(form) !== saved;
+  // A post last saved before addresses were codes (2 Oct 69) gets one on its next save:
+  // Save is open for it even with nothing changed
+  const needsCode = !!entry && !entry.code;
+  const changed = JSON.stringify(form) !== saved; // something typed since the last save
+  const dirty = changed || needsCode;
   const checks = postChecks(form);
   const bad = checks.filter((c) => c.ok === false).length;
 
+  // Any edit: what the last press said is over — "Saved · live now" no longer holds once
+  // there's something new to save (owner, 2 Oct 69)
   const set = (patch: Partial<Form>) => {
     setForm((f) => ({ ...f, ...patch }));
     setWarned(false);
+    if (note) setNote(null);
   };
-  const setTitle = (title: string) => set(slugAuto ? { title, slug: slugify(title) } : { title });
+  // The slug follows the title, always (owner, 2 Oct 69): it names the file and the
+  // editor's address, never the site's (that's its code), so nothing breaks when the
+  // title changes. No a–z in the title → the server makes it "post-<id>".
+  const setTitle = (title: string) => set({ title, slug: slugify(title) });
 
   // ---------- the server ----------
 
@@ -124,14 +146,19 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     if (!result) return null;
     // Where they went: the post now says their paths, and nothing waits any more
     const paths = result.uploads ?? {};
-    const next = { ...form, cover: form.cover && placeWaiting(form.cover, paths), body: placeWaiting(form.body, paths, "../") };
+    // The slug as the server settled it ("post-37" for a Thai title, "-37" if taken)
+    const next = {
+      ...form,
+      slug: result.slug,
+      cover: form.cover && placeWaiting(form.cover, paths),
+      body: placeWaiting(form.body, paths, "../"),
+    };
     setForm(next);
     setSaved(JSON.stringify(next));
     if (sent.length) setRawReset((n) => n + 1);
     for (const p of sent) URL.revokeObjectURL(p.url);
     pendingRef.current = Object.fromEntries(Object.entries(pendingRef.current).filter(([key]) => !sent.some((p) => p.key === key)));
     setPending(pendingRef.current);
-    setSlugAuto(false);
     // A new post, or a new slug: the address follows, without reloading the page
     if (location.pathname !== `/admin/posts/${result.slug}`) {
       window.history.replaceState(null, "", `/admin/posts/${result.slug}`);
@@ -147,29 +174,52 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
       return;
     }
     setWarned(false);
+    setPublishing(true); // the save before it reads "Publishing…" too
     const target = dirty || id == null ? await doSave() : { id };
-    if (!target) return;
-    const result = await call("Publishing", () => publish(target.id));
+    const result = target && (await call("Publishing", () => publish(target.id)));
+    setPublishing(false);
     if (result) {
-      setNote(
+      setSavedNote(
         result.live
-          ? { text: `Published as No. ${result.entry?.no} · ${result.live}`, tone: "bad" }
-          : { text: `Published as No. ${result.entry?.no} · live now`, tone: "ok" },
+          ? { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · ${result.live}`, tone: "bad" }
+          : { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · live now`, tone: "ok" },
         result.id,
       );
     }
   };
 
+  // Save draft (button, ⌘S): says when, as Save changes does
+  const doDraft = async () => {
+    if (await doSave()) setSavedNote({ text: `Draft saved ${time(new Date())} · not on the site`, tone: "muted" });
+  };
+
   const doUpdate = async () => {
     const result = await doSave();
-    if (result) setNote(result.live ? { text: `Saved · ${result.live}`, tone: "bad" } : { text: "Saved · live now", tone: "ok" });
+    // The time says which press this was: save again and it moves on
+    const at = time(new Date());
+    if (result) setSavedNote(result.live ? { text: `Saved ${at} · ${result.live}`, tone: "bad" } : { text: `Saved ${at} · live now`, tone: "ok" });
+  };
+
+  // Reset (owner, 2 Oct 69): every field and the text back to the last save — for when
+  // an edit went nowhere and starting over is quicker than undoing it. Images picked
+  // since then go too.
+  const doReset = () => {
+    setAsking(null);
+    const back = JSON.parse(saved) as Form;
+    setForm(back);
+    for (const image of Object.values(pendingRef.current)) URL.revokeObjectURL(image.url);
+    pendingRef.current = {};
+    setPending({});
+    setRawReset((n) => n + 1);
+    setWarned(false);
+    setNote(lastSaved.current);
   };
 
   const doUnpublish = async () => {
     setAsking(null);
     if (id == null) return;
     const result = await call("Unpublishing", () => unpublish(id));
-    if (result) setNote({ text: result.live ? `Back to a draft · ${result.live}` : "Back to a draft · off the site", tone: result.live ? "bad" : "muted" });
+    if (result) setSavedNote({ text: result.live ? `Back to a draft · ${result.live}` : "Back to a draft · off the site", tone: result.live ? "bad" : "muted" });
   };
 
   const doDelete = async () => {
@@ -249,12 +299,13 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   };
 
   // Its name, before Save (owner, 2 Oct 69): starts as the file's own, typed over here;
-  // the post's id goes in front when it's committed. Taken → "-2"; nothing left in a–z
-  // and 0–9 (Thai only, say) → stays as it was.
-  const renameImage = (from: string, typed: string) => {
-    const base = slugify(typed).slice(0, 40).replace(/-+$/, "");
-    if (!base || base === from) return;
-    const taken = new Set(["cover", ...Object.keys(pendingRef.current), ...waitingKeys(form.body)]);
+  // the post's id goes in front when it's committed (and "cover-" for the cover).
+  // Taken → "-2"; nothing left in a–z and 0–9 (Thai only, say) → stays as it was.
+  const renameImage = (from: string, typed: string, lead = "") => {
+    const name = slugify(typed).slice(0, 40).replace(/-+$/, "");
+    const base = lead + name;
+    if (!name || base === from) return;
+    const taken = new Set(["cover", ...Object.keys(pendingRef.current), ...waitingKeys(`${form.cover ?? ""}\n${form.body}`)]);
     taken.delete(from);
     let key = base;
     for (let n = 2; taken.has(key); n++) key = `${base}-${n}`;
@@ -262,9 +313,12 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     if (!image) return;
     pendingRef.current = { ...rest, [key]: { ...image, key } };
     setPending(pendingRef.current);
-    set({ body: form.body.replace(/upload:[a-z0-9-]+/g, (m) => (m === `${UPLOAD}${from}` ? `${UPLOAD}${key}` : m)) });
+    const swap = (text: string) => text.replace(/upload:[a-z0-9-]+/g, (m) => (m === `${UPLOAD}${from}` ? `${UPLOAD}${key}` : m));
+    set({ body: swap(form.body), cover: form.cover && swap(form.cover) });
     setRawReset((n) => n + 1);
   };
+  // media/2026/037-… (a new post's id comes with its first save)
+  const stem = `media/${new Date().getFullYear()}/${id == null ? "###" : String(id).padStart(3, "0")}-`;
   const bodyWaiting = [...waitingKeys(form.body)].flatMap((key) => (pending[key] ? [pending[key]] : []));
 
   // A failed save tries again on its own every 10s while there's something to save
@@ -279,11 +333,11 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        if (!busy) void (published ? doUpdate() : doSave());
+        if (!busy) void (published ? doUpdate() : doDraft());
       }
     };
     const leave = (e: BeforeUnloadEvent) => {
-      if (dirty) e.preventDefault();
+      if (changed) e.preventDefault();
     };
     window.addEventListener("keydown", key);
     window.addEventListener("beforeunload", leave);
@@ -303,14 +357,44 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     return () => observer.disconnect();
   }, []);
 
+  // From 1024 the cover is as wide as puts its Alt text line level with the bottom of
+  // Save: it's 2:1, so each px taller is 2 px wider. Measured from where it is now,
+  // again whenever the left column changes height (a link added, a project's fields).
+  // Never under 560 nor past its column (owner, 2 Oct 69).
+  const fieldsRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const fields = fieldsRef.current;
+    const actions = actionsRef.current;
+    const cover = fields?.querySelector<HTMLElement>(`.${styles.cover}`);
+    const box = cover?.querySelector<HTMLElement>(`.${styles.coverBox}`);
+    if (!fields || !actions || !cover || !box) return;
+    const wide = window.matchMedia("(min-width: 1024px)");
+    const fit = () => {
+      if (!wide.matches) return cover.style.removeProperty("--cover-w");
+      const b = box.getBoundingClientRect();
+      const below = cover.getBoundingClientRect().bottom - b.bottom; // File + Alt text rows
+      const height = actions.getBoundingClientRect().bottom - below - b.top;
+      const column = fields.clientWidth - actions.parentElement!.offsetWidth - parseFloat(getComputedStyle(fields).columnGap);
+      const width = Math.min(column, Math.max(560, height * 2));
+      cover.style.setProperty("--cover-w", `${Math.floor(width)}px`);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(fields);
+    observer.observe(actions.parentElement!);
+    return () => observer.disconnect();
+  }, []);
+
   // ---------- RAW .MD ----------
 
   const raw = useMemo(() => toRaw(form), [form]);
   const onRaw = (text: string) => {
     const parsed = fromRaw(text, form.slug || "new"); // throws: RawBox shows why
     // A title typed (or pasted) here makes the slug too, while it's still automatic
-    setForm((f) => ({ ...f, ...parsed, ...(slugAuto && { slug: slugify(parsed.title) }) }));
+    setForm((f) => ({ ...f, ...parsed, slug: slugify(parsed.title) }));
     setWarned(false);
+    if (note) setNote(null);
   };
 
   // ---------- page ----------
@@ -339,7 +423,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
         </span>
         <span className={`${styles.mono} ${styles.path}`}>{file}</span>
         <span className="label">{status}</span>
-        <span className={styles.saved} data-state={error ? "bad" : busy ? "busy" : dirty ? "dirty" : undefined}>
+        <span className={styles.saved} data-state={error ? "bad" : busy ? "busy" : changed ? "dirty" : undefined}>
           {error ? (
             <>
               Not saved ·{" "}
@@ -350,13 +434,13 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           ) : (
             <>
               {savedText}
-              {dirty && !busy && " · edited"}
+              {changed && !busy && " · edited"}
             </>
           )}
         </span>
         <nav className={styles.menu}>
           {published ? (
-            <a href={`/${form.section === "project" ? "project" : "posts"}/${entry?.slug}`} target="_blank" rel="noopener" className={styles.link}>
+            <a href={entry ? postUrl(entry) : "#"} target="_blank" rel="noopener" className={styles.link}>
               View live
             </a>
           ) : (
@@ -417,26 +501,19 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           <Count n={form.title.length} max={70} />
         </label>
 
-        <div className={styles.fields}>
+        <div ref={fieldsRef} className={styles.fields}>
           <div className={styles.left}>
-            <label className={styles.field}>
+            <div className={styles.field}>
               <span className="label" title="File name and URL · made from the title until you change it">
                 Slug · file name
               </span>
               <span className={styles.slugRow}>
-                <input
-                  className={`${styles.input} ${styles.mono}`}
-                  value={form.slug}
-                  onChange={(e) => {
-                    setSlugAuto(false);
-                    set({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") });
-                  }}
-                  placeholder="a-z, 0-9 and dashes"
-                  spellCheck={false}
-                />
-                <span className={styles.mono}>.md · {slugAuto ? "auto" : "edited"}</span>
+                <span className={`${styles.input} ${styles.mono} ${styles.slugText}`}>
+                  {form.slug || `post-${id ?? "…"}`}
+                </span>
+                <span className={styles.mono}>.md · from the title</span>
               </span>
-            </label>
+            </div>
 
             <div className={styles.pair}>
               <div className={styles.field}>
@@ -507,21 +584,42 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
 
             <LinksField links={form.links} onChange={(links) => set({ links })} />
 
-            <div className={styles.actions}>
+            <div ref={actionsRef} className={styles.actions}>
               {published ? (
                 <button type="button" className={styles.btnm} disabled={!!busy || !dirty} onClick={() => void doUpdate()}>
-                  Save changes
+                  {busy === "Saving" ? "Saving…" : "Save changes"}
                 </button>
               ) : (
                 <>
                   <button type="button" className={styles.btnm} disabled={!!busy} onClick={() => void doPublish()}>
-                    Publish
+                    {busy === "Publishing" || (busy === "Saving" && publishing) ? "Publishing…" : "Publish"}
                   </button>
-                  <button type="button" className={styles.btnl} disabled={!!busy || (!dirty && id != null)} onClick={() => void doSave()}>
-                    Save draft
+                  <button type="button" className={styles.btnl} disabled={!!busy || (!dirty && id != null)} onClick={() => void doDraft()}>
+                    {busy === "Saving" && !publishing ? "Saving…" : "Save draft"}
                   </button>
                 </>
               )}
+              <span className={`${styles.ask} ${styles.askLeft}`}>
+                <button
+                  type="button"
+                  className={styles.btnl}
+                  disabled={!!busy || !changed}
+                  title="Every field back to the last save"
+                  onClick={() => setAsking(asking === "reset" ? null : "reset")}
+                >
+                  Reset
+                </button>
+                {asking === "reset" && (
+                  <Confirm
+                    question="Throw away the changes since the last save?"
+                    note={id == null ? "Back to an empty post" : "Back to the last save · nothing is committed"}
+                    yes="Reset"
+                    danger
+                    onYes={doReset}
+                    onNo={() => setAsking(null)}
+                  />
+                )}
+              </span>
             </div>
             {note && (
               <span className={styles.note} data-tone={note.tone}>
@@ -537,6 +635,8 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
             onUpload={(file) => void uploadCover(file)}
             uploading={uploading}
             waiting={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)] : undefined}
+            stem={`${stem}cover-`}
+            onRename={(key, typed) => renameImage(key, typed, "cover-")}
           />
         </div>
 
@@ -563,8 +663,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           onImages={uploadImages}
           reset={rawReset}
           waiting={bodyWaiting}
-          // media/2026/037-… (a new post's id comes with its first save)
-          stem={`media/${new Date().getFullYear()}/${id == null ? "###" : String(id).padStart(3, "0")}-`}
+          stem={stem}
           onRename={renameImage}
         />
       </main>

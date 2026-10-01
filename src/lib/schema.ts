@@ -10,6 +10,7 @@ export type PostLink = { label: string; url: string; preview: string | null };
 
 export type PostMeta = {
   id: number; // primary key: given when the post is made (drafts too), never reused, not shown
+  code: string | null; // its address, /posts/<code> (postUrl)
   // The number readers see: counted per section, given on the first publish (the
   // section's highest + 1), kept through unpublish / publish. null = a draft never
   // published. Decided 1 Oct 69 → notes/content.md
@@ -93,8 +94,12 @@ export function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
   });
 
   const cover = text("cover", true);
+  if (data.code != null && (typeof data.code !== "string" || !CODE.test(data.code))) {
+    throw new Error(`${where}: "code" must be 8 of a–z and 0–9`);
+  }
   return {
     id,
+    code: (data.code as string | undefined) ?? null,
     no,
     slug,
     title: text("title"),
@@ -159,9 +164,30 @@ export function readIndex(text: string | null): ContentIndex {
   return index;
 }
 
+// Its address on the site: /posts/<code>, eight random letters and digits given on its
+// first save and kept in its frontmatter (owner, 2 Oct 69). Not the slug — it follows
+// the title — nor the number (No. 2), which a delete moves down to close the gap, nor
+// the id: the id is the content's key and readers shouldn't learn it or count through
+// it. A random code says nothing about either, so a saved link opens the same post or,
+// once it's gone, the 404 page. A post saved before codes has none until its next save;
+// until then its address is its slug.
+export const postUrl = (p: { section: PostMeta["section"]; code: string | null; slug: string }) =>
+  `/${p.section === "project" ? "project" : "posts"}/${p.code ?? p.slug}`;
+
+export const CODE = /^[a-z0-9]{8}$/;
+
+// Eight of a–z and 0–9 from the platform's random source (36⁸ ≈ 2.8 trillion)
+export function newCode(taken: Set<string>): string {
+  for (;;) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    const code = [...bytes].map((b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
+    if (!taken.has(code)) return code;
+  }
+}
+
 // Where a post lives: its id first, so the folder lists in the order posts were made
-// (GitHub, Finder, Obsidian), and a slug change keeps its place — the URL is the slug
-// alone (owner, 1 Oct 69). 3 digits; past 999 they simply get longer.
+// (GitHub, Finder, Obsidian), and a slug change keeps its place (owner, 1 Oct 69).
+// 3 digits; past 999 they simply get longer.
 export const postFile = (id: number, slug: string) => `posts/${String(id).padStart(3, "0")}-${slug}.md`;
 
 // A file's slug: its name without ".md" and without the id in front ("037-x.md" → "x"),
@@ -236,6 +262,7 @@ const bare = (value: string) => (/^[a-z0-9][a-z0-9-]*$/.test(value) ? value : qu
 
 export function toMarkdown(meta: PostMeta, body: string): string {
   const lines = [`id: ${meta.id}`];
+  if (meta.code) lines.push(`code: ${meta.code}`);
   if (meta.no != null) lines.push(`no: ${meta.no}`);
   lines.push(
     `title: ${quote(meta.title)}`,

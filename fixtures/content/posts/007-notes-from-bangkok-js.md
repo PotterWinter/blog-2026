@@ -1,5 +1,6 @@
 ---
 id: 7
+code: 4jn1q1kg
 no: 7
 title: "บันทึกจากงาน Bangkok JS"
 excerpt: "สามเรื่องที่จดกลับมา"

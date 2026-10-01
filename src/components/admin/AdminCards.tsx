@@ -5,7 +5,7 @@ import Link from "next/link";
 import { memo, useEffect, useRef } from "react";
 import { postIssues } from "@/lib/checks";
 import { postNo, shortDate } from "@/lib/format";
-import type { IndexEntry } from "@/lib/schema";
+import { postUrl, type IndexEntry } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import styles from "./Admin.module.css";
 
@@ -20,7 +20,7 @@ type Props = {
 const categoryLabel = (slug: string) =>
   [...categories, ...projectCategories].find((c) => c.slug === slug)?.label ?? slug;
 
-export const publicUrl = (p: IndexEntry) => (p.section === "project" ? `/project/${p.slug}` : `/posts/${p.slug}`);
+export const publicUrl = (p: IndexEntry) => postUrl(p);
 
 // 06 cards (v4 .acard). A click (or the arrow keys) selects: a grey box springs over to
 // the card (v4 _gAim: .08 pull, .74 damping, 6px round it) and a dot pushes its number

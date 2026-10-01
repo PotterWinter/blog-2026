@@ -1,5 +1,6 @@
 ---
 id: 31
+code: 4t6eqjvh
 no: 6
 title: "Buddy Blog"
 excerpt: "A git-native publishing platform: markdown committed to a GitHub repo, TOTP auth, incremental revalidation. Publishing is a push to main — this site runs on it."

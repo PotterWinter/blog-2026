@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
@@ -9,7 +10,7 @@ import styles from "./PostCard.module.css";
 // One card in the 01 grid: 2:1 cover, CATEGORY · tags · (date on hover), title, excerpt.
 // Phones: NO (left) and date (right) drop into the gap under the cover with the dot.
 type Props = {
-  post: PostMeta;
+  post: ForReaders;
   delay: number; // reveal-on-scroll stagger (ms)
   reveal?: boolean;
   order: number; // position on the page, for the page-change stagger
@@ -19,7 +20,7 @@ export default function PostCard({ post, delay, reveal = true, order }: Props) {
   const category = categories.find((c) => c.slug === post.category)?.label ?? post.category;
   return (
     <TransitionLink
-      href={`/posts/${post.slug}`}
+      href={postUrl(post)}
       className={styles.card}
       data-card
       data-reveal={reveal || undefined}

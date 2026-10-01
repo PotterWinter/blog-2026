@@ -1,5 +1,6 @@
 ---
 id: 14
+code: cbiauh23
 no: 14
 title: "Spring curves by hand"
 excerpt: "Damping ratio on graph paper."

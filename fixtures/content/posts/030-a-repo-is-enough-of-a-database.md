@@ -1,5 +1,6 @@
 ---
 id: 30
+code: 34a3lr4m
 no: 30
 title: "A repo is enough of a database"
 excerpt: "Writing a blog with git as the database."

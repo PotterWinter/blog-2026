@@ -1,5 +1,6 @@
 ---
 id: 1
+code: hkzyj6bu
 no: 1
 title: "The probability of a typo"
 excerpt: "Counting keystrokes, badly."

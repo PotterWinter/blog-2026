@@ -1,5 +1,6 @@
 ---
 id: 19
+code: fk8i7uoh
 no: 19
 title: "Drawing a house in Rhino, twice"
 excerpt: "ผมวาดบ้านหลังเดียวกันสองรอบ ห่างกันสิบปี"

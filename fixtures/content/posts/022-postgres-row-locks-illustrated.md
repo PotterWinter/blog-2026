@@ -1,5 +1,6 @@
 ---
 id: 22
+code: f0wra2t0
 no: 22
 title: "Postgres row locks, illustrated"
 excerpt: "Six diagrams that made it stick."

@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 import { shortDate } from "@/lib/format";
 import { projectCategories, type ProjectCategory } from "@/lib/site";
 import CategoryFilter from "../home/CategoryFilter";
@@ -10,7 +11,7 @@ import TransitionLink from "../TransitionLink";
 import styles from "./Project.module.css";
 
 type Props = {
-  projects: PostMeta[];
+  projects: ForReaders[];
   initial: ProjectCategory;
 };
 
@@ -51,7 +52,7 @@ export default function ProjectBrowser({ projects, initial }: Props) {
         {shown.map((project, i) => (
           <TransitionLink
             key={project.slug}
-            href={`/project/${project.slug}`}
+            href={postUrl(project)}
             className={styles.row}
             data-flip={Math.floor(i / 2) % 2 === 1 || undefined}
             data-reveal

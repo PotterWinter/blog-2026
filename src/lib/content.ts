@@ -4,12 +4,14 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   buildIndex,
+  postUrl,
   readIndex,
   sourceSlug,
   splitFrontmatter,
   toMeta,
   type ContentIndex,
   type IndexEntry,
+  type PostMeta,
   type Post,
 } from "./schema.ts";
 
@@ -110,6 +112,40 @@ export async function getPost(slug: string): Promise<Post | null> {
   if (text == null) return null;
   const { data, body } = splitFrontmatter(text, slug);
   return { ...toMeta(data, slug), body };
+}
+
+// ---------- what reaches readers ----------
+// The public pages hand their posts to the browser, so everything the index knows would
+// be in the page's data. The id (the content's key), the file it's in, the last commit
+// message ("Edit #3") and the like stay on the server (owner, 2 Oct 69): readers get the
+// post as it reads, its address and its counts.
+export type ForReaders<T extends PostMeta = PostMeta> = Omit<T, "id" | "file" | "lastCommit" | "revisions" | "createdAt">;
+
+export function forReaders<T extends PostMeta>(post: T): ForReaders<T> {
+  const shown: Record<string, unknown> = { ...post };
+  for (const key of ["id", "file", "lastCommit", "revisions", "createdAt"]) delete shown[key];
+  return shown as ForReaders<T>;
+}
+
+export async function getPublished(section: IndexEntry["section"]) {
+  return (await getPosts({ section })).map(forReaders);
+}
+
+// A published post by its address (/posts/<code>), in its own section. A slug — an
+// address from before codes (until 2 Oct 69) — moves to the code while it's still the
+// post's own slug; a post with no code yet is served at its slug.
+export async function findPublished(
+  section: IndexEntry["section"],
+  param: string,
+): Promise<{ post: Post } | { moved: string } | null> {
+  const posts = await getPosts({ section });
+  const entry = posts.find((p) => p.code === param) ?? posts.find((p) => !p.code && p.slug === param);
+  if (entry) {
+    const post = await getPost(entry.slug);
+    return post ? { post } : null;
+  }
+  const old = posts.find((p) => p.slug === param);
+  return old ? { moved: postUrl(old) } : null;
 }
 
 // ---------- media ----------

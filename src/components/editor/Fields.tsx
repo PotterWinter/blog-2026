@@ -257,6 +257,8 @@ export function CoverField({
   onUpload,
   uploading,
   waiting,
+  stem,
+  onRename,
 }: {
   cover: string | null;
   alt: string;
@@ -265,6 +267,9 @@ export function CoverField({
   onUpload: (file: File) => void;
   uploading: boolean;
   waiting?: Waiting; // an image picked, not saved yet: shown from memory
+  // Its file name while it waits: media/2026/003-cover- + the name to type over
+  stem: string;
+  onRename: (key: string, typed: string) => void;
 }) {
   const measured = useMeasure(waiting ? null : cover);
   const size = waiting ? { ...waiting, src: cover! } : measured;
@@ -334,14 +339,39 @@ export function CoverField({
       </span>
       <label className={styles.inline}>
         <span className="label">File</span>
-        <input
-          className={`${styles.input} ${styles.mono}`}
-          value={waiting ? "named on Save · media/<year>/<id>-cover.webp" : (cover ?? "")}
-          readOnly={!!waiting}
-          placeholder="media/2026/name.webp"
-          spellCheck={false}
-          onChange={(e) => onChange(e.target.value.trim().replace(/^\.\.\/|^\//, "") || null, alt)}
-        />
+        {waiting ? (
+          // Not saved yet: the name is its file's, to type over (Enter or leaving keeps it)
+          <span className={`${styles.input} ${styles.coverName}`}>
+            <span className={styles.mono}>{stem}</span>
+            <input
+              key={waiting.key}
+              className={styles.mono}
+              defaultValue={waiting.key.replace(/^cover-?/, "")}
+              spellCheck={false}
+              aria-label="Cover file name"
+              onBlur={(e) => onRename(waiting.key, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+                if (e.key === "Escape") {
+                  e.currentTarget.value = waiting.key.replace(/^cover-?/, "");
+                  e.currentTarget.blur();
+                }
+              }}
+            />
+            <span className={styles.mono}>.webp</span>
+          </span>
+        ) : (
+          <input
+            className={`${styles.input} ${styles.mono}`}
+            value={cover ?? ""}
+            placeholder="media/2026/name.webp"
+            spellCheck={false}
+            onChange={(e) => onChange(e.target.value.trim().replace(/^\.\.\/|^\//, "") || null, alt)}
+          />
+        )}
       </label>
       <label className={styles.inline}>
         <span className="label" title="Read aloud by screen readers · shown if the image fails to load">

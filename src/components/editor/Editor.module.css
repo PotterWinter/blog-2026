@@ -108,6 +108,31 @@
   position: relative;
 }
 
+/* Phones: the header wraps, so Unpublish / Delete draft can sit anywhere along it and a
+   box hung from the link ran off the left edge. It hangs from the header instead, at
+   its right margin. */
+@media (max-width: 767px) {
+  .bar .ask {
+    position: static;
+  }
+
+  .bar .confirm {
+    top: calc(100% + 8px);
+    right: var(--page-x);
+  }
+}
+
+/* Reset's box hangs from the start of the Save row, not from Reset itself: from
+   Reset it ran off the right edge of a phone (owner, 2 Oct 69) */
+.askLeft {
+  position: static;
+}
+
+.askLeft .confirm {
+  right: auto;
+  left: 0;
+}
+
 /* v4 data-ed-del: a small box under the link, red for a removal */
 .confirm {
   position: absolute;
@@ -118,6 +143,7 @@
   flex-direction: column;
   gap: 10px;
   width: 260px;
+  max-width: calc(100vw - 40px); /* never wider than a phone */
   padding: 14px;
   border: 1px solid var(--ink);
   border-radius: 8px;
@@ -298,7 +324,14 @@
   border: 0;
 }
 
-.slugRow > .mono {
+/* The slug itself: shown, not typed (it follows the title) — whole, wrapping if long */
+.slugText {
+  flex: 1;
+  overflow-wrap: anywhere;
+  color: var(--muted); /* not typed: it follows the title */
+}
+
+.slugRow > span.mono:last-child {
   flex: none;
   margin-left: auto;
   font-size: 11px;
@@ -519,6 +552,7 @@
 
 /* Publish · Save draft */
 .actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -613,6 +647,31 @@
   cursor: pointer;
 }
 
+/* The cover's name while it waits for Save: the fixed part grey, the name typed over */
+.coverName {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.coverName > span {
+  flex: none;
+  color: var(--muted);
+}
+
+.coverName input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.coverName input:focus {
+  outline: none;
+}
+
 .coverSize {
   font-family: var(--ff-mono);
   font-size: 11px;
@@ -623,10 +682,12 @@
   color: var(--error);
 }
 
+/* 2:1, as covers are (2400 × 1200) and as the site crops them — v4 drew 16:9 here,
+   which showed more than the page would (owner, 2 Oct 69) */
 .coverBox {
   position: relative;
   display: block;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   background: var(--surface);
 }
@@ -930,25 +991,12 @@
 
   .fields {
     grid-template-columns: 488px minmax(0, 1fr);
-    align-items: stretch;
   }
 
-  /* The cover takes the whole right column and grows down until its Alt text line
-     sits level with the bottom of Save (owner, 2 Oct 69). The box isn't a fixed ratio
-     any more, so the image is shown whole inside it rather than cropped. */
+  /* Wider than 560, centred, still 2:1: as wide as puts its Alt text line level with
+     the bottom of Save (--cover-w, measured by the editor; owner, 2 Oct 69) */
   .cover {
-    max-width: none;
-    margin-inline: 0;
-  }
-
-  .coverBox {
-    flex: 1;
-    min-height: 280px;
-    aspect-ratio: auto;
-  }
-
-  .coverImg {
-    object-fit: contain;
+    max-width: var(--cover-w, 560px);
   }
 
   .meta {

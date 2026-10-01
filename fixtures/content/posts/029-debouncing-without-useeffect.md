@@ -1,5 +1,6 @@
 ---
 id: 29
+code: l6e54q4l
 no: 29
 title: "Debouncing without useEffect"
 excerpt: "Eight keystrokes, one request — and not a single useEffect in the file."

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 import { categories, type CategorySlug } from "@/lib/site";
 import { sortPosts, type Sort } from "@/lib/sort";
 import CardDot from "./CardDot";
@@ -33,12 +34,12 @@ export type BrowseState = {
 };
 
 type Props = {
-  posts: PostMeta[];
+  posts: ForReaders[];
   initial: BrowseState;
 };
 
 // Does a post pass every filter? Category AND (any selected tag) AND the search words.
-function matches(post: PostMeta, { category, tags, query }: BrowseState) {
+function matches(post: ForReaders, { category, tags, query }: BrowseState) {
   if (category && post.category !== category) return false;
   if (tags.length && !post.tags.some((t) => tags.includes(t))) return false;
   if (query) {
@@ -133,7 +134,7 @@ export default function PostBrowser({ posts, initial }: Props) {
   // The search panel jumps to any post, whatever the category / tags on screen
   // Posts whose title holds every word come first, then ones matched on excerpt / tags
   const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
-  const inTitle = (post: PostMeta) => words.every((w) => post.title.toLowerCase().includes(w));
+  const inTitle = (post: ForReaders) => words.every((w) => post.title.toLowerCase().includes(w));
   const quickResults = words.length
     ? posts
         .filter((post) => matches(post, { ...state, category: null, tags: [] }))
@@ -249,7 +250,7 @@ export default function PostBrowser({ posts, initial }: Props) {
             total={posts.length}
             results={quickResults}
             onChange={(query) => update({ query })}
-            onOpen={(post) => go?.(`/posts/${post.slug}`)}
+            onOpen={(post) => go?.(postUrl(post))}
           >
             <ViewToggle value={state.view} onChange={switchView} />
           </SearchBox>

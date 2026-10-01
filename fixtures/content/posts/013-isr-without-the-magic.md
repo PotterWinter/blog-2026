@@ -1,5 +1,6 @@
 ---
 id: 13
+code: ppnoq0sl
 no: 13
 title: "ISR without the magic"
 excerpt: "Cache, then revalidate."

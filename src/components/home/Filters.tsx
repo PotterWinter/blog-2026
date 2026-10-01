@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
 import styles from "./Filters.module.css";
 import SearchPanel from "./SearchPanel";
 
@@ -44,9 +44,9 @@ export function SearchBox({
 }: {
   value: string;
   total: number;
-  results: PostMeta[]; // every match, best first, for the panel
+  results: ForReaders[]; // every match, best first, for the panel
   onChange: (value: string) => void;
-  onOpen: (post: PostMeta) => void;
+  onOpen: (post: ForReaders) => void;
   children?: ReactNode; // what sits after the box: GRID / LIST
 }) {
   // Engaged = the panel may show. With a mouse it ends when the box loses focus. On a

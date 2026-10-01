@@ -1,5 +1,6 @@
 ---
 id: 32
+code: nlx5zk56
 no: 5
 title: "Home Service"
 excerpt: "Booking and dispatch for a household repair crew — scheduling, technician assignment, and a Thai-first customer flow that a two-person office can actually run."

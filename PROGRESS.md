@@ -6,19 +6,24 @@
 
 ## ตอนนี้อยู่
 
-- push ถึง `86b9282` แล้ว (2 ต.ค. 69): admin hub (5.2) · Editor + RAW .MD (5.3a–c) · login ด้วย Redis · อัปโหลดภาพปก (5.4a)
-- push ถึง `e4e8d29` แล้ว (2 ต.ค. 69): 5.4b + login + dev บอกเว็บจริงล้าง cache (`REVALIDATE_SECRET` ใส่ Vercel แล้ว) · แทรกรูปในเนื้อหา + ตั้งชื่อรูปเอง · login พิมพ์อะไรก็ได้ / cursor ท้ายเสมอ / ผิดแล้วลบทีเดียว · cover ใน Editor กว้างเต็มคอลัมน์
-- **ถัดไป**: 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
-- เปลี่ยนรูปบนเว็บจริงได้แล้ว (เจ้าของลอง 2 ต.ค. 69)
-- repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีปก — เจ้าของจะใส่เองผ่าน Editor)
+- push แล้ว (2 ต.ค. 69 ตี 2): ทุกอย่างถึงรอบ "ข้อความใต้ปุ่ม" — รายละเอียดใน notes/content.md (URL), notes/editor.md, notes/media.md
+- **ถัดไป: 5.3g Preview** (เจ้าของขอ, ตกลงแบบนี้แล้ว): ปุ่ม Preview ทั้งโพสต์ใหม่และที่แก้ · เปิดแท็บใหม่หน้าตาเหมือนเว็บจริง · แสดงสิ่งที่อยู่ใน Editor ตอนนั้น (ยังไม่ save + รูปที่รอ save) · พิมพ์แล้วแท็บ Preview ตามทันที · login เท่านั้น, noindex
+- แล้วค่อย 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
+- **URL = รหัสสุ่ม 8 ตัว** `/posts/<code>` (frontmatter `code:`) · ไม่ใช่ slug / no / id · หน้าเว็บไม่ส่ง id ให้ browser
+  - no = เลขโชว์: ลบ = เลขหลังจากนั้นลด 1 · unpublish = เลขค้างไว้
+  - slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ (ชื่อไฟล์ + URL ของ Editor)
+- repo จริง: Debouncing (#3, No. 2) ได้รหัสแล้ว · **hello-world ยังไม่มีรหัส → เปิด Editor แล้วกด Save changes หนึ่งครั้ง**
 - login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
-- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · `.env.development.local` มีบรรทัด `# CONTENT_DIR=` — ลบ `#` = ใช้ repo จริง (รหัสจากบัญชี (dev)) · token ใหม่ regenerate แล้ว 2 ต.ค. 69
+- dev: `.env.development.local` บรรทัด `CONTENT_DIR=` ไม่มี `#` = repo จริง · ใส่ `#` = fixtures (36 เรื่อง) · Save จาก dev บอกเว็บจริงล้าง cache ให้เอง (`REVALIDATE_SECRET`)
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
 - [x] ลบ `sessions.json` ออกจาก content repo แล้ว · หลัง push ทุกเครื่องต้อง login ใหม่ครั้งเดียว
 - [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
+- [ ] เจ้าของกด Save changes ที่ hello-world (ให้ได้รหัส URL)
+- [ ] ชื่อไฟล์รูปยังขึ้นต้นด้วย id (`003-cover-….webp`) — เปลี่ยนเป็นรหัสโพสต์ไหม? ยังไม่ได้ตัดสิน
+- [ ] เจ้าของลองบน iPhone: แตะช่อง Slug / RAW แล้วหน้าไม่ซูม · กล่องยืนยันไม่ล้นจอ
 - [ ] rebuild `index.json` ใน content repo (ช่องใหม่: images, videos, codeBlocks, bytes, lastCommit) แล้ว push
 
 ---

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import PageSlot from "@/components/PageSlot";
@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   title: "Admin · Code by Korn Natthanat",
   robots: { index: false, follow: false },
 };
+
+// iPhone Safari zooms the page in on any field typed in under 16px — and the admin's
+// small mono fields (slug, tags, RAW, image names) are 11–12px. A maximum scale of 1
+// stops that zoom; iOS still lets you pinch. Admin only: the public site keeps
+// Android's pinch zoom, which this would also block (2 Oct 69).
+export const viewport: Viewport = { width: "device-width", initialScale: 1, maximumScale: 1 };
 
 // Every /admin page: signed in on this device (proxy.ts checks the cookie; this checks
 // the device is still on the list). No rise-in on scroll here (no RevealObserver, no

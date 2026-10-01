@@ -302,7 +302,7 @@ export default function Details({ post, sheetOpen, onClose }: Props) {
               <dt className="label">Revisions</dt>
               <dd>{post.revisions}</dd>
               <dt className="label">Path</dt>
-              <dd className={styles.mono}>posts/{post.slug}.md</dd>
+              <dd className={styles.mono}>{post.file}</dd>
             </dl>
 
             <div className={styles.danger}>

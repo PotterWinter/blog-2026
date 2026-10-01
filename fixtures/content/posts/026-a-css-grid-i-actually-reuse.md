@@ -1,5 +1,6 @@
 ---
 id: 26
+code: 17dvkp46
 no: 26
 title: "A CSS grid I actually reuse"
 excerpt: "Twelve columns, three breakpoints."

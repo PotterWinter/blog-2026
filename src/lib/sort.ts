@@ -1,4 +1,4 @@
-import type { PostMeta } from "./content";
+import type { ForReaders } from "./content";
 import { categories } from "./site";
 
 // The 01B column heads, one rule for all four:
@@ -18,16 +18,17 @@ const categoryLabel = (slug: string) => categories.find((c) => c.slug === slug)?
 const text = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
 
 // Each column, low → high
-const ORDERS: Record<SortKey, (a: PostMeta, b: PostMeta) => number> = {
+const ORDERS: Record<SortKey, (a: ForReaders, b: ForReaders) => number> = {
   no: (a, b) => (a.no ?? 0) - (b.no ?? 0),
   title: (a, b) => text(a.title, b.title),
   category: (a, b) => text(categoryLabel(a.category), categoryLabel(b.category)),
-  date: (a, b) => a.publishedAt.localeCompare(b.publishedAt) || a.id - b.id,
+  // Same day: the order they went out in (the number; readers never get the id)
+  date: (a, b) => a.publishedAt.localeCompare(b.publishedAt) || (a.no ?? 0) - (b.no ?? 0),
 };
 
 // Posts arrive newest first, and ties keep that order (sort is stable, and "-desc"
 // flips the comparison, not the list), so posts in one category stay newest first
-export function sortPosts(posts: PostMeta[], sort: Sort | null) {
+export function sortPosts<T extends ForReaders>(posts: T[], sort: Sort | null) {
   if (!sort) return posts;
   const [key, desc] = sort.split("-") as [SortKey, string | undefined];
   const order = ORDERS[key];

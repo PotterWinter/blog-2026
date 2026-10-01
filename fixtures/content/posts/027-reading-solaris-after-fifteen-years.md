@@ -1,5 +1,6 @@
 ---
 id: 27
+code: mnpcapla
 no: 27
 title: "Reading Solaris after fifteen years"
 excerpt: "The ocean is still not a metaphor."

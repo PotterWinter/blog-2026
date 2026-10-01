@@ -1,5 +1,6 @@
 ---
 id: 6
+code: ex7jv48f
 no: 6
 title: "Markdown is a database schema"
 excerpt: "Frontmatter as columns."

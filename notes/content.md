@@ -93,3 +93,14 @@ npm run rebuild-index -- ../blog-content
 
 - `path.resolve(/*turbopackIgnore: true*/ …)` — ไม่งั้น Turbopack แพ็กทั้งโปรเจกต์ (fixtures, รูป) ไปกับ server function
 - GitHub ไม่ใส่ token จำกัด 60 ครั้ง/ชม. · ใส่ token 5,000 ครั้ง/ชม. (cache ทำให้ใช้น้อยอยู่แล้ว)
+
+## URL ใช้รหัสสุ่ม (2 ต.ค. 69 — เจ้าของเลือก)
+
+- `/posts/<code>` · `/project/<code>` · code = a–z 0–9 สุ่ม 8 ตัว ได้ตอน save ครั้งแรก เก็บใน frontmatter (`code:`) + index · ไม่เปลี่ยน ไม่ซ้ำ
+  - ไม่ใช้ slug (ตามชื่อเรื่อง) · ไม่ใช้ no (ขยับตอนลบ) · ไม่ใช้ id (pk — คนอ่านไม่ควรรู้ และไล่นับไม่ได้)
+  - ลองแบบคูณสลับเลข id แล้ว ไม่เอา: ลำดับยังเดาได้ + repo โค้ด public = ถอดกลับได้
+- โพสต์ที่ save ก่อนมี code: ยังไม่มี code จน save / publish ครั้งถัดไป · ระหว่างนั้น URL = slug · Editor เปิดปุ่ม Save changes ให้โพสต์ที่ยังไม่มี code แม้ไม่ได้แก้อะไร + ข้อความ "Save once to give it its address"
+- ลิงก์เก่า `/posts/<slug>` → 308 ไป code (เฉพาะ slug ปัจจุบัน) · อย่างอื่น 404
+- หน้าเว็บสาธารณะส่งให้ browser แบบตัด id, file, lastCommit, revisions, createdAt ออก (`forReaders`)
+- slug: ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · ใช้ตั้งชื่อไฟล์ + URL ของ Editor · ไทยล้วน = `post-<id>` · ซ้ำ = ต่อ `-<id>`
+- **no = เลขลำดับโชว์อย่างเดียว:** ออกตอน publish ครั้งแรก (สูงสุดใน section + 1) · unpublish เก็บเลขไว้ · **ลบ = โพสต์หลังจากนั้นใน section เดียวกันเลขลด 1** (แก้ .md ของพวกนั้นใน commit เดียวกัน) ไม่มีเลขว่าง · unpublish = เลขค้างไว้ ไม่ขยับ (เจ้าของยืนยัน 2 ต.ค. 69)

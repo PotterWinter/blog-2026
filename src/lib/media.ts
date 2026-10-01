@@ -54,14 +54,15 @@ export const mediaName = (fileName: string) =>
 
 export const UPLOAD = "upload:";
 
-// What the editor holds and sends back: key "cover", or the image's own name
+// What the editor holds and sends back: "cover-<its name>", or the image's own name
 export type Pending = { key: string; base64: string };
 export type Prepped = Pending & { width: number; height: number; bytes: number };
 
 export async function prepareUpload(fileName: string, input: Buffer, role: "cover" | "image"): Promise<Prepped> {
   const image = await prepareImage(input);
   return {
-    key: role === "cover" ? "cover" : mediaName(fileName),
+    // The cover keeps its file's name too: 003-cover-img-2041.webp (owner, 2 Oct 69)
+    key: role === "cover" ? `cover-${mediaName(fileName)}` : mediaName(fileName),
     base64: image.data.toString("base64"),
     width: image.width,
     height: image.height,

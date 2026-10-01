@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
 import { shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
 import styles from "./SearchPanel.module.css";
@@ -11,7 +11,7 @@ type Props = {
   id: string;
   open: boolean;
   query: string;
-  results: PostMeta[];
+  results: ForReaders[];
   active: number;
   picked: number | null; // the row that was chosen (Enter / click), mid-animation
   onHover: (index: number) => void;

@@ -1,8 +1,9 @@
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 import TransitionLink from "../TransitionLink";
 import styles from "./Post.module.css";
 
-type Props = { previous: PostMeta | null; next: PostMeta | null };
+type Props = { previous: ForReaders | null; next: ForReaders | null };
 
 const Arrow = ({ back }: { back?: boolean }) => (
   <svg
@@ -29,7 +30,7 @@ export default function PostNav({ previous, next }: Props) {
   return (
     <nav id="post-end" className={styles.postNav} aria-label="More posts">
       {previous ? (
-        <TransitionLink href={`/posts/${previous.slug}`} className={styles.prev}>
+        <TransitionLink href={postUrl(previous)} className={styles.prev}>
           <span className="label">
             <Arrow back /> Previous
           </span>
@@ -39,7 +40,7 @@ export default function PostNav({ previous, next }: Props) {
         <span />
       )}
       {next ? (
-        <TransitionLink href={`/posts/${next.slug}`} className={styles.next}>
+        <TransitionLink href={postUrl(next)} className={styles.next}>
           <span className="label">
             Next <Arrow />
           </span>

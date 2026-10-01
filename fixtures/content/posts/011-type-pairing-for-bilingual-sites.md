@@ -1,5 +1,6 @@
 ---
 id: 11
+code: 213mbt54
 no: 11
 title: "Type pairing for bilingual sites"
 excerpt: "Helvetica, Newsreader, Plex Thai."

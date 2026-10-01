@@ -1,5 +1,6 @@
 ---
 id: 10
+code: gefqy5d0
 no: 10
 title: "Stoner, and slowness"
 excerpt: "A quiet book about a quiet life."

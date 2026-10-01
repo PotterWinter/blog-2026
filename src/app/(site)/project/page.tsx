@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Hero, { Keep } from "@/components/home/Hero";
 import ProjectBrowser from "@/components/project/ProjectBrowser";
 import styles from "@/components/project/Project.module.css";
-import { getPosts } from "@/lib/content";
+import { getPublished } from "@/lib/content";
 import { isProjectCategory, projectCategories } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ const one = (value: string | string[] | undefined) => (Array.isArray(value) ? va
 // and a note on case studies
 export default async function ProjectPage({ searchParams }: PageProps<"/project">) {
   const category = one((await searchParams).category);
-  const projects = await getPosts({ section: "project" });
+  const projects = await getPublished("project");
   return (
     <main>
       <Hero

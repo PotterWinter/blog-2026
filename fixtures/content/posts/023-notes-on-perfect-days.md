@@ -1,5 +1,6 @@
 ---
 id: 23
+code: 26bkhtwa
 no: 23
 title: "Notes on Perfect Days"
 excerpt: "Wenders and the dignity of routine."

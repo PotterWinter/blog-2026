@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { Post } from "@/lib/content";
+import type { ForReaders, Post } from "@/lib/content";
 import { longDate, readingMinutes } from "@/lib/format";
 import { categories } from "@/lib/site";
 import TransitionLink from "../TransitionLink";
@@ -10,7 +10,7 @@ import ProjectLead from "./ProjectLead";
 // ruled strip of Category · Published (+ read time, updated) · Tags.
 // A project (04B) goes back to Projects and its strip is Role · Year · Stack (its tags,
 // EDITOR-SPEC). With links, the title block is 04B's: the links beside a preview.
-export default function PostHeader({ post }: { post: Post }) {
+export default function PostHeader({ post }: { post: ForReaders<Post> }) {
   const category = categories.find((c) => c.slug === post.category)?.label ?? post.category;
   const updated = post.updatedAt !== post.publishedAt;
   const project = post.section === "project";

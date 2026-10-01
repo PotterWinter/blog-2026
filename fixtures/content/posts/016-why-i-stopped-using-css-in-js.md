@@ -1,5 +1,6 @@
 ---
 id: 16
+code: 5g6xj1go
 no: 16
 title: "ทำไมผมเลิกใช้ CSS-in-JS"
 excerpt: "สั้นๆ คือ server ไม่ต้องรอ JavaScript"

@@ -1,5 +1,6 @@
 ---
 id: 8
+code: xxadgbov
 no: 8
 title: "Cursor labels that follow"
 excerpt: "Lerp, but make it polite."

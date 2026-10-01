@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import type { PostMeta } from "@/lib/content";
+import type { ForReaders } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 import { buzz } from "@/lib/buzz";
 import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
@@ -35,7 +36,7 @@ const FOLLOW = [0.45, 0.45] as const;
 const STRIP = [0.35, 0.5] as const;
 
 type Props = {
-  posts: PostMeta[];
+  posts: ForReaders[];
   phase: "out" | "in" | null;
   direction: number;
   sort: Sort | null;
@@ -477,7 +478,7 @@ export default function PostList({ posts, phase, direction, sort, onSort }: Prop
         {posts.map((post, i) => (
           <TransitionLink
             key={post.slug}
-            href={`/posts/${post.slug}`}
+            href={postUrl(post)}
             className={styles.row}
             data-index={i}
             data-excerpt={post.excerpt}

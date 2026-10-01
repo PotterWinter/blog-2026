@@ -4,7 +4,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
-import { placeWaiting, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { placeWaiting, renumbered, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
 import { placeUploads, type Pending } from "./media";
 import { readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
@@ -235,7 +235,15 @@ export async function unpublishPost(id: number): Promise<Saved> {
 export async function deletePost(id: number): Promise<Saved> {
   const result = await commit(async (read) => {
     const { index, file } = await withFile(id, read);
-    return planDelete(index, id, new Date(), file);
+    // The posts after it in its section move down a number, in the same commit
+    const later = await Promise.all(
+      renumbered(index, id).map(async (entry) => {
+        const text = await read.file(entry.file);
+        if (text == null) throw new Error(`${entry.file} is missing`);
+        return { entry, text };
+      }),
+    );
+    return planDelete(index, id, new Date(), file, later);
   });
   return done(result, id);
 }

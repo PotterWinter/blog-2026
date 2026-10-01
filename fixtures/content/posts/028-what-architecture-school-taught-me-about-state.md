@@ -1,5 +1,6 @@
 ---
 id: 28
+code: w3qx59lg
 no: 28
 title: "What architecture school taught me about state"
 excerpt: "Section drawings and component trees."

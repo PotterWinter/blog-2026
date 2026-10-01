@@ -1,5 +1,6 @@
 ---
 id: 21
+code: 6hhw1nnn
 no: 21
 title: "Bézier curves from first principles"
 excerpt: "Four points, one lerp, repeated."
