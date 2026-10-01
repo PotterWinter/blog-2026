@@ -28,6 +28,12 @@
   - ขั้น 5 เซฟแล้วสั่ง `revalidateTag("content")` → ของใหม่ขึ้นทันที · 1 ชั่วโมงมีผลแค่ตอนแก้นอก admin
 - รูป `/media/…`: browser เก็บ 1 วัน (`max-age=86400, stale-while-revalidate=604800`)
 - dev ไม่ cache หน้า (Next render ใหม่ทุกครั้ง)
+- **cache แยกกันคนละเครื่อง** (เจอ 2 ต.ค. 69): เว็บจริงกับ dev ต่างคนต่างจำ · save ที่ไหนล้างแค่ cache ของที่นั่น
+  - save บนเว็บจริง → dev (ชี้ repo จริง) เคยเห็นช้าสูงสุด 1 ชม. → แก้แล้ว: dev อ่าน GitHub ใหม่ทุก 10 วิ (`CONTENT_TTL`)
+  - save จาก dev → เว็บจริงเคยเห็นช้าสูงสุด 1 ชม. → แก้แล้ว (เจ้าของเลือก ข): dev commit เสร็จเรียก `POST <เว็บจริง>/api/revalidate` (Bearer `REVALIDATE_SECRET`) ให้เว็บจริงล้าง index + โพสต์นั้น
+    - ต้องมี `REVALIDATE_SECRET` ค่าเดียวกันทั้งใน `.env.development.local` และ Vercel (Production) · บนเว็บจริงไม่มีค่า = endpoint ปิด (503)
+    - เรียกไม่สำเร็จ: save ยังสำเร็จ แต่ข้อความใต้ Publish เป็นสีแดงบอกว่า "shows within the hour"
+    - เลือกแทนการลด cache เว็บจริงเหลือ 1 นาที (กิน resource ทุกนาทีที่มีคนเข้า)
 
 ## index.json (ที่ root ของ content repo)
 

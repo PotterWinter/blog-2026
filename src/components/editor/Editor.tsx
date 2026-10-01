@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
-import { fromRaw, slugify, toRaw, type PostInput } from "@/lib/edit";
+import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
 import { postFile, type IndexEntry, type Post } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { usePageTransition } from "../PageTransition";
@@ -78,6 +78,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   const [note, setNoteState] = useState<Note | null>(() => notes.get(first?.id ?? "new") ?? null);
   const [warned, setWarned] = useState(false);
   const [asking, setAsking] = useState<"delete" | "unpublish" | null>(null);
+  const [rawReset, setRawReset] = useState(0);
 
   const id = entry?.id ?? null;
   // Where it is (or will be, on the first save): posts/<id>-<slug>.md
@@ -117,17 +118,19 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
 
   const doSave = async () => {
     // The images still waiting (5.4) that the post points at go with it
-    const sent = Object.values(pending).filter(({ key }) => (form.cover + form.body).includes(`${UPLOAD}${key}`));
+    const used = waitingKeys(`${form.cover ?? ""}\n${form.body}`);
+    const sent = Object.values(pending).filter(({ key }) => used.has(key));
     const result = await call("Saving", () => save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 }))));
     if (!result) return null;
     // Where they went: the post now says their paths, and nothing waits any more
-    const swap = (text: string) =>
-      Object.entries(result.uploads ?? {}).reduce((t, [from, to]) => t.split(from).join(to), text);
-    const next = { ...form, cover: form.cover && swap(form.cover), body: swap(form.body) };
+    const paths = result.uploads ?? {};
+    const next = { ...form, cover: form.cover && placeWaiting(form.cover, paths), body: placeWaiting(form.body, paths, "../") };
     setForm(next);
     setSaved(JSON.stringify(next));
+    if (sent.length) setRawReset((n) => n + 1);
     for (const p of sent) URL.revokeObjectURL(p.url);
-    setPending((all) => Object.fromEntries(Object.entries(all).filter(([key]) => !sent.some((p) => p.key === key))));
+    pendingRef.current = Object.fromEntries(Object.entries(pendingRef.current).filter(([key]) => !sent.some((p) => p.key === key)));
+    setPending(pendingRef.current);
     setSlugAuto(false);
     // A new post, or a new slug: the address follows, without reloading the page
     if (location.pathname !== `/admin/posts/${result.slug}`) {
@@ -147,18 +150,26 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     const target = dirty || id == null ? await doSave() : { id };
     if (!target) return;
     const result = await call("Publishing", () => publish(target.id));
-    if (result) setNote({ text: `Published as No. ${result.entry?.no} · live now`, tone: "ok" }, result.id);
+    if (result) {
+      setNote(
+        result.live
+          ? { text: `Published as No. ${result.entry?.no} · ${result.live}`, tone: "bad" }
+          : { text: `Published as No. ${result.entry?.no} · live now`, tone: "ok" },
+        result.id,
+      );
+    }
   };
 
   const doUpdate = async () => {
-    if (await doSave()) setNote({ text: "Saved · live now", tone: "ok" });
+    const result = await doSave();
+    if (result) setNote(result.live ? { text: `Saved · ${result.live}`, tone: "bad" } : { text: "Saved · live now", tone: "ok" });
   };
 
   const doUnpublish = async () => {
     setAsking(null);
     if (id == null) return;
     const result = await call("Unpublishing", () => unpublish(id));
-    if (result) setNote({ text: "Back to a draft · off the site", tone: "muted" });
+    if (result) setNote({ text: result.live ? `Back to a draft · ${result.live}` : "Back to a draft · off the site", tone: result.live ? "bad" : "muted" });
   };
 
   const doDelete = async () => {
@@ -174,31 +185,87 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   // The cover (5.4): shrunk here if it's a big photo, made a WebP on the server and
   // held here — shown in the box, not in the repo yet. Save commits it with the post.
   const [pending, setPending] = useState<Record<string, Waiting>>({});
+  // The same, for uploads one after another (state is a render behind); set together
+  const pendingRef = useRef(pending);
   const [uploading, setUploading] = useState(false);
-  const uploadCover = async (file: File) => {
-    setUploading(true);
+  const saveWord = published ? "Save changes" : "Save";
+
+  // One file → a WebP held here under its key. An image in the body never takes a key
+  // already waiting or written in the post ("photo" → "photo-2"); "cover" is the cover's.
+  const prepare = async (file: File, role: "cover" | "image") => {
     const data = new FormData();
-    data.set("role", "cover");
+    data.set("role", role);
     data.set("file", await shrinkForUpload(file));
     const result = await upload(data);
+    if (!result.ok) return result;
+    let key = result.image.key;
+    if (role === "image") {
+      const taken = new Set(["cover", ...Object.keys(pendingRef.current), ...waitingKeys(form.body)]);
+      for (let n = 2; taken.has(key); n++) key = `${result.image.key}-${n}`;
+    }
+    const bytes = Uint8Array.from(atob(result.image.base64), (c) => c.charCodeAt(0));
+    const image: Waiting = { ...result.image, key, url: URL.createObjectURL(new Blob([bytes], { type: "image/webp" })) };
+    const all = pendingRef.current;
+    if (all[key]) URL.revokeObjectURL(all[key].url);
+    pendingRef.current = { ...all, [key]: image };
+    setPending(pendingRef.current);
+    return { ok: true as const, image };
+  };
+  const sized = (image: Waiting) => `${image.width} × ${image.height}, ${Math.round(image.bytes / 1024)} KB`;
+
+  const uploadCover = async (file: File) => {
+    setUploading(true);
+    const result = await prepare(file, "cover");
     setUploading(false);
     if (!result.ok) {
       setNote({ text: `Cover not added · ${result.error}`, tone: "bad" });
       return;
     }
-    const image = result.image;
-    const bytes = Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0));
-    const url = URL.createObjectURL(new Blob([bytes], { type: "image/webp" }));
-    setPending((all) => {
-      if (all[image.key]) URL.revokeObjectURL(all[image.key].url);
-      return { ...all, [image.key]: { ...image, url } };
-    });
-    set({ cover: `${UPLOAD}${image.key}` });
-    setNote({
-      text: `Cover ready · ${image.width} × ${image.height}, ${Math.round(image.bytes / 1024)} KB · goes up with ${published ? "Save changes" : "Save"}`,
-      tone: "muted",
-    });
+    set({ cover: `${UPLOAD}${result.image.key}` });
+    setNote({ text: `Cover ready · ${sized(result.image)} · goes up with ${saveWord}`, tone: "muted" });
   };
+
+  // Images for the body (5.4b), from RAW's Image button, a drop or a paste: one after
+  // another, handed back as markdown for RawBox to put where the cursor is — one on a
+  // line each, so several sit together and a <!-- two --> / <!-- carousel --> above
+  // lays them out. Alt and caption are left for you to write: ![alt](path "caption").
+  const uploadImages = async (files: File[]) => {
+    const lines: string[] = [];
+    const failed: string[] = [];
+    let last: Waiting | null = null;
+    for (const file of files) {
+      const result = await prepare(file, "image");
+      if (result.ok) {
+        lines.push(`![](${UPLOAD}${result.image.key})`);
+        last = result.image;
+      } else failed.push(`${file.name}: ${result.error}`);
+    }
+    if (failed.length) setNote({ text: `Not added · ${failed.join(" · ")}`, tone: "bad" });
+    else if (last) {
+      const what = lines.length > 1 ? `${lines.length} images ready` : `Image ready · ${sized(last)}`;
+      setNote({ text: `${what} · goes up with ${saveWord}`, tone: "muted" });
+    }
+    return lines.length ? lines.join("\n") : null;
+  };
+
+  // Its name, before Save (owner, 2 Oct 69): starts as the file's own, typed over here;
+  // the post's id goes in front when it's committed. Taken → "-2"; nothing left in a–z
+  // and 0–9 (Thai only, say) → stays as it was.
+  const renameImage = (from: string, typed: string) => {
+    const base = slugify(typed).slice(0, 40).replace(/-+$/, "");
+    if (!base || base === from) return;
+    const taken = new Set(["cover", ...Object.keys(pendingRef.current), ...waitingKeys(form.body)]);
+    taken.delete(from);
+    let key = base;
+    for (let n = 2; taken.has(key); n++) key = `${base}-${n}`;
+    const { [from]: image, ...rest } = pendingRef.current;
+    if (!image) return;
+    pendingRef.current = { ...rest, [key]: { ...image, key } };
+    setPending(pendingRef.current);
+    set({ body: form.body.replace(/upload:[a-z0-9-]+/g, (m) => (m === `${UPLOAD}${from}` ? `${UPLOAD}${key}` : m)) });
+    setRawReset((n) => n + 1);
+  };
+  const bodyWaiting = [...waitingKeys(form.body)].flatMap((key) => (pending[key] ? [pending[key]] : []));
 
   // A failed save tries again on its own every 10s while there's something to save
   useEffect(() => {
@@ -489,7 +556,17 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           <span className={styles.toolsNote}>Markdown, frontmatter included · ⌘S saves</span>
         </div>
 
-        <RawBox file={file.replace(/^posts\//, "")} text={raw} onChange={onRaw} />
+        <RawBox
+          file={file.replace(/^posts\//, "")}
+          text={raw}
+          onChange={onRaw}
+          onImages={uploadImages}
+          reset={rawReset}
+          waiting={bodyWaiting}
+          // media/2026/037-… (a new post's id comes with its first save)
+          stem={`media/${new Date().getFullYear()}/${id == null ? "###" : String(id).padStart(3, "0")}-`}
+          onRename={renameImage}
+        />
       </main>
     </>
   );

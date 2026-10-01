@@ -103,6 +103,19 @@ function written(meta: PostMeta, body: string, before: IndexEntry | null, now: D
   return { entry, changes, slugs };
 }
 
+// ---------- images waiting for the save (5.4) ----------
+// The post points at an image picked but not committed yet as "upload:<key>" — the
+// cover field as "upload:cover", the body as ![…](upload:<key>). Matched whole, so
+// "upload:photo" never catches "upload:photo-2".
+const WAITING = /upload:[a-z0-9-]+/g;
+
+export const waitingKeys = (text: string) => new Set([...text.matchAll(WAITING)].map(([m]) => m.slice("upload:".length)));
+
+// Once committed: "upload:<key>" → its path. The body gets "../" in front, as every
+// image in a .md is relative to the post ("../media/…", so Obsidian shows it).
+export const placeWaiting = (text: string, paths: Record<string, string>, prefix = "") =>
+  text.replace(WAITING, (m) => (paths[m] ? prefix + paths[m] : m));
+
 // The post's own images: media files named after its id ("media/2026/003-cover.webp")
 // that a text points at. Images named for another post are never counted as its own.
 export function ownMedia(id: number, text: string): Set<string> {

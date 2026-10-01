@@ -4,7 +4,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
-import { planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { placeWaiting, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
 import { placeUploads, type Pending } from "./media";
 import { readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
@@ -143,9 +143,32 @@ async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promi
 
 // Lists and the post's own page show the change at once (the hour-long cache is for
 // reads; a write clears what it touched)
-function refresh(slugs: string[]) {
+export function refresh(slugs: string[]) {
   revalidateTag("index", { expire: 0 });
   for (const slug of slugs) revalidateTag(`post:${slug}`, { expire: 0 });
+}
+
+// A dev server writing to the real repo: the live site has its own cache, which the
+// line above doesn't reach — so it's asked to clear the same things (/api/revalidate).
+// Needs REVALIDATE_SECRET here and on Vercel. If it fails the save still stands; the
+// live site catches up within the hour, and the editor says so.
+const LIVE_URL = process.env.LIVE_URL || "https://blog-2026-vercel.vercel.app";
+
+async function refreshLive(slugs: string[]): Promise<string | undefined> {
+  if (process.env.NODE_ENV !== "development" || LOCAL_DIR) return;
+  const secret = process.env.REVALIDATE_SECRET;
+  if (!secret) return "Live site not told (no REVALIDATE_SECRET) · shows within the hour";
+  try {
+    const res = await fetch(`${LIVE_URL}/api/revalidate`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ slugs }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return `Live site said ${res.status} · shows within the hour`;
+  } catch {
+    return "Live site didn't answer · shows within the hour";
+  }
 }
 
 // entry: the post as the index now has it (null once deleted) · uploads: where the
@@ -157,11 +180,13 @@ export type Saved = {
   sha: string | null;
   entry: IndexEntry | null;
   uploads?: Record<string, string>;
+  live?: string; // dev on the real repo: why the live site wasn't refreshed, if it wasn't
 };
 
-const done = ({ plan, sha }: { plan: Plan; sha: string | null }, id: number): Saved => {
+const done = async ({ plan, sha }: { plan: Plan; sha: string | null }, id: number): Promise<Saved> => {
   refresh(plan.slugs);
-  return { id, slug: plan.entry?.slug ?? plan.slugs[0], message: plan.message, sha, entry: plan.entry };
+  const live = await refreshLive(plan.slugs);
+  return { id, slug: plan.entry?.slug ?? plan.slugs[0], message: plan.message, sha, entry: plan.entry, live };
 };
 
 // With the images picked since the last save (5.4): they're committed with the post,
@@ -173,13 +198,13 @@ export async function savePost(input: PostInput, pending: Pending[] = []): Promi
     const now = new Date();
     const { changes, paths } = await placeUploads(pending, input.id ?? index.nextId, read.exists, now);
     placed = paths;
-    const swap = (text: string) => Object.entries(paths).reduce((t, [from, to]) => t.split(from).join(to), text);
     const before = input.id == null ? null : index.posts.find((p) => p.id === input.id);
     const previous = before ? ((await read.file(before.file)) ?? "") : "";
-    const plan = planSave(index, { ...input, cover: input.cover && swap(input.cover), body: swap(input.body) }, now, previous);
+    const cover = input.cover && placeWaiting(input.cover, paths);
+    const plan = planSave(index, { ...input, cover, body: placeWaiting(input.body, paths, "../") }, now, previous);
     return { ...plan, changes: [...changes, ...plan.changes] };
   });
-  return { ...done(result, result.plan.entry!.id), uploads: placed };
+  return { ...(await done(result, result.plan.entry!.id)), uploads: placed };
 }
 
 async function withFile(id: number, read: Reader) {

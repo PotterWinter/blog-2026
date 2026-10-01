@@ -31,7 +31,10 @@ export const LOCAL_DIR = process.env.CONTENT_DIR
 export const REPO = process.env.CONTENT_REPO || "PotterWinter/blog-content-2026";
 export const BRANCH = process.env.CONTENT_BRANCH ?? "main";
 const TOKEN = process.env.GITHUB_TOKEN ?? "";
-export const CONTENT_TTL = 3600;
+// The live site and a dev server each keep their own cache, and a save clears only the
+// cache of the one that saved — so dev on the real repo would show the live site's
+// edits up to an hour late. Dev checks again after 10 seconds instead (owner, 2 Oct 69).
+export const CONTENT_TTL = process.env.NODE_ENV === "development" ? 10 : 3600;
 
 // One file from the content repo, null if it isn't there
 async function fromGitHub(file: string, tags: string[]): Promise<Response | null> {

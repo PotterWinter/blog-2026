@@ -820,6 +820,64 @@
   cursor: pointer;
 }
 
+/* Image sits before Copy: it takes the push to the right, Copy follows it */
+.addImage ~ .copy {
+  margin-left: 0;
+}
+
+.copy:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* Images in the text not saved yet: a thumbnail, the name to type over, the size */
+.waitingList {
+  margin: 0;
+  padding: 6px 14px;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.waitingItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 4px 0;
+}
+
+.waitingItem .mono {
+  color: var(--muted);
+}
+
+.waitingThumb {
+  width: 40px;
+  height: 28px;
+  object-fit: cover;
+  background: var(--line);
+}
+
+.waitingName {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.waitingName input {
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.waitingName input:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+
 .rawProblem {
   padding: 8px 14px;
   border-bottom: 1px solid var(--error);
@@ -849,6 +907,12 @@
   outline: none;
 }
 
+/* An image dragged over the text */
+.rawText[data-over] {
+  outline: 1px dashed var(--line);
+  outline-offset: -10px;
+}
+
 /* ---------- From 1024: v4's two columns ---------- */
 @media (min-width: 1024px) {
   .bar {
@@ -866,6 +930,25 @@
 
   .fields {
     grid-template-columns: 488px minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  /* The cover takes the whole right column and grows down until its Alt text line
+     sits level with the bottom of Save (owner, 2 Oct 69). The box isn't a fixed ratio
+     any more, so the image is shown whole inside it rather than cropped. */
+  .cover {
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .coverBox {
+    flex: 1;
+    min-height: 280px;
+    aspect-ratio: auto;
+  }
+
+  .coverImg {
+    object-fit: contain;
   }
 
   .meta {

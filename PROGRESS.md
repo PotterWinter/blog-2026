@@ -7,10 +7,12 @@
 ## ตอนนี้อยู่
 
 - push ถึง `86b9282` แล้ว (2 ต.ค. 69): admin hub (5.2) · Editor + RAW .MD (5.3a–c) · login ด้วย Redis · อัปโหลดภาพปก (5.4a)
-- **ถัดไป 5.4b**: แทรกรูปในเนื้อหา (ปุ่มใน RAW) + รูปในหน้าบทความคมขึ้น → [notes/media.md](notes/media.md) · แล้ว 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
+- 5.4b ทำแล้ว (ยังไม่ commit): แทรกรูปในเนื้อหา + ตั้งชื่อรูปเอง · login พิมพ์อะไรก็ได้ / cursor ท้ายเสมอ / ผิดแล้วลบทีเดียว · cover ใน Editor กว้างเต็มคอลัมน์
+- **ถัดไป**: 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
+- เปลี่ยนรูปบนเว็บจริงได้แล้ว (เจ้าของลอง 2 ต.ค. 69)
 - repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีปก — เจ้าของจะใส่เองผ่าน Editor)
-- login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost กับ fixtures ใช้ `111111`
-- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · `.env.development.local` มีบรรทัด `# CONTENT_DIR=` — ลบ `#` = ใช้ repo จริง (ต้องรหัส Authenticator, 111111 ใช้ไม่ได้) · token ใหม่ regenerate แล้ว 2 ต.ค. 69
+- login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
+- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · `.env.development.local` มีบรรทัด `# CONTENT_DIR=` — ลบ `#` = ใช้ repo จริง (รหัสจากบัญชี (dev)) · token ใหม่ regenerate แล้ว 2 ต.ค. 69
 
 ## ทำต่อ
 
@@ -95,7 +97,8 @@
   - [ ] 5.3g 07P preview
 - [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
   - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)
-  - [ ] 5.4b รูปในเนื้อหา · 5.4c หน้า Media · 5.4d คลิป (Vercel Blob)
+  - [x] 5.4b รูปในเนื้อหา: ปุ่ม Image / ลากวาง / paste · ตั้งชื่อเองก่อน Save
+  - [ ] 5.4c หน้า Media · 5.4d คลิป (Vercel Blob)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
