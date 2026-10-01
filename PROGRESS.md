@@ -8,7 +8,8 @@
 
 - ขั้น 4 เสร็จ (30 ก.ย. 69): เว็บจริงอ่านบทความจาก GitHub แล้ว · hello-world published เป็นบทความแรก
 - ขั้น 5.1 Login เสร็จ (1 ต.ค. 69): login บนเว็บจริงได้ · commit "Sign in · Mac · Safari" ลง content repo · Firewall ตั้งแล้ว
-- 5.2 Admin hub เสร็จ + commit แล้ว (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin · **ยังไม่ push**
+- 5.2 Admin hub เสร็จ (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin
+- push ถึง `ae7faa4` แล้ว (1 ต.ค. 69 คืน): admin + Editor (RAW .MD) + login ด้วย Redis ขึ้นเว็บจริง
 - กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
 - login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost ใช้ `111111`
 - dev ตอนนี้ชี้ไป **GitHub repo จริง** (`.env.development.local`: `CONTENT_DIR=` + token ของเจ้าของ) · กลับไปใช้ fixtures = ลบบรรทัด `CONTENT_DIR=` หรือลบไฟล์นั้น
@@ -16,7 +17,7 @@
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
-- [ ] ลบ `sessions.json` ออกจาก content repo (รอเจ้าของตกลง) · push แล้วเว็บจริงทุกเครื่องต้อง login ใหม่ครั้งเดียว
+- [x] ลบ `sessions.json` ออกจาก content repo แล้ว · หลัง push ทุกเครื่องต้อง login ใหม่ครั้งเดียว
 - [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
 - [ ] rebuild `index.json` ใน content repo (ช่องใหม่: images, videos, codeBlocks, bytes, lastCommit) แล้ว push
 
