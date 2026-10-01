@@ -11,8 +11,8 @@
 - 5.2 Admin hub เสร็จ (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin
 - push ถึง `ae7faa4` แล้ว (1 ต.ค. 69 คืน): admin + Editor (RAW .MD) + login ด้วย Redis ขึ้นเว็บจริง
 - กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
-- login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost ใช้ `111111`
-- dev ตอนนี้ชี้ไป **GitHub repo จริง** (`.env.development.local`: `CONTENT_DIR=` + token ของเจ้าของ) · กลับไปใช้ fixtures = ลบบรรทัด `CONTENT_DIR=` หรือลบไฟล์นั้น
+- login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost กับ fixtures ใช้ `111111`
+- dev ใช้ fixtures (mockup 36 เรื่อง) เป็นค่าเริ่มต้น · ทดสอบกับ GitHub จริง = เพิ่มบรรทัด `CONTENT_DIR=` ใน `.env.development.local` (token อยู่ในไฟล์แล้ว) แล้วใช้รหัส Authenticator — 111111 ใช้ได้กับ fixtures เท่านั้น
 
 ## ทำต่อ
 

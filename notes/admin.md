@@ -25,6 +25,7 @@
   - `device` จาก User-Agent ("iPhone · Safari") · `city` จาก header `x-vercel-ip-city` (dev = ว่าง)
   - `currentSession()` = cookie ถูก **และ** `session:<id>` ยังอยู่ (1 คำสั่งต่อหน้า admin)
   - 111111 ใน dev → เข้า `dev:` เท่านั้น ไม่ปนของจริง
+  - 111111 ใช้ได้เฉพาะ `next dev` **และ** dev อยู่ที่ fixtures (`CONTENT_DIR`) · dev ชี้ GitHub จริง = ต้องใช้รหัส Authenticator (รหัสง่าย + สิทธิ์เขียนของจริงไม่อยู่ด้วยกัน — dev server เข้าถึงได้จาก Wi-Fi บ้าน) (1 ต.ค. 69)
 - `src/proxy.ts` (Next 16 เปลี่ยนชื่อ middleware เป็น proxy) — `/admin/…` ไม่มี cookie ถูก → `/login?next=…`
   - เช็กแค่ลายเซ็นกับวันหมดอายุ ไม่อ่าน Redis · หน้า admin เช็กอีกชั้น
 - `/api/login` POST `{ code }` → 200 / 401 (ผิด หรือใช้ซ้ำ — ผิดก็ลงประวัติ) / 503 (ยังไม่ตั้ง `TOTP_SECRET` หรือ Redis ใช้ไม่ได้)
