@@ -41,6 +41,9 @@
 - `?next=` รับเฉพาะ path ใต้ `/admin` (กันพาไปเว็บอื่น)
 - ลิงก์วิดีโอ YouTube ยังเป็น `#`
 
+- หลัง login ทันที GitHub อาจยังส่ง sessions.json เก่ามาไม่กี่วินาที → เคยเด้งกลับ /login · ตอนนี้ cookie ถูกต้องแต่ไม่อยู่ในรายการที่ cache = อ่านไฟล์สดอีกสูงสุด 2 ครั้ง (ห่าง 0.8 วิ) ก่อนถือว่าหลุด
+- login ใน dev ที่ชี้ GitHub จริง = 1 commit "Sign in" (รายการเครื่องอยู่ใน repo)
+
 ## Secret
 
 - dev: `.env.development` มี `TOTP_SECRET` / `SESSION_SECRET` สำหรับเครื่องนี้เท่านั้น

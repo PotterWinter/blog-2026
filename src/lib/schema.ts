@@ -121,6 +121,7 @@ export function toMeta(data: Record<string, unknown>, slug: string): PostMeta {
 // .md it changes; scripts/rebuild-index.ts rebuilds it from the .md files when needed.
 
 export type IndexEntry = PostMeta & {
+  file: string; // "posts/037-editor-test.md" (older files: "posts/<slug>.md")
   createdAt: string; // first commit of the .md
   revisions: number; // commits that touched it
   words: number;
@@ -151,13 +152,32 @@ export type ContentIndex = { nextId: number; posts: IndexEntry[] };
 export function readIndex(text: string | null): ContentIndex {
   if (!text) return { nextId: 1, posts: [] };
   const index = JSON.parse(text) as ContentIndex;
-  for (const p of index.posts) p.no ??= p.status === "published" ? p.id : null;
+  for (const p of index.posts) {
+    p.no ??= p.status === "published" ? p.id : null;
+    p.file ??= `posts/${p.slug}.md`; // before files were numbered
+  }
   return index;
+}
+
+// Where a post lives: its id first, so the folder lists in the order posts were made
+// (GitHub, Finder, Obsidian), and a slug change keeps its place — the URL is the slug
+// alone (owner, 1 Oct 69). 3 digits; past 999 they simply get longer.
+export const postFile = (id: number, slug: string) => `posts/${String(id).padStart(3, "0")}-${slug}.md`;
+
+// A file's slug: its name without ".md" and without the id in front ("037-x.md" → "x"),
+// read against the id in its frontmatter so a slug that starts with a number
+// ("2026-review.md") isn't cut
+export function sourceSlug(name: string, text: string): string {
+  const base = name.replace(/\.md$/, "");
+  const id = /^id:\s*(\d+)\s*$/m.exec(text)?.[1];
+  const prefix = id && `${id.padStart(3, "0")}-`;
+  return prefix && base.startsWith(prefix) ? base.slice(prefix.length) : base;
 }
 
 export type SourceFile = {
   slug: string;
   text: string;
+  file?: string; // its path; "posts/<slug>.md" when not given
   // From git, when the folder is a repo; otherwise the publish date and 1
   createdAt?: string;
   revisions?: number;
@@ -165,12 +185,13 @@ export type SourceFile = {
 };
 
 // One .md checked and summarised for the index
-export function indexEntry({ slug, text, createdAt, revisions, lastCommit }: SourceFile): IndexEntry {
+export function indexEntry({ slug, text, file, createdAt, revisions, lastCommit }: SourceFile): IndexEntry {
   const { data, body } = splitFrontmatter(text, slug);
   const meta = toMeta(data, slug);
   const words = countWords(body);
   return {
     ...meta,
+    file: file ?? `posts/${slug}.md`,
     createdAt: createdAt ?? `${meta.publishedAt}T00:00:00+07:00`,
     revisions: revisions ?? 1,
     words,

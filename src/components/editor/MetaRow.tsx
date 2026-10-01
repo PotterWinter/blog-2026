@@ -14,11 +14,13 @@ import styles from "./Editor.module.css";
 // Checks (live too; Publish with issues asks twice)
 export default function MetaRow({
   form,
+  file,
   entry,
   checks,
   published,
 }: {
   form: Form;
+  file: string;
   entry: IndexEntry | null;
   checks: Check[];
   published: boolean;
@@ -56,7 +58,7 @@ export default function MetaRow({
         <dt className="label">Created</dt>
         <dd className={styles.mono}>{entry ? stamp(entry.createdAt) : "on the first save"}</dd>
         <dt className="label">Path</dt>
-        <dd className={styles.mono}>posts/{form.slug || "…"}.md</dd>
+        <dd className={styles.mono}>{file}</dd>
       </dl>
       <dl className={styles.facts}>
         <dt className={`label ${styles.factsHead}`}>Post</dt>

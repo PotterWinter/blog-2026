@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PostLink } from "@/lib/schema";
 import styles from "./Editor.module.css";
 
@@ -216,6 +216,38 @@ export function LinksField({ links, onChange }: { links: PostLink[]; onChange: (
 }
 
 // ---------- Cover (the top image, also the card's and the shared link's) ----------
+// Beside its label, as v4: the file's size and pixels ("164 KB · 2400 × 1500") — of the
+// file itself, not the resized copy the page shows — or, with none yet, the size to aim
+// for. Covers are 2:1 (07N: the card, the list's peek and the post's top share one
+// crop), 2400 wide covers a 1200px box on a 2× screen.
+
+const RECOMMENDED = "2400 × 1200 recommended · 2:1";
+
+type Measured = { src: string; width: number; height: number; bytes: number };
+
+function useMeasure(src: string | null) {
+  const [measured, setMeasured] = useState<Measured | null>(null);
+  useEffect(() => {
+    if (!src) return;
+    let live = true;
+    const url = `/${src}`;
+    const img = new window.Image();
+    img.onload = async () => {
+      const bytes = await fetch(url)
+        .then((r) => r.blob())
+        .then((b) => b.size)
+        .catch(() => 0);
+      if (live) setMeasured({ src, width: img.naturalWidth, height: img.naturalHeight, bytes });
+    };
+    img.src = url;
+    return () => {
+      live = false;
+    };
+  }, [src]);
+  return measured?.src === src ? measured : null;
+}
+
+const kb = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
 
 export function CoverField({
   cover,
@@ -226,11 +258,16 @@ export function CoverField({
   alt: string;
   onChange: (cover: string | null, alt: string) => void;
 }) {
+  const size = useMeasure(cover);
+  const off = size && Math.abs(size.width / size.height - 2) > 0.06;
   return (
     <div className={`${styles.field} ${styles.cover}`}>
       <span className={styles.labelRow}>
         <span className="label" title="Top image of the post · also used when a link is shared">
           Cover
+        </span>
+        <span className={styles.coverSize} data-off={off || undefined} title={off ? "Covers are 2:1 — this one will be cropped" : undefined}>
+          {!cover ? RECOMMENDED : size ? `${size.bytes ? `${kb(size.bytes)} · ` : ""}${size.width} × ${size.height}${off ? " · not 2:1" : ""}` : "…"}
         </span>
         {cover && (
           <button type="button" className={styles.remove} onClick={() => onChange(null, alt)}>
@@ -242,7 +279,11 @@ export function CoverField({
         {cover ? (
           <Image src={`/${cover}`} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className={styles.coverImg} />
         ) : (
-          <span className={styles.coverEmpty}>No cover · type its path below (upload comes with Media, 5.4)</span>
+          <span className={styles.coverEmpty}>
+            No cover · {RECOMMENDED}
+            <br />
+            type its path below for now (upload comes with Media, 5.4)
+          </span>
         )}
       </span>
       <label className={styles.inline}>

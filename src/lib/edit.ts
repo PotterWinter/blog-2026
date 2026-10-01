@@ -1,5 +1,6 @@
 import {
   indexEntry,
+  postFile,
   splitFrontmatter,
   toMarkdown,
   toMeta,
@@ -33,7 +34,8 @@ export type PostInput = {
 };
 
 export type Change = { path: string; text: string | null }; // null = remove the file
-export type Plan = { changes: Change[]; message: string; index: ContentIndex; entry: IndexEntry | null };
+// slugs: the posts whose pages change (their cache is cleared)
+export type Plan = { changes: Change[]; message: string; index: ContentIndex; entry: IndexEntry | null; slugs: string[] };
 
 export type Action = "Publish" | "Edit" | "Draft" | "Delete";
 
@@ -64,7 +66,6 @@ export const commitMessage = (now: Date, action: Action, id: number) => `${bangk
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const postPath = (slug: string) => `posts/${slug}.md`;
 
 // The index with one entry put in (or taken out), newest id first, as buildIndex leaves it
 function withEntry(index: ContentIndex, id: number, entry: IndexEntry | null, nextId = index.nextId): ContentIndex {
@@ -80,18 +81,25 @@ function find(index: ContentIndex, id: number): IndexEntry {
   return entry;
 }
 
-// The .md, checked the way every read checks it, then summarised for the index
+// The .md, checked the way every read checks it, then summarised for the index. It's
+// written to posts/<id>-<slug>.md; if it was somewhere else (an older unnumbered file,
+// or the slug changed) that file goes in the same commit.
 function written(meta: PostMeta, body: string, before: IndexEntry | null, now: Date, message: string) {
   const text = toMarkdown(meta, body);
   toMeta(splitFrontmatter(text, meta.slug).data, meta.slug); // throws on anything a read would refuse
+  const path = postFile(meta.id, meta.slug);
   const entry = indexEntry({
     slug: meta.slug,
     text,
+    file: path,
     createdAt: before?.createdAt ?? bangkok(now).iso,
     revisions: (before?.revisions ?? 0) + 1,
     lastCommit: message,
   });
-  return { text, entry };
+  const changes: Change[] = [{ path, text }];
+  if (before && before.file !== path) changes.push({ path: before.file, text: null });
+  const slugs = [...new Set([meta.slug, ...(before ? [before.slug] : [])])];
+  return { entry, changes, slugs };
 }
 
 // Save (Save draft, or a published post's edits): a new post gets the next id and
@@ -116,15 +124,8 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date): Plan
     updatedAt: today,
   };
   const message = commitMessage(now, before?.status === "published" ? "Edit" : "Draft", id);
-  const { text, entry } = written(meta, body, before, now, message);
-  const changes: Change[] = [{ path: postPath(meta.slug), text }];
-  if (before && before.slug !== meta.slug) changes.push({ path: postPath(before.slug), text: null });
-  return {
-    changes,
-    message,
-    index: withEntry(index, id, entry, before ? index.nextId : id + 1),
-    entry,
-  };
+  const { entry, changes, slugs } = written(meta, body, before, now, message);
+  return { changes, message, index: withEntry(index, id, entry, before ? index.nextId : id + 1), entry, slugs };
 }
 
 // Publish: the first time, the section's next number and today's date; again after an
@@ -138,7 +139,7 @@ export function planPublish(index: ContentIndex, id: number, file: string, now: 
   const top = Math.max(0, ...index.posts.filter((p) => p.section === meta.section).map((p) => p.no ?? 0));
   const today = bangkok(now).date;
   const message = commitMessage(now, "Publish", id);
-  const { text, entry } = written(
+  const { entry, changes, slugs } = written(
     {
       ...meta,
       status: "published",
@@ -151,7 +152,7 @@ export function planPublish(index: ContentIndex, id: number, file: string, now: 
     now,
     message,
   );
-  return { changes: [{ path: postPath(meta.slug), text }], message, index: withEntry(index, id, entry), entry };
+  return { changes, message, index: withEntry(index, id, entry), entry, slugs };
 }
 
 // Unpublish: back to a draft, off the site; it keeps its number for when it goes back up
@@ -161,8 +162,8 @@ export function planUnpublish(index: ContentIndex, id: number, file: string, now
   const { data, body } = splitFrontmatter(file, before.slug);
   const meta = toMeta(data, before.slug);
   const message = commitMessage(now, "Draft", id);
-  const { text, entry } = written({ ...meta, status: "draft", updatedAt: bangkok(now).date }, body, before, now, message);
-  return { changes: [{ path: postPath(meta.slug), text }], message, index: withEntry(index, id, entry), entry };
+  const { entry, changes, slugs } = written({ ...meta, status: "draft", updatedAt: bangkok(now).date }, body, before, now, message);
+  return { changes, message, index: withEntry(index, id, entry), entry, slugs };
 }
 
 // Delete: drafts only (a published post is unpublished first). The id is never given
@@ -172,10 +173,11 @@ export function planDelete(index: ContentIndex, id: number, now: Date): Plan {
   if (before.status !== "draft") throw new Error(`#${id} is published: unpublish it first`);
   const message = commitMessage(now, "Delete", id);
   return {
-    changes: [{ path: postPath(before.slug), text: null }],
+    changes: [{ path: before.file, text: null }],
     message,
     index: withEntry(index, id, null),
     entry: null,
+    slugs: [before.slug],
   };
 }
 

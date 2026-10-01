@@ -67,6 +67,14 @@ npm run rebuild-index -- ../blog-content
 - ลำดับ: ผู้อ่าน = วันที่ใหม่สุดก่อน · admin = draft ก่อน (สร้างใหม่สุดก่อน) แล้วที่ publish ล่าสุด (blog / project นับเลขแยก → ข้าม section เรียงตามวันที่ publish)
 - ทำแล้ว (5.3a): `no` ใน frontmatter + `PostMeta` · ไม่มี `no` แต่ published = ใช้ `id` (hello-world ใน repo จริง, index.json เก่า) · `(section, no)` ซ้ำ = buildIndex หยุด · แสดงด้วย `postNo()` (`012`, admin `P01`, draft `—`)
 
+## ชื่อไฟล์ (1 ต.ค. 69)
+
+- `posts/037-<slug>.md` — id 3 หลักนำหน้า: เรียงตามลำดับที่สร้างใน GitHub / Finder / Obsidian · URL ยังเป็น `/posts/<slug>`
+- index เก็บ `file` ของแต่ละโพสต์ · เปิดโพสต์ด้วย slug = หา file จาก index (ไม่มีใน index = ลอง `posts/<slug>.md`)
+- slug ของไฟล์ = ชื่อไฟล์ตัด `<id>-` ที่ตรงกับ id ใน frontmatter (slug ที่ขึ้นต้นด้วยเลขเองไม่โดนตัด)
+- ไฟล์เก่าไม่มีเลข (hello-world ใน repo จริง) ย้ายเป็นชื่อใหม่เองตอน save ครั้งถัดไป ใน commit เดียวกัน
+- media แยกโฟลเดอร์ต่างหาก (ไม่ทำโฟลเดอร์ต่อโพสต์แบบ v4) · ชื่อรูปจะมี id นำหน้าเหมือนกัน — ทำใน 5.4
+
 ## โค้ด
 
 - `src/lib/schema.ts` — ชนิดข้อมูล, ตรวจ frontmatter, `buildIndex` (ไม่มี import ฝั่ง server ใช้ใน script ได้)

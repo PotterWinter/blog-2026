@@ -49,10 +49,20 @@ const cachedIds = unstable_cache(
 
 // The signed-in session, or null: cookie good AND still in the list (signed out
 // elsewhere = gone)
+//
+// Right after a sign-in, GitHub can still hand back the sessions.json from before it for a
+// few seconds, so the new device isn't on the list yet and the first page sent it back
+// to /login (seen 1 Oct 69). A cookie that checks out (signed by us) but isn't on the
+// cached list gets the file read fresh, twice at most, before it counts as signed out.
 export async function currentSession(): Promise<{ id: string } | null> {
   const cookie = readCookie((await cookies()).get(COOKIE)?.value);
   if (!cookie) return null;
-  return (await cachedIds()).includes(cookie.id) ? { id: cookie.id } : null;
+  if ((await cachedIds()).includes(cookie.id)) return { id: cookie.id };
+  for (let tries = 0; tries < 2; tries++) {
+    if (tries) await new Promise((r) => setTimeout(r, 800));
+    if ((await readList()).file.sessions.some((s) => s.id === cookie.id)) return { id: cookie.id };
+  }
+  return null;
 }
 
 export async function allSessions(): Promise<Session[]> {

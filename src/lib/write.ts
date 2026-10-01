@@ -117,17 +117,15 @@ async function commit(work: (read: Reader) => Promise<Plan>): Promise<{ plan: Pl
 // reads; a write clears what it touched)
 function refresh(slugs: string[]) {
   revalidateTag("index", { expire: 0 });
-  for (const slug of new Set(slugs)) revalidateTag(`post:${slug}`, { expire: 0 });
+  for (const slug of slugs) revalidateTag(`post:${slug}`, { expire: 0 });
 }
-
-const slugOf = (change: Change) => change.path.replace(/^posts\/|\.md$/g, "");
 
 // entry: the post as the index now has it (null once deleted)
 export type Saved = { id: number; slug: string; message: string; sha: string | null; entry: IndexEntry | null };
 
 const done = ({ plan, sha }: { plan: Plan; sha: string | null }, id: number): Saved => {
-  refresh(plan.changes.map(slugOf));
-  return { id, slug: plan.entry?.slug ?? slugOf(plan.changes[0]), message: plan.message, sha, entry: plan.entry };
+  refresh(plan.slugs);
+  return { id, slug: plan.entry?.slug ?? plan.slugs[0], message: plan.message, sha, entry: plan.entry };
 };
 
 export async function savePost(input: PostInput): Promise<Saved> {
@@ -139,8 +137,8 @@ async function withFile(id: number, read: Reader) {
   const index = await read.index();
   const entry = index.posts.find((p) => p.id === id);
   if (!entry) throw new Error(`No post #${id}`);
-  const file = await read.file(`posts/${entry.slug}.md`);
-  if (file == null) throw new Error(`posts/${entry.slug}.md is missing`);
+  const file = await read.file(entry.file);
+  if (file == null) throw new Error(`${entry.file} is missing`);
   return { index, file };
 }
 

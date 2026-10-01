@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   buildIndex,
   readIndex,
+  sourceSlug,
   splitFrontmatter,
   toMeta,
   type ContentIndex,
@@ -70,9 +71,13 @@ export async function localIndex(): Promise<ContentIndex> {
   } catch {
     return { nextId: 1, posts: [] };
   }
-  const slugs = names.filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3));
   const files = await Promise.all(
-    slugs.map(async (slug) => ({ slug, text: (await readText(`posts/${slug}.md`, []))! })),
+    names
+      .filter((name) => name.endsWith(".md"))
+      .map(async (name) => {
+        const text = (await readText(`posts/${name}`, []))!;
+        return { slug: sourceSlug(name, text), text, file: `posts/${name}` };
+      }),
   );
   return buildIndex(files);
 }
@@ -95,7 +100,10 @@ export async function getPosts({
 
 export async function getPost(slug: string): Promise<Post | null> {
   if (!/^[a-z0-9-]+$/.test(slug)) return null; // never let a slug walk out of posts/
-  const text = await readText(`posts/${slug}.md`, [`post:${slug}`]);
+  // The file comes from the index ("posts/037-<slug>.md"); a post not in it yet (edited
+  // on GitHub) may still be at the old place, "posts/<slug>.md"
+  const entry = (await getIndex()).posts.find((p) => p.slug === slug);
+  const text = await readText(entry?.file ?? `posts/${slug}.md`, [`post:${slug}`]);
   if (text == null) return null;
   const { data, body } = splitFrontmatter(text, slug);
   return { ...toMeta(data, slug), body };

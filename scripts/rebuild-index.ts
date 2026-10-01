@@ -7,7 +7,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { buildIndex, type ContentIndex, type SourceFile } from "../src/lib/schema.ts";
+import { buildIndex, sourceSlug, type ContentIndex, type SourceFile } from "../src/lib/schema.ts";
 
 const dir = path.resolve(process.argv[2] ?? ".");
 const postsDir = path.join(dir, "posts");
@@ -22,8 +22,8 @@ const git = (...args: string[]) => execFileSync("git", ["-C", dir, ...args], { e
 const files: SourceFile[] = readdirSync(postsDir)
   .filter((name) => name.endsWith(".md"))
   .map((name) => {
-    const slug = name.slice(0, -3);
-    const file: SourceFile = { slug, text: readFileSync(path.join(postsDir, name), "utf8") };
+    const text = readFileSync(path.join(postsDir, name), "utf8");
+    const file: SourceFile = { slug: sourceSlug(name, text), text, file: `posts/${name}` };
     if (isRepo) {
       const log = git("log", "--follow", "--format=%h %aI", "--", `posts/${name}`).trim().split("\n").filter(Boolean);
       if (log.length) {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { publish, remove, save, unpublish, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, slugify, toRaw, type PostInput } from "@/lib/edit";
-import type { IndexEntry, Post } from "@/lib/schema";
+import { postFile, type IndexEntry, type Post } from "@/lib/schema";
 import { categories, projectCategories } from "@/lib/site";
 import { usePageTransition } from "../PageTransition";
 import Segmented from "../Segmented";
@@ -78,6 +78,8 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   const [asking, setAsking] = useState<"delete" | "unpublish" | null>(null);
 
   const id = entry?.id ?? null;
+  // Where it is (or will be, on the first save): posts/<id>-<slug>.md
+  const file = id != null ? postFile(id, form.slug || "…") : `posts/new-${form.slug || "…"}.md`;
   const setNote = (next: Note | null, forId: number | null = id) => {
     if (next) notes.set(forId ?? "new", next);
     else notes.delete(forId ?? "new");
@@ -200,7 +202,8 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   const raw = useMemo(() => toRaw(form), [form]);
   const onRaw = (text: string) => {
     const parsed = fromRaw(text, form.slug || "new"); // throws: RawBox shows why
-    setForm((f) => ({ ...f, ...parsed }));
+    // A title typed (or pasted) here makes the slug too, while it's still automatic
+    setForm((f) => ({ ...f, ...parsed, ...(slugAuto && { slug: slugify(parsed.title) }) }));
     setWarned(false);
   };
 
@@ -228,7 +231,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
         <span className={styles.id} title="Post ID · primary key, never reused">
           {id == null ? "New" : `#${id}`}
         </span>
-        <span className={`${styles.mono} ${styles.path}`}>posts/{form.slug || "…"}.md</span>
+        <span className={`${styles.mono} ${styles.path}`}>{file}</span>
         <span className="label">{status}</span>
         <span className={styles.saved} data-state={error ? "bad" : busy ? "busy" : dirty ? "dirty" : undefined}>
           {error ? (
@@ -428,7 +431,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           />
         </div>
 
-        <MetaRow form={form} entry={entry} checks={checks} published={published} />
+        <MetaRow form={form} file={file} entry={entry} checks={checks} published={published} />
 
         <div className={styles.tools}>
           <Segmented
@@ -444,7 +447,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           <span className={styles.toolsNote}>Markdown, frontmatter included · ⌘S saves</span>
         </div>
 
-        <RawBox file={`${form.slug || "new"}.md`} text={raw} onChange={onRaw} />
+        <RawBox file={file.replace(/^posts\//, "")} text={raw} onChange={onRaw} />
       </main>
     </>
   );

@@ -11,6 +11,7 @@
 - 5.2 Admin hub เสร็จ + commit แล้ว (1 ต.ค. 69): grid + list + แผงรายละเอียด + Checks + sheet มือถือ + page transition ใน admin · **ยังไม่ push**
 - กำลังทำ 5.3 Editor = เริ่มฝั่งเขียน (backend): เซฟ / publish / ลบ เป็น commit ลง content repo
 - login: เว็บจริงใช้รหัสจากแอป Authenticator · localhost ใช้ `111111`
+- dev ตอนนี้ชี้ไป **GitHub repo จริง** (`.env.development.local`: `CONTENT_DIR=` + token ของเจ้าของ) · กลับไปใช้ fixtures = ลบบรรทัด `CONTENT_DIR=` หรือลบไฟล์นั้น
 
 ## ทำต่อ
 
@@ -86,7 +87,8 @@
   - [x] 5.3a เลข `no` แยกต่อ section (`id` ภายใน) · fixtures ใส่แล้ว · index เก่าที่ไม่มี `no` ใช้ id แทน → [notes/content.md](notes/content.md)
   - [x] 5.3b ฝั่งเขียน: commit .md + index.json ครั้งเดียว · Save / Publish / Unpublish / Delete — ทดสอบใน dev แล้ว · **ทาง GitHub ยังไม่ได้ลองกับ repo จริง**
   - ตัวแก้ข้อความ WRITE = Tiptap (เจ้าของเลือก 1 ต.ค. 69)
-  - [x] 5.3c หน้า Editor + โหมด RAW .MD — ใช้งานได้ใน dev (สร้าง / save / publish / unpublish / ลบ) · **รอทดสอบกับ GitHub จริง**
+  - [x] 5.3c หน้า Editor + โหมด RAW .MD — ทดสอบกับ GitHub จริงผ่าน (1 ต.ค. 69): Draft / Publish / Delete เป็น commit เดียวต่อครั้ง · repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีรูป — ใส่ตอน 5.4)
+  - [x] ชื่อไฟล์ `posts/<id>-<slug>.md` · hello-world ย้ายชื่อเองตอน save ครั้งถัดไป
   - [ ] 5.3d โหมด WRITE (ต้องเลือกตัวแก้ข้อความก่อน — แนะนำ Tiptap)
   - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
   - [ ] 5.3f Checks ตรวจจริง
