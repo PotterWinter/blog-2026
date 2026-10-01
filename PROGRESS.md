@@ -16,6 +16,7 @@
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
+- [ ] ลบ `sessions.json` ออกจาก content repo (รอเจ้าของตกลง) · push แล้วเว็บจริงทุกเครื่องต้อง login ใหม่ครั้งเดียว
 - [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
 - [ ] rebuild `index.json` ใน content repo (ช่องใหม่: images, videos, codeBlocks, bytes, lastCommit) แล้ว push
 
@@ -72,10 +73,10 @@
 
 ## ขั้น 5 · Login (05) → Admin (06–09)
 
-ตัดสินใจ (30 ก.ย. 69): rate limit = กฎ Vercel Firewall (POST `/api/login` ≤ 5 ครั้ง / 10 นาที ต่อ IP) · รายการ session = `sessions.json` ใน content repo · มี homelab database เมื่อไหร่ค่อยย้ายทั้งสองไปที่นั่น
+ตัดสินใจ (30 ก.ย. 69): rate limit = กฎ Vercel Firewall (POST `/api/login` ≤ 5 ครั้ง / 10 นาที ต่อ IP) · รายการ session = ~~`sessions.json`~~ **Upstash Redis** (1 ต.ค. 69 — login / sign out ไม่เป็น commit แล้ว) · มี homelab database เมื่อไหร่ค่อยย้ายไปที่นั่น
 
 - [x] 5.1 Login (05) → [notes/admin.md](notes/admin.md)
-  - [x] TOTP เขียนเอง · session cookie + `sessions.json` · `proxy.ts` กัน `/admin`
+  - [x] TOTP เขียนเอง · session cookie + Redis (เดิม `sessions.json`) · `proxy.ts` กัน `/admin`
   - [x] หน้า `/login` ตาม v4 (ช่องรหัส 6 ช่อง, Paste, Continue)
   - [x] token Read and write · `TOTP_SECRET` / `SESSION_SECRET` บน Vercel · กฎ Firewall "Login rate limit" (POST `/api/login`, 5 ครั้ง / 600 วิ ต่อ IP → 429)
 - [x] 5.2 Admin hub (06 / 06B) → [notes/admin.md](notes/admin.md)
@@ -108,7 +109,7 @@
 
 ## อนาคต (มี homelab database แล้ว)
 
-- [ ] ย้าย rate limit + sessions จาก Firewall / `sessions.json` ไป database
+- [ ] ย้าย rate limit + sessions + ประวัติ login จาก Firewall / Redis ไป database
 - [ ] ย้ายบทความไป database (ถ้าทำ): .md เป็นต้นฉบับ มี `id` + `no` ครบ → [notes/content.md](notes/content.md)
 - [ ] แยก backend เป็น API ของตัวเองบน homelab (ตอนนี้ Next.js ทำทั้งหน้าเว็บและ backend ใน `npm run dev` ตัวเดียว) — เปลี่ยนแค่ `lib/write.ts` + `lib/content.ts` ให้เรียก API นั้น · `lib/edit.ts` และหน้า Editor ไม่ต้องแตะ (เจ้าของ, 1 ต.ค. 69)
 - [ ] Dashboard ยอดคนอ่านต่อบทความ, บทความยอดนิยม, ประวัติ login

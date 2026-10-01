@@ -6,8 +6,10 @@
 
 - TOTP อย่างเดียว ไม่มี user / password (ตกลงไว้ตั้งแต่ขั้น 0)
 - rate limit = กฎ Vercel Firewall: POST `/api/login` ≤ 5 ครั้ง / 10 นาที ต่อ IP
-- รายการ session = `sessions.json` ใน content repo · login / sign out = 1 commit
-- มี homelab database เมื่อไหร่ ค่อยย้ายทั้งสองไปที่นั่น
+- ~~รายการ session = `sessions.json` ใน content repo~~ → **Upstash Redis** (1 ต.ค. 69): login / sign out เคย = 1 commit ใน repo บทความ เจ้าของไม่เอา
+  - Vercel Marketplace · แผน Free (500k คำสั่ง/เดือน, 1 ฐานต่อบัญชี) · iad1 · eviction ปิด · env `KV_REST_API_URL` / `KV_REST_API_TOKEN` (Production + Preview + Development, ไม่ sensitive เพื่อให้ dev ดึงได้)
+  - dev ใช้ฐานเดียวกัน แยกด้วยคำนำหน้า key: `prod:` / `preview:` / `dev:` · `vercel env pull .env.local`
+- มี homelab database เมื่อไหร่ ค่อยย้าย session + ประวัติ + rate limit ไปที่นั่น
 
 ## ทำงานยังไง
 
@@ -15,17 +17,18 @@
   - รับรหัสช่วงก่อน/หลัง 1 ช่วง (±30 วิ) เผื่อนาฬิกามือถือคลาด
   - ผ่านชุดทดสอบมาตรฐานของ RFC ครบ
 - `src/lib/cookie.ts` — cookie `session` = `<id>.<หมดอายุ>.<ลายเซ็น>` เซ็นด้วย `SESSION_SECRET` (HMAC-SHA256) · อายุ 30 วัน · httpOnly
-- `src/lib/session.ts`
-  - `sessions.json` = `{ sessions: [{ id, device, city, createdAt }], lastStep }`
-  - `lastStep` = ช่วงเวลาของรหัสล่าสุดที่ใช้ → รหัสเดิมใช้ซ้ำไม่ได้
+- `src/lib/redis.ts` — Upstash ผ่าน REST (`fetch` เอง ไม่มี library) · `redis(...)` / `pipeline([...])` · ไม่มี env = error บอกชื่อตัวที่ขาด
+- `src/lib/session.ts` (key ทุกตัวขึ้นต้นด้วยคำนำหน้า)
+  - `session:<id>` = `{ id, device, city, createdAt }` หมดอายุ 30 วันพร้อม cookie · `sessions` = set ของ id (Settings)
+  - `totp:<step>` = `SET NX EX 120` → รหัสเดิมใช้ซ้ำไม่ได้ (เช็กกับจองในคำสั่งเดียว)
+  - `logins` = ประวัติล่าสุด 500 (in / out / wrong-code / reused-code) ไว้ทำ dashboard · `loginHistory()`
   - `device` จาก User-Agent ("iPhone · Safari") · `city` จาก header `x-vercel-ip-city` (dev = ว่าง)
-  - `currentSession()` = cookie ถูก **และ** id ยังอยู่ในรายการ (ถูก sign out จากเครื่องอื่น = หลุด)
-  - รายการ id cache ไว้ (tag `sessions`) ล้างทันที (`revalidateTag(…, { expire: 0 })`) เมื่อ login / sign out
+  - `currentSession()` = cookie ถูก **และ** `session:<id>` ยังอยู่ (1 คำสั่งต่อหน้า admin)
+  - 111111 ใน dev → เข้า `dev:` เท่านั้น ไม่ปนของจริง
 - `src/proxy.ts` (Next 16 เปลี่ยนชื่อ middleware เป็น proxy) — `/admin/…` ไม่มี cookie ถูก → `/login?next=…`
-  - เช็กแค่ลายเซ็นกับวันหมดอายุ ไม่อ่าน repo · หน้า admin เช็กรายการอีกชั้น
-- `/api/login` POST `{ code }` → 200 / 401 (ผิด หรือใช้ซ้ำ) / 503 (ยังไม่ตั้ง `TOTP_SECRET`)
-- `/api/logout` POST → ลบเครื่องนี้ออกจากรายการ + ลบ cookie
-- `content.ts`: `readFresh` (ไม่ผ่าน cache + sha) · `writeContent` (PUT contents API = 1 commit; sha ไม่ตรง = 409 ไม่เขียนทับ) — ขั้น 5 ต่อไปใช้เขียนบทความด้วย
+  - เช็กแค่ลายเซ็นกับวันหมดอายุ ไม่อ่าน Redis · หน้า admin เช็กอีกชั้น
+- `/api/login` POST `{ code }` → 200 / 401 (ผิด หรือใช้ซ้ำ — ผิดก็ลงประวัติ) / 503 (ยังไม่ตั้ง `TOTP_SECRET` หรือ Redis ใช้ไม่ได้)
+- `/api/logout` POST → ลบเครื่องนี้ + ลบ cookie
 
 ## หน้า 05 Login (`/login`) — ตาม v4
 
@@ -41,8 +44,7 @@
 - `?next=` รับเฉพาะ path ใต้ `/admin` (กันพาไปเว็บอื่น)
 - ลิงก์วิดีโอ YouTube ยังเป็น `#`
 
-- หลัง login ทันที GitHub อาจยังส่ง sessions.json เก่ามาไม่กี่วินาที → เคยเด้งกลับ /login · ตอนนี้ cookie ถูกต้องแต่ไม่อยู่ในรายการที่ cache = อ่านไฟล์สดอีกสูงสุด 2 ครั้ง (ห่าง 0.8 วิ) ก่อนถือว่าหลุด
-- login ใน dev ที่ชี้ GitHub จริง = 1 commit "Sign in" (รายการเครื่องอยู่ใน repo)
+- (สมัย sessions.json: หลัง login GitHub ส่งไฟล์เก่ามาไม่กี่วินาที → เด้งกลับ /login · หมดปัญหาเมื่อย้ายไป Redis)
 
 ## Secret
 
