@@ -261,15 +261,19 @@ export default function ContentsRail() {
     // Where each entry takes the page: its heading (Title: the title) OFFSET below the top
     // of the screen — never the very top, where the rail isn't held mid-screen yet and
     // would slide out from under the pointer
+    // Phones: never past the furthest the page can go with the rail still held mid-screen.
+    // A short last section would otherwise take its heading to the top and the article's
+    // end with it, pushing the rail up; it stops a little lower instead (owner, 2 Oct 69).
+    // End goes exactly there — the rail's range ends --rail-end above Previous | Next.
     const topOf = (k: number) => {
       const h = heads[k];
       if (!h) return 0;
-      if (phone.matches && items[k].id === "post-end" && zone) {
-        // The rail's range ends --rail-end above Previous | Next (.rail bottom)
-        const end = pageTop(zone) + zone.offsetHeight - px("--rail-end");
-        return Math.max(0, end - heldAt - nav.offsetHeight - slack);
-      }
-      return Math.max(0, h.getBoundingClientRect().top + window.scrollY - OFFSET);
+      const held =
+        phone.matches && zone
+          ? pageTop(zone) + zone.offsetHeight - px("--rail-end") - heldAt - nav.offsetHeight - slack
+          : Infinity;
+      if (items[k].id === "post-end" && held < Infinity) return Math.max(0, held);
+      return Math.max(0, Math.min(held, h.getBoundingClientRect().top + window.scrollY - OFFSET));
     };
     // The ticks' heights are taken once, as a drag starts, where they'll be once
     // spread — not live. Live, they were still easing apart from 8px (a few px of finger
@@ -341,7 +345,8 @@ export default function ContentsRail() {
         clearInterval(fix);
         gliding = false;
         if (pin) pin.y = window.scrollY;
-        const off = h.getBoundingClientRect().top - OFFSET;
+        // Off from where it should be (its heading at OFFSET, or the phone's cap)
+        const off = window.scrollY - topOf(k);
         const atBottom =
           window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
         if (Math.abs(off) > 4 && !atBottom && tries > 0) jump(k, tries - 1);
