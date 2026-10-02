@@ -23,11 +23,14 @@
   padding: 72px var(--page-x) calc(72px + 12vh);
 }
 
+/* As wide as the six slots, not v4's 520: at 520 the Continue row (and the note beside
+   it) set the width, the block centred on that, and the slots sat 38px left of the
+   page's middle — plain on an iPad (owner, 2 Oct 69). The note wraps inside instead. */
 .box {
   display: flex;
   flex-direction: column;
   gap: 36px;
-  width: min(520px, 100%);
+  width: min(calc(var(--pitch) * 5 + var(--seg)), 100%);
 }
 
 .title {
