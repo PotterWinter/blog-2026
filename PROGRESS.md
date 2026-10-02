@@ -7,7 +7,7 @@
 ## ตอนนี้อยู่
 
 - push แล้ว (2 ต.ค. 69 ตี 2): ทุกอย่างถึงรอบ "ข้อความใต้ปุ่ม" — รายละเอียดใน notes/content.md (URL), notes/editor.md, notes/media.md
-- **ถัดไป: 5.3g Preview** (เจ้าของขอ, ตกลงแบบนี้แล้ว): ปุ่ม Preview ทั้งโพสต์ใหม่และที่แก้ · **หน้าซ้อนเต็มจอในแท็บเดิม** (Esc / Close กลับ Editor) หน้าตาเหมือนเว็บจริง · แสดงสิ่งที่อยู่ใน Editor ตอนนั้น (ยังไม่ save + รูปที่รอ save) · พิมพ์แล้วแท็บ Preview ตามทันที · login เท่านั้น, noindex
+- 5.3g Preview ทำแล้ว (หน้าซ้อนในแท็บเดิม) · **ถัดไป: 5.3d WRITE (Tiptap)** แบบ Obsidian + เมนู `/` แทรกรูป/โค้ด/note → notes/editor.md
 - แล้วค่อย 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
 - **URL = รหัสสุ่ม 8 ตัว** `/posts/<code>` (frontmatter `code:`) · ไม่ใช่ slug / no / id · หน้าเว็บไม่ส่ง id ให้ browser
   - no = เลขโชว์: ลบ = เลขหลังจากนั้นลด 1 · unpublish = เลขค้างไว้
@@ -99,7 +99,7 @@
   - [ ] 5.3d โหมด WRITE (ต้องเลือกตัวแก้ข้อความก่อน — แนะนำ Tiptap)
   - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
   - [ ] 5.3f Checks ตรวจจริง
-  - [ ] 5.3g 07P preview
+  - [x] 5.3g 07P preview (หน้าซ้อนในแท็บเดิม, 2 ต.ค. 69)
 - [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
   - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)
   - [x] 5.4b รูปในเนื้อหา: ปุ่ม Image / ลากวาง / paste · ตั้งชื่อเองก่อน Save

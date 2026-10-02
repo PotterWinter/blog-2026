@@ -10,14 +10,24 @@ import ProjectLead from "./ProjectLead";
 // ruled strip of Category · Published (+ read time, updated) · Tags.
 // A project (04B) goes back to Projects and its strip is Role · Year · Stack (its tags,
 // EDITOR-SPEC). With links, the title block is 04B's: the links beside a preview.
-export default function PostHeader({ post }: { post: ForReaders<Post> }) {
+// coverUrl: the editor's Preview (07P) showing a cover not saved yet, from memory —
+// next/image can't take a blob: address
+export default function PostHeader({ post, coverUrl }: { post: ForReaders<Post>; coverUrl?: string }) {
   const category = categories.find((c) => c.slug === post.category)?.label ?? post.category;
   const updated = post.updatedAt !== post.publishedAt;
   const project = post.section === "project";
   return (
     <>
       <div className={styles.cover} data-reveal>
-        {post.cover && (
+        {coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a blob: from the editor
+          <img
+            src={coverUrl}
+            alt={post.coverAlt}
+            className={styles.coverImage}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+          />
+        ) : post.cover && (
           <Image
             src={`/${post.cover}`}
             alt={post.coverAlt}

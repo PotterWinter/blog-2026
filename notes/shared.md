@@ -101,3 +101,7 @@ Header · footer · nav · page transition · travel dot · จุดกลั�
   - หัวข้อพ้นจอ = ไม่คำนวณ · `prefers-reduced-motion` = ไม่ขยับเลย
 - หน้าตาไม่เปลี่ยน: ตำแหน่ง hero ทุกขนาดเท่าเดิม ±1px (kerning หายเมื่อแยกตัวอักษร — v4 ก็เป็น)
 - ทดสอบ: Chrome headless ครบทุกท่า · Safari แกว่งตอนอยู่นิ่งได้ (hover ทดสอบอัตโนมัติไม่ได้ ให้เจ้าของลอง)
+
+## scrollbar บนมือถือ (2 ต.ค. 69)
+- ซ่อนเฉพาะตอนสารบัญอยู่บนจอ (`html[data-rail]`) · ใช้แค่ `scrollbar-width: none`
+- เลิกใช้ `::-webkit-scrollbar { display: none }` — iOS Safari ซ่อนแล้วไม่คืน จนกว่าจะ reload (หน้า Edit หลังปิด Preview / หน้าที่มาจากหน้าบทความ scrollbar หาย)

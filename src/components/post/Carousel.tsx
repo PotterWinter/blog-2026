@@ -29,6 +29,7 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
     >
       <div
         className={styles.stage}
+        data-swipe-own // its own sideways swipe: the editor's Preview leaves it alone
         onPointerDown={(e) => {
           if (e.pointerType !== "mouse") start.current = e.clientX;
         }}

@@ -59,3 +59,17 @@
 - แนะนำ Tiptap (ProseMirror) + แปลง markdown เอง: React node view ทำ block รูป / code / carousel ได้, ecosystem ใหญ่
 - ทางอื่น: Milkdown (ใช้ remark เหมือน renderer เรา แต่คนใช้น้อยกว่า), เขียน contenteditable เอง (ไม่แนะนำ: เปราะ)
 - ไม่ว่าแบบไหน: syntax ของเราเอง (`<!-- two 4:5 -->`, ```` ```ts search.ts ````, `attach`, `> [!NOTE]`) ต้องเขียนตัวแปลงเอง
+
+## 5.3g Preview (2 ต.ค. 69)
+
+- ปุ่ม Preview อยู่แถวเดียวกับ Save / Reset (เจ้าของ: กดบ่อย ไม่ควรอยู่ข้าง Unpublish) · ทั้งโพสต์ใหม่ / draft / published · View live ยังอยู่บนหัว
+- ปิดได้ 5 ทาง ไปทางเดียวกัน: Close · Esc · Back to Blog / Projects · ปุ่ม back ของ browser (เปิด Preview = push history) · มือถือ**ปัดขวาจากตรงไหนก็ได้** (ท่า back ของ Safari ต้องชิดขอบ — อันนี้สะดวกกว่า, เจ้าของเลือก 2 ต.ค. 69 หลังลองลากลงแล้วไม่เอา) · ไม่นับจากขอบซ้าย 30px (ของ Safari) / สารบัญ / carousel / โค้ด / ตาราง · เกิน 1/3 จอหรือสะบัด = เลื่อนออกขวาแล้วปิด ไม่ถึง = เด้งกลับ · มีแค่ใน Preview
+- **หน้าซ้อนในแท็บเดิม** (เจ้าของเลือก): Editor ซ่อนไว้ (ทุกอย่างที่พิมพ์ยังอยู่) · Preview เริ่มบนสุด · Close / Esc กลับที่เดิม (scroll เดิม)
+- ใช้ component ชุดเดียวกับหน้า 04 / 04B: PostHeader + PostBody + ContentsRail (+ ProjectEnd สำหรับ project)
+- แสดงสิ่งที่อยู่ใน Editor ตอนนั้น รวมที่ยังไม่ save · ปกที่รอ save โชว์จาก memory (`coverUrl`)
+- ไม่มี rise-in (admin ไม่มี RevealObserver) · ลิงก์ภายในเว็บ (Back to Blog ฯลฯ) กดแล้วไม่ไปไหน กันหลุดจาก Editor · ลิงก์ออกนอก + สารบัญใช้ได้
+- (แผนเดิม `/preview/[slug]` แยกหน้า ไม่ทำ)
+
+## WRITE (5.3d) — จดไว้
+- แทรกรูป / code / note / YouTube / ตาราง ด้วยเมนู `/` ตรงที่พิมพ์ (เจ้าของ, 2 ต.ค. 69: ปุ่มบนสุดต้องเลื่อนขึ้นไปทุกครั้ง ไม่ work)
+- พิมพ์ markdown แล้วกลายเป็นรูปแบบทันทีแบบ Obsidian live preview

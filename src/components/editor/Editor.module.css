@@ -554,6 +554,7 @@
 .actions {
   position: relative;
   display: flex;
+  flex-wrap: wrap; /* a draft's four buttons on a phone */
   align-items: center;
   gap: 10px;
   padding-top: 8px;
@@ -910,6 +911,20 @@
   color: var(--muted);
 }
 
+/* On a phone the three don't fit: the file name gives way (…), the line count and
+   Copy keep their size, so Copy stays inside the box (owner, 2 Oct 69) */
+.rawBar > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.rawBar > .mono:first-child {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .rawProblem {
   padding: 8px 14px;
   border-bottom: 1px solid var(--error);
@@ -975,4 +990,35 @@
   .meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* ---------- 07P Preview ---------- */
+/* No rise-in: everything is there when it opens (the admin has no reveal observer) */
+.preview [data-reveal][data-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+/* A slim bar over the post: what this is, Close */
+.previewBar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  padding: 14px var(--page-x);
+  border-bottom: var(--rule-nav);
+  background: var(--paper);
+}
+
+.previewNote {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.previewBar .link {
+  margin-left: auto;
 }

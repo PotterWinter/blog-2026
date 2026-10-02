@@ -135,14 +135,14 @@ select {
   }
 }
 
-/* A post's contents rail stands in for the page's scroll bar on phones */
+/* A post's contents rail stands in for the page's scroll bar on phones. scrollbar-width
+   only: iOS Safari, once ::-webkit-scrollbar { display: none } has hidden the page's
+   bar, doesn't bring it back when the rule stops applying — the editor (after Preview)
+   and pages reached from a post lost theirs until a reload (owner, 2 Oct 69). Safari
+   reads scrollbar-width from 18.2; before that the bar simply stays. */
 @media (pointer: coarse) {
   html[data-rail] {
     scrollbar-width: none;
-  }
-
-  html[data-rail]::-webkit-scrollbar {
-    display: none;
   }
 }
 

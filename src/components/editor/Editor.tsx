@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
@@ -11,6 +11,7 @@ import Segmented from "../Segmented";
 import TransitionLink from "../TransitionLink";
 import { CoverField, LinksField, TagsField } from "./Fields";
 import MetaRow from "./MetaRow";
+import Preview from "./Preview";
 import RawBox from "./RawBox";
 import { UPLOAD, type Waiting } from "./waiting";
 import { shrinkForUpload } from "./shrink";
@@ -402,8 +403,50 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
             `saved ${/\d\d:\d\d:\d\d/.exec(entry.lastCommit ?? "")?.[0] ?? ""}`.trim()
           : "not saved yet";
 
+  // ---------- Preview (07P) ----------
+  // The editor stays mounted but hidden (all that's typed stays put); the preview starts
+  // at the top, and leaving puts you back where you were. Opening it is a step in the
+  // browser's history, so Back — the button, or Safari's swipe from the edge — closes
+  // the preview rather than leaving the editor; Close, Esc, Back to Blog and the swipe
+  // in Preview all go the same way (owner, 2 Oct 69).
+  const [previewing, setPreviewing] = useState(false);
+  const scrollRef = useRef(0);
+  const openPreview = () => {
+    scrollRef.current = window.scrollY;
+    window.history.pushState({ preview: true }, "");
+    setPreviewing(true);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  };
+  const closePreview = useCallback(() => window.history.back(), []);
+  useEffect(() => {
+    if (!previewing) return;
+    const back = () => {
+      setPreviewing(false);
+      requestAnimationFrame(() => window.scrollTo({ top: scrollRef.current, behavior: "instant" }));
+    };
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  }, [previewing]);
+  const today = new Date().toISOString().slice(0, 10);
+  const previewPost = {
+    ...form,
+    code: entry?.code ?? null,
+    no: entry?.no ?? null,
+    status: entry?.status ?? "draft",
+    publishedAt: entry?.publishedAt ?? today,
+    updatedAt: changed ? today : (entry?.updatedAt ?? today),
+  } as const;
+
   return (
     <>
+      {previewing && (
+        <Preview
+          post={previewPost}
+          coverUrl={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)]?.url : undefined}
+          onClose={closePreview}
+        />
+      )}
+      <div hidden={previewing}>
       <header ref={barRef} className={styles.bar}>
         <TransitionLink href="/admin" className={styles.back}>
           ← Publishing
@@ -429,14 +472,10 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           )}
         </span>
         <nav className={styles.menu}>
-          {published ? (
+          {published && (
             <a href={entry ? postUrl(entry) : "#"} target="_blank" rel="noopener" className={styles.link}>
               View live
             </a>
-          ) : (
-            <span className={styles.off} title="The private preview comes with 5.3g">
-              Preview
-            </span>
           )}
           {published ? (
             <span className={styles.ask}>
@@ -610,6 +649,11 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
                   />
                 )}
               </span>
+              {/* Down here with Save and Reset, not in the header beside Unpublish: it's
+                  pressed often, and shouldn't sit next to taking a post down (owner, 2 Oct 69) */}
+              <button type="button" className={styles.btnl} onClick={openPreview}>
+                Preview
+              </button>
             </div>
             {working ? (
               <span className={styles.note} data-tone="muted">
@@ -659,6 +703,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           reset={rawReset}
         />
       </main>
+      </div>
     </>
   );
 }
