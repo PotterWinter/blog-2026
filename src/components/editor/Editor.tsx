@@ -289,29 +289,6 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     setNote({ text: `Cover ready · ${sized(result.image)} · goes up with ${saveWord}`, tone: "muted" });
   };
 
-  // Images for the body (5.4b), from RAW's Image button, a drop or a paste: one after
-  // another, handed back as markdown for RawBox to put where the cursor is — one on a
-  // line each, so several sit together and a <!-- two --> / <!-- carousel --> above
-  // lays them out. Alt and caption are left for you to write: ![alt](path "caption").
-  const uploadImages = async (files: File[]) => {
-    const lines: string[] = [];
-    const failed: string[] = [];
-    let last: Waiting | null = null;
-    for (const file of files) {
-      const result = await prepare(file, "image");
-      if (result.ok) {
-        lines.push(`![](${UPLOAD}${result.image.key})`);
-        last = result.image;
-      } else failed.push(`${file.name}: ${result.error}`);
-    }
-    if (failed.length) setNote({ text: `Not added · ${failed.join(" · ")}`, tone: "bad" });
-    else if (last) {
-      const what = lines.length > 1 ? `${lines.length} images ready` : `Image ready · ${sized(last)}`;
-      setNote({ text: `${what} · goes up with ${saveWord}`, tone: "muted" });
-    }
-    return lines.length ? lines.join("\n") : null;
-  };
-
   // Its name, before Save (owner, 2 Oct 69): starts as the file's own, typed over here;
   // the post's id goes in front when it's committed (and "cover-" for the cover).
   // Taken → "-2"; nothing left in a–z and 0–9 (Thai only, say) → stays as it was.
@@ -333,7 +310,6 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   };
   // media/2026/3lcdqaxt-… (a new post's code comes with its first save)
   const stem = `media/${new Date().getFullYear()}/${entry?.code ?? "<code>"}-`;
-  const bodyWaiting = [...waitingKeys(form.body)].flatMap((key) => (pending[key] ? [pending[key]] : []));
 
   // A failed save tries again on its own every 10s while there's something to save
   useEffect(() => {
@@ -680,11 +656,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
           file={file.replace(/^posts\//, "")}
           text={raw}
           onChange={onRaw}
-          onImages={uploadImages}
           reset={rawReset}
-          waiting={bodyWaiting}
-          stem={stem}
-          onRename={renameImage}
         />
       </main>
     </>

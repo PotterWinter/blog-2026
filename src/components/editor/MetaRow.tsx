@@ -10,6 +10,14 @@ import { useHoverTip } from "../admin/useHoverTip";
 import type { Form } from "./Editor";
 import styles from "./Editor.module.css";
 
+// A clock for Commit › Message, ticking each second in the browser (0 on the server,
+// where the message waits with "…")
+const second = () => Math.floor(Date.now() / 1000);
+const everySecond = (tick: () => void) => {
+  const timer = window.setInterval(tick, 1000);
+  return () => clearInterval(timer);
+};
+
 // v4 07's row under the fields: Commit · Post · Content (counted live from the text) ·
 // Checks (live too; Publish with issues asks twice)
 export default function MetaRow({
@@ -33,6 +41,7 @@ export default function MetaRow({
     () => true,
     () => false,
   );
+  const now = useSyncExternalStore(everySecond, second, () => 0);
   const words = inBrowser ? countWords(form.body) : (entry?.words ?? 0);
   const counts = contentCounts(form.body);
   const bytes = new TextEncoder().encode(toRaw(form)).length;
@@ -50,11 +59,22 @@ export default function MetaRow({
           Commit
         </dt>
         <dt className="label">Message</dt>
-        <dd className={styles.mono}>
-          {entry ? commitMessage(new Date(), published ? "Edit" : "Draft", entry.id).replace(/ \d\d:\d\d:\d\d/, " …") : "Draft #new"}
+        {/* v4: the message the next save will write — as it would read if pressed now,
+            the clock running (owner, 2 Oct 69) — "next save" beside it on an underline,
+            what it's made of under that. Grey: written for you, not typed */}
+        <dd className={styles.message}>
+          <span className={styles.messageLine}>
+            <span className={`${styles.mono} ${styles.muted}`}>
+              {now
+                ? commitMessage(new Date(now * 1000), published ? "Edit" : "Draft", entry?.id ?? 0).replace(/#0$/, "#new")
+                : "…"}
+            </span>
+            <span className={styles.messageTag}>next save</span>
+          </span>
+          <span className={styles.messageNote}>written for you on each save — Draft, or Edit once it&apos;s live · Publish · Delete</span>
         </dd>
         <dt className="label">Last commit</dt>
-        <dd className={styles.mono}>{entry?.lastCommit ?? "—"}</dd>
+        <dd className={`${styles.mono} ${styles.muted}`}>{entry?.lastCommit ?? "—"}</dd>
         <dt className="label">Created</dt>
         <dd className={styles.mono}>{entry ? stamp(entry.createdAt) : "on the first save"}</dd>
         <dt className="label">Path</dt>

@@ -723,6 +723,47 @@
   align-items: baseline;
 }
 
+/* Commit › Message (v4): the line, "next save" at its end, on an ink underline; the
+   note under it grey */
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.messageLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.messageLine .mono {
+  white-space: nowrap;
+}
+
+.messageTag,
+.messageNote {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.messageTag {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.messageNote {
+  line-height: 1.6;
+}
+
+.muted {
+  color: var(--muted);
+}
+
 /* ---------- Commit · Post · Content · Checks ---------- */
 .meta {
   display: grid;
@@ -869,76 +910,6 @@
   color: var(--muted);
 }
 
-.copy {
-  margin-left: auto;
-  padding: 5px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper);
-  font: inherit;
-  font-size: 12px;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-/* Image sits before Copy: it takes the push to the right, Copy follows it */
-.addImage ~ .copy {
-  margin-left: 0;
-}
-
-.copy:disabled {
-  color: var(--muted);
-  cursor: default;
-}
-
-/* Images in the text not saved yet: a thumbnail, the name to type over, the size */
-.waitingList {
-  margin: 0;
-  padding: 6px 14px;
-  list-style: none;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.waitingItem {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  padding: 4px 0;
-}
-
-.waitingItem .mono {
-  color: var(--muted);
-}
-
-.waitingThumb {
-  width: 40px;
-  height: 28px;
-  object-fit: cover;
-  background: var(--line);
-}
-
-.waitingName {
-  display: flex;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.waitingName input {
-  min-width: 0;
-  padding: 2px 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-}
-
-.waitingName input:focus {
-  outline: none;
-  border-bottom-color: var(--ink);
-}
-
 .rawProblem {
   padding: 8px 14px;
   border-bottom: 1px solid var(--error);
@@ -968,11 +939,6 @@
   outline: none;
 }
 
-/* An image dragged over the text */
-.rawText[data-over] {
-  outline: 1px dashed var(--line);
-  outline-offset: -10px;
-}
 
 /* ---------- From 1024: v4's two columns ---------- */
 @media (min-width: 1024px) {

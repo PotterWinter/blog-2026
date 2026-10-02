@@ -37,6 +37,8 @@
   - Next สร้างหน้าใหม่เมื่อ `[slug]` เปลี่ยน → ข้อความใต้ Publish เก็บไว้นอก component (`notes` ต่อ id) · เวลา saved อ่านจาก `lastCommit`
 - header ของ editor เอง (แทน nav admin: `admin/(main)/layout` สำหรับ hub / Media / Settings): ← Publishing · #id · path · สถานะ · saved / Not saved · Retry · View live / Preview · Unpublish · Delete draft (กล่องยืนยัน)
 - ช่อง: Title (70) · Slug (แสดงอย่างเดียว ตาม title เสมอ — 2 ต.ค. 69; ไทยล้วน = `post-<id>`) · Shows in · Category · Excerpt (200) · Role / Year (project) · Tags / Stack (Manage) · Links (≤3, label เดาจาก URL) · Cover (พิมพ์ path ไปก่อน, อัปโหลดมากับ 5.4)
+- Commit › Message ตาม v4 (2 ต.ค. 69): ข้อความของ save ถัดไป **เวลาเดินสด** (ถ้ากดตอนนี้จะได้แบบนี้) สีเทา (ระบบเขียน ไม่ได้พิมพ์) + ป้าย "next save" บนเส้นดำ + บรรทัดเทา "written for you on each save — Draft, or Edit once it's live · Publish · Delete" · Last commit สีเทา
+- RAW .MD: ปุ่ม Copy ใช้ตัวเดียวกับกรอบโค้ดในหน้าบทความ (⧉→✓ Copied) · **ไม่มีการแทรกรูปใน RAW แล้ว** (เจ้าของ: syntax รูปเยอะเกินพิมพ์เอง) — ไปทำใน WRITE (Tiptap) · โค้ด 5.4b อยู่ใน git
 - แถว Commit · Post · Content · Checks — นับคำในเบราว์เซอร์เท่านั้น (Node กับ Chrome ตัดคำต่างกัน 253 / 250 → hydration ไม่ตรง)
 - RAW .MD: frontmatter + เนื้อหา แต่ไม่มี id / no / status / วันที่ (ของระบบ) · พิมพ์แล้วช่องข้างบนตามทันทีเมื่ออ่านเป็นโพสต์ได้ · ยังผิด = บอกว่าผิดอะไร
 - มือถือ (ตรวจที่ 375, 2 ต.ค. 69):

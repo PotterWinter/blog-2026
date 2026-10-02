@@ -5,7 +5,7 @@ import styles from "./Post.module.css";
 
 // v4's copy pill: "⧉ Copy" → "✓ Copied" for 1.6s. The ⧉ drops out as a ✓ rises in,
 // the "y" slips up and away and "ied" rises in letter by letter.
-export default function CopyButton({ text }: { text: string }) {
+export default function CopyButton({ text, label = "Copy code" }: { text: string; label?: string }) {
   const [done, setDone] = useState(false);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -27,7 +27,7 @@ export default function CopyButton({ text }: { text: string }) {
       className={styles.copy}
       data-done={done || undefined}
       onClick={copy}
-      aria-label={done ? "Copied" : "Copy code"}
+      aria-label={done ? "Copied" : label}
     >
       <span className={styles.copyWord} aria-hidden="true">
         <span className={styles.copySym}>
