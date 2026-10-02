@@ -57,10 +57,17 @@ header.header {
 }
 
 /* ---------- 06: title, New post ---------- */
-.hub {
+/* The header and the page fill the screen at least ((main)/layout) */
+.frame {
   display: flex;
   flex-direction: column;
-  min-height: calc(100svh - 40px);
+  min-height: 100svh;
+}
+
+.hub {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .hub > footer {

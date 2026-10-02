@@ -127,3 +127,7 @@
 - Sign out → หน้าแรกของ blog (`/`) ผ่าน page transition (เจ้าของ, 1 ต.ค. 69)
 - กด Posts ใน header ตอนอยู่ `/admin` อยู่แล้ว = page transition แล้วเริ่มใหม่: grid, ไม่มี filter / sort, หน้า 1, ไม่เลือก, ขึ้นบนสุด + ดึงข้อมูลใหม่ (กลไกเดียวกับ nav ของเว็บ: `PageSlot` remount)
 - `index.json` เพิ่ม: `images` · `videos` · `codeBlocks` · `bytes` · `lastCommit` (จาก git ใน `rebuild-index`)
+
+## ขีดขาวใต้ footer หน้า admin (2 ต.ค. 69)
+- เดิม hub สูงอย่างน้อย `100svh − 40px` (ความสูงหัวที่วัดใน Chrome) — Safari วาดหัวเตี้ยกว่า หน้าเลยขาดไม่กี่ px เห็นขาวใต้แถบดำ
+- แก้: `(main)/layout` ห่อหัว + หน้าใน `.frame` (flex column, min-height 100svh) · hub `flex: 1` · ไม่ต้องรู้ความสูงหัว
