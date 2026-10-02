@@ -46,9 +46,21 @@ export default function Preview({
     let sideways: boolean | null = null;
     let dx = 0;
     let gone = false;
+    // Moved right, the page pokes out past the screen's edge, and iOS Safari zooms out
+    // to fit the wider page (owner, 2 Oct 69: "it shrinks to the whole page first").
+    // While it's off centre, html and body clip sideways — clip, not hidden, which would
+    // stop sticky things sticking — so the page is never wider than the screen.
+    const pages = [document.documentElement, document.body];
+    let unclip = 0;
+    const clip = (on: boolean) => {
+      clearTimeout(unclip);
+      pages.forEach((el) => (el.style.overflowX = on ? "clip" : ""));
+    };
     const slide = (x: number, ease: boolean) => {
+      if (x) clip(true);
       root.style.transition = ease ? "transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)" : "none";
       root.style.transform = x ? `translateX(${x}px)` : "";
+      if (!x) unclip = window.setTimeout(() => clip(false), ease ? 300 : 0); // back home
     };
     const down = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -87,6 +99,7 @@ export default function Preview({
     root.addEventListener("touchend", up);
     root.addEventListener("touchcancel", up);
     return () => {
+      clip(false);
       root.removeEventListener("touchstart", down);
       root.removeEventListener("touchmove", move);
       root.removeEventListener("touchend", up);
