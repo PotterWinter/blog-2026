@@ -114,13 +114,17 @@ export default function ContentsRail() {
       links.forEach((a, i) => (a.style.transform = `translateY(${dys[i]}px)`));
     };
 
-    // The dot sits 6px left of the active tick, or of its name when the rail is open
+    // The dot sits 6px left of the active tick, or of its name when the rail is open.
+    // The name's place is read from the page (the link's left plus the name's, both in
+    // offsets, so the names' slide-in transform doesn't count) — it used to be worked out
+    // as if the link were exactly as wide as its tick, true only from 1280: on an iPad
+    // (1024–1279, and a touch screen, so it drags) the dot landed hundreds of px left of
+    // the name and swung there and back at every tick (owner's video, 2 Oct 69)
     const target = (k: number): [number, number] => {
       const a = links[k];
       const tick = items[k].sub ? px("--tick-sub-on") : px("--tick-on");
-      const right = nav.clientWidth - tick;
       const label = a.querySelector<HTMLElement>("[data-label]");
-      const nx = open && label ? right - 10 - label.offsetWidth - 12 : right - 12;
+      const nx = open && label ? a.offsetLeft + label.offsetLeft - 12 : nav.clientWidth - tick - 12;
       return [nx, a.offsetTop + dys[k] + a.offsetHeight / 2 - 3];
     };
     const place = (k: number, animate: boolean) => {
