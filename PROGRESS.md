@@ -6,20 +6,20 @@
 
 ## ตอนนี้อยู่
 
-- push แล้ว (2 ต.ค. 69 ตี 2): ทุกอย่างถึงรอบ "ข้อความใต้ปุ่ม" — รายละเอียดใน notes/content.md (URL), notes/editor.md, notes/media.md
-- 5.3g Preview ทำแล้ว (หน้าซ้อนในแท็บเดิม) · **ถัดไป: 5.3d WRITE (Tiptap)** แบบ Obsidian + เมนู `/` แทรกรูป/โค้ด/note → notes/editor.md
-- แล้วค่อย 5.4c หน้า Media · 5.4d คลิป · 5.3d WRITE (Tiptap)
-- **URL = รหัสสุ่ม 8 ตัว** `/posts/<code>` (frontmatter `code:`) · ไม่ใช่ slug / no / id · หน้าเว็บไม่ส่ง id ให้ browser
-  - no = เลขโชว์: ลบ = เลขหลังจากนั้นลด 1 · unpublish = เลขค้างไว้
-  - slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ (ชื่อไฟล์ + URL ของ Editor)
-- repo จริง: Debouncing (#3, No. 2) ได้รหัสแล้ว · **hello-world ยังไม่มีรหัส → เปิด Editor แล้วกด Save changes หนึ่งครั้ง**
+- push แล้ว (2 ต.ค. 69 เย็น): หน้า login กล่องกว้างเท่าช่องรหัส · สารบัญบน iPad แก้แล้ว (จุดไม่วาร์ป · ลากด้วยนิ้ว หน้าเลื่อนเมื่อนิ้วค้าง 120 ms เลี่ยง WebKit bug 181954 · ทดสอบบน iPad จริงผ่าน) → notes/04-post.md
+  - ก่อนหน้า (`50b43bd`): 5.3g Preview · URL รหัสสุ่ม · ชื่อรูป `<code>-<ชื่อ>.webp` · filter Blog/Project · Reset · Message เวลาเดินสด
+- **ถัดไป: 5.3d WRITE (Tiptap)** แบบ Obsidian live preview + เมนู `/` แทรกรูป / โค้ด / Note / YouTube / ตาราง → notes/editor.md · แล้ว 5.4c หน้า Media (โชว์ #id / No. ของแต่ละรูปได้) · 5.4d คลิป
+- URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
+- repo จริง: Debouncing (#3) มีรหัสแล้ว · hello-world ยังไม่มี → เปิด Editor แล้วกด Save changes หนึ่งครั้ง
 - login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
-- dev: `.env.development.local` บรรทัด `CONTENT_DIR=` ไม่มี `#` = repo จริง · ใส่ `#` = fixtures (36 เรื่อง) · Save จาก dev บอกเว็บจริงล้าง cache ให้เอง (`REVALIDATE_SECRET`)
+- dev: `.env.development.local` บรรทัด `CONTENT_DIR=` ไม่มี `#` = repo จริง · ใส่ `#` = fixtures · Save จาก dev สั่งเว็บจริงล้าง cache ให้เอง (`REVALIDATE_SECRET`) · localhost บนมือถือไม่มี scrollbar = เรื่องโหมด dev เท่านั้น เว็บจริงปกติ
+- ทดสอบ: copy โปรเจกต์ใน scratchpad รันที่ port 3001 (fixtures, `111111`) — ไม่ชน dev ของเจ้าของที่ 3000 · Safari ทดสอบผ่าน safaridriver · วิดีโอ iPad (HEVC) เปิดผ่าน safaridriver ดึงเฟรมได้
 
 ## ทำต่อ
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
 - [x] ลบ `sessions.json` ออกจาก content repo แล้ว · หลัง push ทุกเครื่องต้อง login ใหม่ครั้งเดียว
+- [ ] เจ้าของลองลากสารบัญบน iPhone (เปลี่ยนเหมือน iPad: หน้าเลื่อนเมื่อนิ้วค้าง)
 - [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
 - [ ] เจ้าของกด Save changes ที่ hello-world (ให้ได้รหัส URL)
 - [x] ชื่อไฟล์รูปขึ้นต้นด้วยรหัสโพสต์แล้ว (รูปเก่าที่ขึ้นด้วย id ยังใช้ได้ · Debouncing กด Replace ปกถ้าอยากได้ชื่อใหม่)

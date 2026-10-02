@@ -15,14 +15,17 @@ const DRAG = 4;
 const TAP_SLOP = 10;
 // Touch: the names fold away after this long untouched
 const IDLE = 3000;
+// Touch drag: the page glides to the entry under the finger once it has rested there
+// this long
+const DWELL = 120;
 
 // 04 contents rail (v4 _tocRail): a short tick per heading down the right edge, held at
 // the middle of the screen while the article is on it. The tick of the section being
 // read is long and ink, with a 6px dot beside it that arcs over when the section
 // changes. Hover (or a drag) opens the headings' names to the left.
 // Press and drag along the rail (mouse or finger): reaching a tick, the page slides to
-// that heading. A click jumps to an entry; by touch, one tap opens the names and a tap
-// on one goes there.
+// that heading (by finger, once it rests there — see slideTo). A click jumps to an
+// entry; by touch, one tap opens the names and a tap on one goes there.
 // From 1280 it sits in the page margin; below that it shrinks to the screen's edge.
 export default function ContentsRail() {
   const navRef = useRef<HTMLElement>(null);
@@ -132,6 +135,12 @@ export default function ContentsRail() {
       cur = k;
       const [nx, ny] = target(k);
       if (animate) {
+        // From where the dot is drawn right now, not where its last arc was headed:
+        // a fast drag picks a new entry before the arc lands, and starting from that
+        // arc's end made the dot jump there first, then swing back (iPad, 2 Oct 69)
+        const now = new DOMMatrixReadOnly(getComputedStyle(dot).transform);
+        x = now.m41;
+        y = now.m42;
         dot.getAnimations().forEach((q) => q.cancel());
         dot.animate(
           [
@@ -306,11 +315,39 @@ export default function ContentsRail() {
       holdTicks();
       slid = held(y);
     };
-    const slideTo = (y: number) => {
+    // By finger the page glides only once the finger rests on an entry (DWELL), and
+    // the finger's height is not read while the page moves, nor once just after: while
+    // the page scrolls, iOS Safari reports touches up to ~300px off — clientY and
+    // pageY − scrollY alike (WebKit bug 181954, open since 2018) — so sliding the page
+    // under a moving finger chose headings back and forth (iPad logs, 2 Oct 69). Until
+    // the page moves, the dot and the lit name follow the finger.
+    let dwell = 0;
+    let skipNext = false;
+    const slideTo = (y: number, finger = false) => {
+      if (finger && gliding) {
+        skipNext = true;
+        return;
+      }
+      if (finger && skipNext) {
+        skipNext = false;
+        return;
+      }
       const k = held(y);
       if (k === slid) return;
       slid = k;
-      jump(k);
+      if (!finger) {
+        jump(k);
+        return;
+      }
+      pin = { k, y: null };
+      if (k !== cur) place(k, cur >= 0);
+      clearTimeout(dwell);
+      dwell = window.setTimeout(() => jump(k), DWELL);
+    };
+    // The finger lifts: the page goes to the last entry it chose
+    const endSlide = () => {
+      clearTimeout(dwell);
+      jump(slid);
     };
     // The entry whose tick (and name) sits nearest a height on screen
     const nearest = (clientY: number) => {
@@ -432,6 +469,7 @@ export default function ContentsRail() {
     // Touch: a tap (moving under TAP_SLOP) opens the rail, or — open — jumps to the
     // entry under it. Moving further is a drag: it opens the names and slides.
     let touch: {
+      id: number;
       y: number;
       wasOpen: boolean;
       target: EventTarget | null;
@@ -448,7 +486,13 @@ export default function ContentsRail() {
     const onTouchStart = (e: TouchEvent) => {
       touch =
         e.touches.length === 1
-          ? { y: e.touches[0].clientY, wasOpen: open, target: e.target, dragging: false }
+          ? {
+              id: e.touches[0].identifier,
+              y: e.touches[0].clientY,
+              wasOpen: open,
+              target: e.target,
+              dragging: false,
+            }
           : null;
       if (touch) clearTimeout(idleTimer);
       // iOS Safari ignores touch-action: none, and once it has started scrolling the
@@ -459,7 +503,10 @@ export default function ContentsRail() {
     const onTouchMove = (e: TouchEvent) => {
       if (!touch) return;
       if (e.cancelable) e.preventDefault(); // the finger is on the rail, not the page
-      const y = e.touches[0].clientY;
+      // The finger that started on the rail (e.touches lists every finger on the screen)
+      const f = [...e.touches].find((q) => q.identifier === touch?.id);
+      if (!f) return;
+      const y = f.clientY;
       if (!touch.dragging && Math.abs(y - touch.y) <= TAP_SLOP) return;
       if (!touch.dragging) {
         touch.dragging = true;
@@ -468,7 +515,7 @@ export default function ContentsRail() {
         setOpen(true, nearest(touch.y));
         startSlide(touch.y);
       }
-      slideTo(y);
+      slideTo(y, true);
     };
     const onTouchEnd = (e: TouchEvent) => {
       if (!touch) return;
@@ -477,7 +524,8 @@ export default function ContentsRail() {
       e.preventDefault(); // no click after the tap
       if (t.dragging) {
         nav.removeAttribute("data-drag");
-        armIdle(600); // the slide it started settles the pin itself
+        endSlide();
+        armIdle(600); // the glide settles the pin itself
         return;
       }
       if (!t.wasOpen) {
@@ -499,7 +547,8 @@ export default function ContentsRail() {
     const onTouchCancel = () => {
       if (touch?.dragging) {
         nav.removeAttribute("data-drag");
-        armIdle(600); // the slide it started settles the pin itself
+        endSlide();
+        armIdle(600); // the glide settles the pin itself
       }
       touch = null;
     };
@@ -592,6 +641,7 @@ export default function ContentsRail() {
       clearTimeout(settle);
       clearTimeout(blendTimer);
       clearInterval(fix);
+      clearTimeout(dwell);
       cancelAnimationFrame(queued);
       sizes.disconnect();
       document.documentElement.removeAttribute("data-rail");

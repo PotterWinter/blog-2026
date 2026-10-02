@@ -47,3 +47,12 @@
 - ถ้าต้อง debug บน iPhone: ทำ route POST ชั่วคราวที่ append ลงไฟล์ + `navigator.sendBeacon` ใน handler
   - ให้เจ้าของลองหนึ่งครั้งแล้วอ่าน log · ลบ route ก่อน commit
   - ใช้หา bug ลากสารบัญบน iPhone ได้ (30 ก.ย. 69)
+
+### iPad จริง (ต่อสายกับ Mac)
+
+- สำเนาโปรเจกต์ใน scratchpad รัน port 3001 → iPad เปิด `http://192.168.1.35:3001/...` (ต้องมี IP ใน `allowedDevOrigins`)
+  - Turbopack ไม่รับ node_modules ที่เป็น symlink → copy เข้าไปจริง
+- ตัวบันทึกทุกเฟรมในคอมโพเนนต์ + route POST ชั่วคราวเขียนไฟล์ · ส่งด้วย `fetch` ไม่ใช่ `sendBeacon` (beacon จำกัด 64 KB ข้อมูลลากหาย)
+- เจ้าของลาก + อัดจอ แล้วอ่าน log — ใช้หาสาเหตุสารบัญ iPad ได้ (2 ต.ค. 69)
+- Safari บน iPad: UA เป็น Macintosh · `screenY` นับรวมการเลื่อนหน้า
+
