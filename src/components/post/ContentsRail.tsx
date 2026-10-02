@@ -15,7 +15,7 @@ const DRAG = 4;
 const TAP_SLOP = 10;
 // Touch: the names fold away after this long untouched
 const IDLE = 3000;
-// Touch drag: the page glides to the entry under the finger once it has rested there
+// Tablet drag: the page glides to the entry under the finger once it has rested there
 // this long
 const DWELL = 120;
 
@@ -24,7 +24,7 @@ const DWELL = 120;
 // read is long and ink, with a 6px dot beside it that arcs over when the section
 // changes. Hover (or a drag) opens the headings' names to the left.
 // Press and drag along the rail (mouse or finger): reaching a tick, the page slides to
-// that heading (by finger, once it rests there — see slideTo). A click jumps to an
+// that heading (on a tablet by finger, once it rests there — see slideTo). A click jumps to an
 // entry; by touch, one tap opens the names and a tap on one goes there.
 // From 1280 it sits in the page margin; below that it shrinks to the screen's edge.
 export default function ContentsRail() {
@@ -70,6 +70,13 @@ export default function ContentsRail() {
     let open = false;
     let x = 0;
     let y = 0;
+    // A tablet: a touch screen whose shorter side is a tablet's (an iPad's is 744 or
+    // more, a phone's 440 or less), whichever way it's held. The iPad fixes below are
+    // for it alone — the computer and the iPhone keep the rail as it was (owner,
+    // 2 Oct 69)
+    const tablet = () =>
+      window.matchMedia("(pointer: coarse)").matches &&
+      Math.min(screen.width, screen.height) >= 600;
     const px = (name: string) => parseFloat(getComputedStyle(nav).getPropertyValue(name)) || 0;
 
     // Shut, the ticks sit close together (--pitch-shut apart) about the rail's middle;
@@ -135,12 +142,14 @@ export default function ContentsRail() {
       cur = k;
       const [nx, ny] = target(k);
       if (animate) {
-        // From where the dot is drawn right now, not where its last arc was headed:
-        // a fast drag picks a new entry before the arc lands, and starting from that
-        // arc's end made the dot jump there first, then swing back (iPad, 2 Oct 69)
-        const now = new DOMMatrixReadOnly(getComputedStyle(dot).transform);
-        x = now.m41;
-        y = now.m42;
+        // Tablet: from where the dot is drawn right now, not where its last arc was
+        // headed — a fast drag picks a new entry before the arc lands, and starting from
+        // that arc's end made the dot jump there first, then swing back (iPad, 2 Oct 69)
+        if (tablet()) {
+          const now = new DOMMatrixReadOnly(getComputedStyle(dot).transform);
+          x = now.m41;
+          y = now.m42;
+        }
         dot.getAnimations().forEach((q) => q.cancel());
         dot.animate(
           [
@@ -315,7 +324,7 @@ export default function ContentsRail() {
       holdTicks();
       slid = held(y);
     };
-    // By finger the page glides only once the finger rests on an entry (DWELL), and
+    // Tablet, by finger: the page glides only once the finger rests on an entry (DWELL), and
     // the finger's height is not read while the page moves, nor once just after: while
     // the page scrolls, iOS Safari reports touches up to ~300px off — clientY and
     // pageY − scrollY alike (WebKit bug 181954, open since 2018) — so sliding the page
@@ -515,7 +524,7 @@ export default function ContentsRail() {
         setOpen(true, nearest(touch.y));
         startSlide(touch.y);
       }
-      slideTo(y, true);
+      slideTo(y, tablet());
     };
     const onTouchEnd = (e: TouchEvent) => {
       if (!touch) return;
@@ -524,7 +533,7 @@ export default function ContentsRail() {
       e.preventDefault(); // no click after the tap
       if (t.dragging) {
         nav.removeAttribute("data-drag");
-        endSlide();
+        if (tablet()) endSlide();
         armIdle(600); // the glide settles the pin itself
         return;
       }
@@ -547,7 +556,7 @@ export default function ContentsRail() {
     const onTouchCancel = () => {
       if (touch?.dragging) {
         nav.removeAttribute("data-drag");
-        endSlide();
+        if (tablet()) endSlide();
         armIdle(600); // the glide settles the pin itself
       }
       touch = null;
