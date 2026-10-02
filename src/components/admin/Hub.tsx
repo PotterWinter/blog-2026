@@ -40,7 +40,7 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   // back (v4 _deg += 90)
   const [filterTurns, setFilterTurns] = useState(0);
   const filterOpen = filterTurns % 2 === 1;
-  const [picks, setPicks] = useState<Picks>({ cat: [], mon: [], iss: false });
+  const [picks, setPicks] = useState<Picks>({ sec: [], cat: [], mon: [], iss: false });
   // null = nothing pressed: No. high → low — drafts on top, then the latest published
   // (owner, 1 Oct 69; the public pages go by date)
   const [sort, setSort] = useState<Sort | null>(null);
@@ -68,11 +68,12 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
   const issueIds = useMemo(() => new Set(posts.filter((p) => postIssues(p).length).map((p) => p.id)), [posts]);
 
   // Every filter but one (the one whose counts are being worked out)
-  const passes = (p: IndexEntry, skip?: "cat" | "mon" | "iss") => {
+  const passes = (p: IndexEntry, skip?: "sec" | "cat" | "mon" | "iss") => {
     const q = query.trim().toLowerCase();
     return (
       (status === "all" || p.status === status) &&
       (!q || `${p.title} ${p.excerpt} ${p.tags.join(" ")}`.toLowerCase().includes(q)) &&
+      (skip === "sec" || !picks.sec.length || picks.sec.includes(p.section)) &&
       (skip === "cat" || !picks.cat.length || picks.cat.includes(p.category)) &&
       (skip === "mon" || !picks.mon.length || picks.mon.includes(month(p))) &&
       (skip === "iss" || !picks.iss || issueIds.has(p.id))
@@ -122,10 +123,16 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
 
   // The panel's options and counts change only with the filters, not with the selection:
   // kept the same between moves so the (memo) panel sits out each arrow key
-  const { categoryOptions, monthOptions, issueCount } = useMemo(
+  const { sectionOptions, categoryOptions, monthOptions, issueCount } = useMemo(
     () => ({
-      categoryOptions: [...categories, ...projectCategories]
-        .filter((c) => posts.some((p) => p.category === c.slug))
+      sectionOptions: [
+        { value: "blog", label: "Blog" },
+        { value: "project", label: "Project" },
+      ].map((s) => ({ ...s, n: posts.filter((p) => p.section === s.value && passes(p, "sec")).length })),
+      // The blog's categories, used or not, so the list is the same each time; a project's
+      // Development / Design aren't offered — Shows in › Project picks those (owner,
+      // 2 Oct 69)
+      categoryOptions: categories
         .map((c) => ({ value: c.slug, label: c.label, n: posts.filter((p) => p.category === c.slug && passes(p, "cat")).length })),
       monthOptions: MONTHS.map((label, i) => {
         const value = `${year}-${pad2(i + 1)}`;
@@ -262,6 +269,7 @@ export default function Hub({ posts, head }: { posts: IndexEntry[]; head: RepoHe
 
       <FilterPanel
         open={filterOpen}
+        sections={sectionOptions}
         categories={categoryOptions}
         issues={issueCount}
         year={year}

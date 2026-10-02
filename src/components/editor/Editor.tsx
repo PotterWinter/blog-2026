@@ -83,6 +83,20 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   const [asking, setAsking] = useState<"delete" | "unpublish" | "reset" | null>(null);
   const [rawReset, setRawReset] = useState(0);
   const [publishing, setPublishing] = useState(false);
+  // Seconds since a press started, shown under it while it works — a commit can take a
+  // few, and a count says it's still going (owner, 2 Oct 69). Publish's save runs on
+  // into its publish, one count for both.
+  const working = !!busy || publishing;
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    if (!working) return;
+    const start = Date.now();
+    const timer = window.setInterval(() => setWaited(Math.floor((Date.now() - start) / 1000)), 250);
+    return () => {
+      clearInterval(timer);
+      setWaited(0);
+    };
+  }, [working]);
 
   const id = entry?.id ?? null;
   // Where it is (or will be, on the first save): posts/<id>-<slug>.md
@@ -317,8 +331,8 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     set({ body: swap(form.body), cover: form.cover && swap(form.cover) });
     setRawReset((n) => n + 1);
   };
-  // media/2026/037-… (a new post's id comes with its first save)
-  const stem = `media/${new Date().getFullYear()}/${id == null ? "###" : String(id).padStart(3, "0")}-`;
+  // media/2026/3lcdqaxt-… (a new post's code comes with its first save)
+  const stem = `media/${new Date().getFullYear()}/${entry?.code ?? "<code>"}-`;
   const bodyWaiting = [...waitingKeys(form.body)].flatMap((key) => (pending[key] ? [pending[key]] : []));
 
   // A failed save tries again on its own every 10s while there's something to save
@@ -621,10 +635,16 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
                 )}
               </span>
             </div>
-            {note && (
-              <span className={styles.note} data-tone={note.tone}>
-                {note.text}
+            {working ? (
+              <span className={styles.note} data-tone="muted">
+                {publishing ? "Publishing" : busy}… {waited}s
               </span>
+            ) : (
+              note && (
+                <span className={styles.note} data-tone={note.tone}>
+                  {note.text}
+                </span>
+              )
             )}
           </div>
 

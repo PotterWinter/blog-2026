@@ -77,6 +77,8 @@ function withEntry(index: ContentIndex, id: number, entry: IndexEntry | null, ne
   return { nextId, posts };
 }
 
+export const takenCodes = (index: ContentIndex) => new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])));
+
 function find(index: ContentIndex, id: number): IndexEntry {
   const entry = index.posts.find((p) => p.id === id);
   if (!entry) throw new Error(`No post #${id}`);
@@ -117,18 +119,23 @@ export const waitingKeys = (text: string) => new Set([...text.matchAll(WAITING)]
 export const placeWaiting = (text: string, paths: Record<string, string>, prefix = "") =>
   text.replace(WAITING, (m) => (paths[m] ? prefix + paths[m] : m));
 
-// The post's own images: media files named after its id ("media/2026/003-cover.webp")
-// that a text points at. Images named for another post are never counted as its own.
-export function ownMedia(id: number, text: string): Set<string> {
-  const own = new RegExp(`media/\\d{4}/${String(id).padStart(3, "0")}-[a-z0-9-]+\\.webp`, "g");
+// The post's own images: media files named after its code ("media/2026/3lcdqaxt-cover-
+// x.webp", since 2 Oct 69 — readers see image addresses, and the id isn't theirs to
+// know) or, uploaded before that, its id ("media/2026/003-cover.webp"), that a text
+// points at. Images named for another post are never counted as its own.
+type Owner = { id: number; code: string | null };
+
+export function ownMedia({ id, code }: Owner, text: string): Set<string> {
+  const names = [String(id).padStart(3, "0"), ...(code ? [code] : [])].join("|");
+  const own = new RegExp(`media/\\d{4}/(?:${names})-[a-z0-9-]+\\.webp`, "g");
   return new Set(text.match(own) ?? []);
 }
 
 // Its own images it no longer points at go in the same commit (owner, 1 Oct 69): a
 // replaced cover, an image taken out of the text
-const dropped = (id: number, before: string, after: string): Change[] => {
-  const kept = ownMedia(id, after);
-  return [...ownMedia(id, before)].filter((p) => !kept.has(p)).map((path) => ({ path, text: null }));
+const dropped = (owner: Owner, before: string, after: string): Change[] => {
+  const kept = ownMedia(owner, after);
+  return [...ownMedia(owner, before)].filter((p) => !kept.has(p)).map((path) => ({ path, text: null }));
 };
 
 // Save (Save draft, or a published post's edits): a new post gets the next id and
@@ -138,7 +145,8 @@ const dropped = (id: number, before: string, after: string): Change[] => {
 // file and the editor's address; the site's address is its code. So it's
 // never refused: a title with no a–z (Thai only) gives "post-<id>", and one another
 // post has (or "new", the editor's) gets "-<id>" on the end.
-export function planSave(index: ContentIndex, input: PostInput, now: Date, previous = ""): Plan {
+// code: the one its new images were named with, when it gets its code on this save
+export function planSave(index: ContentIndex, input: PostInput, now: Date, previous = "", code?: string): Plan {
   if (input.slug && !SLUG.test(input.slug)) throw new Error("Slug: lowercase letters, numbers and single dashes");
   const before = input.id == null ? null : find(index, input.id);
   const id = before?.id ?? index.nextId;
@@ -152,7 +160,7 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date, previ
     ...fields,
     id,
     // Its address: made on the first save (or the first since codes came in), then kept
-    code: before?.code ?? newCode(new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])))),
+    code: before?.code ?? code ?? newCode(takenCodes(index)),
     no: before?.no ?? null,
     status: before?.status ?? "draft",
     publishedAt: before?.publishedAt ?? today,
@@ -160,7 +168,7 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date, previ
   };
   const message = commitMessage(now, before?.status === "published" ? "Edit" : "Draft", id);
   const { entry, changes, slugs } = written(meta, body, before, now, message);
-  changes.push(...dropped(id, previous, `${meta.cover ?? ""}\n${body}`));
+  changes.push(...dropped(meta, previous, `${meta.cover ?? ""}\n${body}`));
   return { changes, message, index: withEntry(index, id, entry, before ? index.nextId : id + 1), entry, slugs };
 }
 
@@ -180,7 +188,7 @@ export function planPublish(index: ContentIndex, id: number, file: string, now: 
       ...meta,
       status: "published",
       // A post last saved before codes gets its address now
-      code: meta.code ?? newCode(new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])))),
+      code: meta.code ?? newCode(takenCodes(index)),
       no: first ? top + 1 : meta.no,
       publishedAt: first ? today : meta.publishedAt,
       updatedAt: today,
@@ -221,7 +229,7 @@ export function planDelete(index: ContentIndex, id: number, now: Date, file = ""
   const before = find(index, id);
   if (before.status !== "draft") throw new Error(`#${id} is published: unpublish it first`);
   const message = commitMessage(now, "Delete", id);
-  const changes: Change[] = [{ path: before.file, text: null }, ...dropped(id, file, "")];
+  const changes: Change[] = [{ path: before.file, text: null }, ...dropped(before, file, "")];
   let next = withEntry(index, id, null);
   for (const { entry, text } of later) {
     const { data, body } = splitFrontmatter(text, entry.slug);

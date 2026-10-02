@@ -127,8 +127,11 @@ export function forReaders<T extends PostMeta>(post: T): ForReaders<T> {
   return shown as ForReaders<T>;
 }
 
+// Highest number first (owner, 2 Oct 69): the order they went out in, newest on top —
+// the same order as by publish date, since both are set on the first publish
 export async function getPublished(section: IndexEntry["section"]) {
-  return (await getPosts({ section })).map(forReaders);
+  const posts = await getPosts({ section });
+  return posts.sort((a, b) => (b.no ?? 0) - (a.no ?? 0)).map(forReaders);
 }
 
 // A published post by its address (/posts/<code>), in its own section. A slug — an

@@ -7,11 +7,12 @@ import styles from "./Admin.module.css";
 // one way then the other ("-r"): No. 001 first, Status Draft first, Cat. A first.
 // null = nothing picked yet: No. high → low, nothing ticked, no head marked
 export type Sort = "new" | "old" | "az" | "za" | "no" | "no-r" | "status" | "status-r" | "cat" | "cat-r";
-export type Picks = { cat: string[]; mon: string[]; iss: boolean };
+export type Picks = { sec: string[]; cat: string[]; mon: string[]; iss: boolean };
 export type Option = { value: string; label: string; n: number };
 
 type Props = {
   open: boolean;
+  sections: Option[]; // Blog · Project (owner, 2 Oct 69)
   categories: Option[];
   issues: number;
   year: string;
@@ -35,7 +36,7 @@ const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x
 // Health (posts with issues) and Month tick on and off, any mix; Sort picks one. Each
 // count is what that tick would show, given the others.
 // memo: Hub re-renders on every card selection; the panel only cares about the filters
-export default memo(function FilterPanel({ open, categories, issues, year, months, picks, sort, onPicks, onSort }: Props) {
+export default memo(function FilterPanel({ open, sections, categories, issues, year, months, picks, sort, onPicks, onSort }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +48,7 @@ export default memo(function FilterPanel({ open, categories, issues, year, month
   }, [open, categories, months]);
 
   const chosen = [
+    ...sections.filter((s) => picks.sec.includes(s.value)).map((s) => s.label),
     ...categories.filter((c) => picks.cat.includes(c.value)).map((c) => c.label),
     ...(picks.iss ? ["issues"] : []),
     ...months.filter((m) => picks.mon.includes(m.value)).map((m) => m.label),
@@ -72,7 +74,7 @@ export default memo(function FilterPanel({ open, categories, issues, year, month
             type="button"
             className={`label ${styles.clear}`}
             onClick={() => {
-              onPicks({ cat: [], mon: [], iss: false });
+              onPicks({ sec: [], cat: [], mon: [], iss: false });
               onSort("new");
             }}
           >
@@ -81,13 +83,26 @@ export default memo(function FilterPanel({ open, categories, issues, year, month
         </div>
         <div className={styles.groups}>
           <div className={styles.group}>
-            <span className={`label ${styles.groupLabel}`}>Category</span>
+            <span className={`label ${styles.groupLabel}`}>Shows in</span>
+            {sections.map((s) =>
+              tick(picks.sec.includes(s.value), s.label, s.n, () =>
+                onPicks({ ...picks, sec: toggle(picks.sec, s.value) }),
+              ),
+            )}
+            <span className={`label ${styles.groupLabel} ${styles.nextLabel}`}>Category</span>
             {categories.map((c) =>
               tick(picks.cat.includes(c.value), c.label, c.n, () =>
                 onPicks({ ...picks, cat: toggle(picks.cat, c.value) }),
               ),
             )}
-            <span className={`label ${styles.groupLabel} ${styles.health}`}>Health</span>
+          </div>
+          {/* Sort, then Health under it (owner, 2 Oct 69). Last on a wide screen; second on
+              a phone, beside the first group, so the two month columns sit side by side
+              under them */}
+          <div className={`${styles.group} ${styles.sortGroup}`}>
+            <span className={`label ${styles.groupLabel}`}>Sort by</span>
+            {SORTS.map((s) => tick(sort === s.value, s.label, null, () => onSort(s.value), true))}
+            <span className={`label ${styles.groupLabel} ${styles.nextLabel}`}>Health</span>
             {tick(picks.iss, "issues", issues, () => onPicks({ ...picks, iss: !picks.iss }))}
           </div>
           <div className={styles.group}>
@@ -105,10 +120,6 @@ export default memo(function FilterPanel({ open, categories, issues, year, month
                 onPicks({ ...picks, mon: toggle(picks.mon, m.value) }),
               ),
             )}
-          </div>
-          <div className={styles.group}>
-            <span className={`label ${styles.groupLabel}`}>Sort by</span>
-            {SORTS.map((s) => tick(sort === s.value, s.label, null, () => onSort(s.value), true))}
           </div>
         </div>
       </div>

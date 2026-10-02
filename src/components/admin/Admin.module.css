@@ -368,7 +368,8 @@ header.header {
   margin-bottom: 4px;
 }
 
-.health {
+/* A second heading in the same column (Category under Shows in, Health under Sort) */
+.nextLabel {
   margin: 14px 0 4px;
 }
 
@@ -1306,6 +1307,10 @@ header.header {
   .groups {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px 28px;
+  }
+
+  .sortGroup {
+    order: 1;
   }
 
   .cards {

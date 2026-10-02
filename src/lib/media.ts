@@ -7,7 +7,7 @@ import { bangkok, type Change } from "./edit";
 // up to 2400 wide (a cover's 2400 × 1200, a full-width image on a 2× screen) and at
 // most 500 KB (Checks › Image size), squeezed a step at a time to get there. Turned
 // upright first (phones store photos sideways plus an EXIF note). Saved beside the
-// others as media/<year>/<post id>-<name>.webp, so a folder lists by post.
+// others as media/<year>/<post code>-<name>.webp, so a folder lists by post.
 
 const MAX_WIDTH = 2400;
 const MAX_BYTES = 500 * 1024;
@@ -72,15 +72,15 @@ export async function prepareUpload(fileName: string, input: Buffer, role: "cove
 
 const MAX_SENT = 700 * 1024; // a 500 KB WebP as base64, and some room
 
-// Where each waiting image goes: media/<year>/<post id>-<key>.webp, -2, -3… past a name
-// already taken. The files to commit, and "upload:<key>" → its path.
-export async function placeUploads(pending: Pending[], postId: number, exists: (path: string) => Promise<boolean>, now: Date) {
+// Where each waiting image goes: media/<year>/<post's code>-<key>.webp, -2, -3… past a
+// name already taken. The files to commit, and "upload:<key>" → its path.
+export async function placeUploads(pending: Pending[], code: string, exists: (path: string) => Promise<boolean>, now: Date) {
   const year = bangkok(now).date.slice(0, 4);
   const changes: Change[] = [];
   const paths: Record<string, string> = {};
   for (const { key, base64 } of pending) {
     if (!/^[a-z0-9-]+$/.test(key) || base64.length > MAX_SENT) throw new Error(`Image "${key}" isn't one the editor made`);
-    const base = `media/${year}/${String(postId).padStart(3, "0")}-${key}`;
+    const base = `media/${year}/${code}-${key}`;
     let path = `${base}.webp`;
     for (let n = 2; (await exists(path)) || changes.some((c) => c.path === path); n++) path = `${base}-${n}.webp`;
     changes.push({ path, text: null, base64 });

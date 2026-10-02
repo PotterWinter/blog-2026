@@ -4,9 +4,9 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
-import { placeWaiting, renumbered, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
 import { placeUploads, type Pending } from "./media";
-import { readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
+import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
 // The admin's writes (5.3b). Each action is one commit to the content repo holding the
 // .md and index.json together, so the list and the post never disagree. On GitHub that's
@@ -196,12 +196,14 @@ export async function savePost(input: PostInput, pending: Pending[] = []): Promi
   const result = await commit(async (read) => {
     const index = await read.index();
     const now = new Date();
-    const { changes, paths } = await placeUploads(pending, input.id ?? index.nextId, read.exists, now);
-    placed = paths;
     const before = input.id == null ? null : index.posts.find((p) => p.id === input.id);
+    // Its code names its new images, so it's settled first (a new post's is made here)
+    const code = before?.code ?? newCode(takenCodes(index));
+    const { changes, paths } = await placeUploads(pending, code, read.exists, now);
+    placed = paths;
     const previous = before ? ((await read.file(before.file)) ?? "") : "";
     const cover = input.cover && placeWaiting(input.cover, paths);
-    const plan = planSave(index, { ...input, cover, body: placeWaiting(input.body, paths, "../") }, now, previous);
+    const plan = planSave(index, { ...input, cover, body: placeWaiting(input.body, paths, "../") }, now, previous, code);
     return { ...plan, changes: [...changes, ...plan.changes] };
   });
   return { ...(await done(result, result.plan.entry!.id)), uploads: placed };
