@@ -67,8 +67,53 @@
 - **หน้าซ้อนในแท็บเดิม** (เจ้าของเลือก): Editor ซ่อนไว้ (ทุกอย่างที่พิมพ์ยังอยู่) · Preview เริ่มบนสุด · Close / Esc กลับที่เดิม (scroll เดิม)
 - ใช้ component ชุดเดียวกับหน้า 04 / 04B: PostHeader + PostBody + ContentsRail (+ ProjectEnd สำหรับ project)
 - แสดงสิ่งที่อยู่ใน Editor ตอนนั้น รวมที่ยังไม่ save · ปกที่รอ save โชว์จาก memory (`coverUrl`)
+- เปิด = เลื่อนเข้าจากขวาทับ Editor (Editor ยังเห็นข้างใต้ระหว่างเลื่อน) 0.36s · เข้าที่แล้วค่อยซ่อน Editor + เลื่อนหน้าไปบนสุดในเฟรมเดียวกัน (เดิมสลับทันที = กะพริบ, เจ้าของ 2 ต.ค. 69) · สารบัญวางหลังเลื่อนเข้าเสร็จ
 - ไม่มี rise-in (admin ไม่มี RevealObserver) · ลิงก์ภายในเว็บ (Back to Blog ฯลฯ) กดแล้วไม่ไปไหน กันหลุดจาก Editor · ลิงก์ออกนอก + สารบัญใช้ได้
 - (แผนเดิม `/preview/[slug]` แยกหน้า ไม่ทำ)
+
+## 5.3d WRITE — รอบ 1 (2 ต.ค. 69)
+
+- Tiptap 3 (`@tiptap/react` + starter-kit + code-block) · `components/editor/WriteBox.tsx`
+- เปิด Editor = WRITE ก่อน (v4) · สลับ RAW .MD ได้ ข้อความเดียวกัน
+- แปลง .md ↔ เอกสาร Tiptap เอง: `lib/richtext.ts` (mdast อ่าน / เขียน — ตัวเดียวกับที่หน้าเว็บใช้อ่าน)
+  - ทุก block จำ markdown ต้นฉบับ (`src`) → block ที่ไม่ได้แก้ เขียนกลับตามเดิมทุกตัวอักษร · แก้ย่อหน้าเดียว .md เปลี่ยนบรรทัดเดียว (ทดสอบแล้ว)
+  - ที่ WRITE ยังแก้ไม่ได้ (รูป + layout, ตาราง, YouTube, HTML) = block `raw` โชว์แบบหน้าเว็บ ป้าย "edit in Raw .md for now" · เขียนกลับไม่แตะ → 5.3e
+  - `npm run check-richtext [-- ../blog-content/posts]` = เปิดแล้วเขียนกลับทุกโพสต์ · ตอนนี้ fixtures 36/36 + repo จริง 2/2 ตรงทุกไบต์
+- พิมพ์ markdown แล้วเป็นรูปแบบทันที (แบบ Obsidian): `## ` `### ` `> ` `[!NOTE] ` `- ` `1. ` ```` ``` ```` (+ ภาษา) `---` `**ตัวหนา**` `*เอียง*` `` `โค้ด` ``
+- Toolbar ตาม v4 (34px, เทา, ดำเมื่อ caret อยู่ในรูปแบบนั้น — เฉพาะตอนพิมพ์อยู่) · tooltip ชื่อ · ปุ่มลัด (useHoverTip เดียวกับ admin)
+  - T ⌥⌘0 · B ⌘B · I ⌘I · H2 ⌥⌘2 · H3 ⌥⌘3 · Quote ⇧⌘. · Note ⌥⌘N · Code ⌘E (เลือกคำ = inline, ไม่เลือก = code block)
+  - Link / Image / Clip / YouTube ยังกดไม่ได้ (รอบหน้า / 5.3e)
+- กรอบโค้ด: แถบเทาแบบ 04 · ชี้ที่แถบ = แก้ info ของ fence ได้ (`ts title="search.ts"`)
+- ⌘U (ขีดเส้นใต้) ปิด — markdown ไม่มี
+- Toolbar บรรทัดเดียว ไม่ตัดบรรทัด เกินจอ = เลื่อนข้าง (ไม่มี scrollbar) · มือถือแยกบรรทัดใต้ WRITE / RAW (เจ้าของ: ตัด 3 บรรทัดน่าเกลียด)
+- **iPhone / iPad (pointer: coarse): ตอนคีย์บอร์ดขึ้น แถบเครื่องมืออยู่บนสุดของจอที่มองเห็น** (`visualViewport.offsetTop`) · หายไปพร้อมคีย์บอร์ด (`innerHeight − visualViewport` > 150) (เจ้าของ, 2 ต.ค. 69)
+  - เคยวางเหนือคีย์บอร์ดแบบ Notes — แถบ URL + ^ ˅ ✓ ของ Safari มาคั่น และตอนคีย์บอร์ดขึ้นแถว WRITE / RAW (sticky) เลื่อนหายไป → ย้ายขึ้นบน
+  - หน้าตาแบบ iOS: พื้นฝ้า (blur) เส้นบาง 0.5px ปุ่ม 44px ไอคอน quote / note / code / link / table · ปุ่มซ่อนคีย์บอร์ดชิดขวา
+  - iPad ต่อคีย์บอร์ดจริง = ไม่มีแถบ · **ต้องลองบนเครื่องจริง** (ตามนิ้วตอน scroll อาจหน่วงบน iOS)
+  - แถว sticky บนมือถือ = WRITE / RAW ที่เดิม + Preview ชิดขวา
+- ปุ่ม Preview ข้าง WRITE / RAW .MD เส้นใต้เข้มแบบ View live (เจ้าของ: กดบ่อย อยู่ใกล้ที่เขียน) · ปุ่มเดิมแถว Save ยังอยู่
+- แถว WRITE / RAW ขึ้นไปชนแถบบน = ดันแถบบนออกจนเหลือแถบเดียว (เจ้าของ, 2 ต.ค. 69) · **CSS ล้วน**: แถบบน sticky อยู่ใน `.head` (หัว + ช่องกรอก + Commit row + ช่องว่าง 48px) — พ้นท้าย `.head` แถบบนก็ถูกดันขึ้นเอง · แถว WRITE / RAW sticky top 0 · (ลองแบบ JS ตอน scroll ก่อน — บน iPhone สะดุด)
+- Cover ไม่ขยายตอนเปิด Tags › Manage แล้ว (ไม่นับความสูงของ panel ที่เปิดชั่วคราว)
+- ป้าย "next save" ใน Commit ล้นจอ 390 ไป 19px → ตัดลงบรรทัดใหม่ได้
+
+## 5.3d — รอบ 2 (2 ต.ค. 69) · `WriteMenus.tsx`
+- **Link** (ปุ่ม Link · ⌘K · แถบลอย · คลิกลิงก์ในข้อความ = แก้ / Remove link)
+  - ช่อง Text (ค่าเริ่ม = คำที่เลือก) + To · พิมพ์คำ = ค้นโพสต์ที่ publish แล้ว ↑↓ Enter → `/posts/<code>` · วาง URL = ลิงก์ออกนอก
+  - รายชื่อโพสต์ส่งมาจาก `admin/posts/[slug]/page.tsx` (`targets`)
+- **แถบลอยสีดำ** เหนือคำที่เลือก: B · I · Code · Link — เฉพาะเมาส์ (iPhone มีเมนูเลือกข้อความของตัวเอง) · ไม่โผล่ระหว่างลากเลือก
+- **เมนู `/`** ต้นบรรทัดหรือหลังเว้นวรรค · พิมพ์กรอง · ↑↓ Enter / Tab · Esc ปิด (ไม่เด้งซ้ำที่ `/` เดิม)
+  - Heading · Subheading · Code block · Quote · Numbered list · Bullet list · Note · Divider · Output (กรอบ output ต่อใต้โค้ด) · Table (แทรกตารางตั้งต้น แก้ใน Raw ไปก่อน)
+  - Image · Two images · Carousel · Clip · YouTube = เทา รอ 5.3e
+- ทดสอบใน Chrome: `/ta` Enter = ตาราง · ดับเบิลคลิกคำ = แถบลอย · ⌘K พิมพ์ "debo" Enter = `[world](/posts/l6e54q4l)`
+
+- **ตาราง แก้ใน WRITE ได้จริง** (เจ้าของไม่ใช้ RAW): ปุ่ม Table ใน toolbar (แยกเส้นเฉพาะ Image · Clip · YouTube) + `/table` · Tab ไปช่องถัดไป · caret ในตาราง = แถบใต้ตาราง + Row · + Column · − Row · − Column · Delete table
+  - `@tiptap/extension-table` · ช่องละหนึ่งย่อหน้า (ตาราง markdown ช่องละบรรทัด) · หน้าตาแบบ 04
+  - richtext: ตาราง gfm ↔ table (เก็บ align) · fixtures ยัง 36/36 ตรงทุกไบต์ · ตารางที่มีของแปลกในช่อง (รูป) ยังเป็น raw
+- **Code + Output ติดกัน**: ปุ่ม "+ Output" บนแถบเทาของกรอบโค้ด = ใส่กรอบ Output ต่อใต้ (ติดกันไม่มีช่อง เหมือนหน้าเว็บ — กรอบโค้ดสองอันติดกันจะต่อกันเสมอ) · หรือ `/output`
+- Preview ข้าง WRITE / RAW: เส้นใต้จาง เข้มตอน hover
+
+## 5.3d — ยังเหลือ
+- สารบัญด้านขวาใน WRITE (ContentsRail ตอนนี้อ่านหัวข้อครั้งเดียวตอนเปิดหน้า — ต้องให้อ่านใหม่ตอนพิมพ์)
 
 ## WRITE (5.3d) — จดไว้
 - แทรกรูป / code / note / YouTube / ตาราง ด้วยเมนู `/` ตรงที่พิมพ์ (เจ้าของ, 2 ต.ค. 69: ปุ่มบนสุดต้องเลื่อนขึ้นไปทุกครั้ง ไม่ work)

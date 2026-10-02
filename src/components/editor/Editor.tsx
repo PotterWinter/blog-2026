@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
@@ -13,13 +13,15 @@ import { CoverField, LinksField, TagsField } from "./Fields";
 import MetaRow from "./MetaRow";
 import Preview from "./Preview";
 import RawBox from "./RawBox";
+import WriteBox from "./WriteBox";
+import type { LinkTarget } from "./WriteMenus";
 import { UPLOAD, type Waiting } from "./waiting";
 import { shrinkForUpload } from "./shrink";
 import styles from "./Editor.module.css";
 
 // 07 Admin post editor (v4 07 / EDITOR-SPEC). The form is the post: title, slug, where
-// it shows, category, excerpt, tags, links, cover — and the body, in RAW .MD for now
-// (WRITE, the formatted view, is 5.3d). Save / Publish / Unpublish / Delete go to the
+// it shows, category, excerpt, tags, links, cover — and the body, in WRITE (formatted,
+// typed into directly) or RAW .MD. Save / Publish / Unpublish / Delete go to the
 // server actions, one commit each. Fields left unsaved are kept on the page (and a
 // leave warns); a save that fails says so in the header and tries again every 10s.
 
@@ -64,14 +66,23 @@ type Note = { text: string; tone: "ok" | "bad" | "muted" };
 const notes = new Map<number | "new", Note>();
 const time = (d: Date) => d.toTimeString().slice(0, 8);
 
-export default function Editor({ post, entry: first, allTags }: { post: Post | null; entry: IndexEntry | null; allTags: string[] }) {
+export default function Editor({
+  post,
+  entry: first,
+  allTags,
+  targets,
+}: {
+  post: Post | null;
+  entry: IndexEntry | null;
+  allTags: string[];
+  targets: LinkTarget[]; // posts a link in the text can go to
+}) {
   const { go } = usePageTransition();
   const barRef = useRef<HTMLElement>(null);
-  const pageRef = useRef<HTMLElement>(null);
   const [form, setForm] = useState<Form>(() => (post ? fromPost(post) : blank));
   const [entry, setEntry] = useState(first);
   const [saved, setSaved] = useState(() => JSON.stringify(post ? fromPost(post) : blank));
-  const [mode, setMode] = useState<"write" | "raw">("raw");
+  const [mode, setMode] = useState<"write" | "raw">("write");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -338,20 +349,12 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     };
   });
 
-  // The WRITE / RAW row sticks under the bar, however tall the bar wraps to
-  useEffect(() => {
-    const bar = barRef.current;
-    const page = pageRef.current;
-    if (!bar || !page) return;
-    const observer = new ResizeObserver(() => page.style.setProperty("--bar-h", `${bar.offsetHeight}px`));
-    observer.observe(bar);
-    return () => observer.disconnect();
-  }, []);
 
   // From 1024 the cover is as wide as puts its Alt text line level with the bottom of
   // Save: it's 2:1, so each px taller is 2 px wider. Measured from where it is now,
   // again whenever the left column changes height (a link added, a project's fields).
-  // Never under 560 nor past its column (owner, 2 Oct 69).
+  // Never under 560 nor past its column (owner, 2 Oct 69). A panel open for a moment
+  // (Tags › Manage) doesn't count: opening it grew the cover (owner, 2 Oct 69).
   const fieldsRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -365,7 +368,8 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
       if (!wide.matches) return cover.style.removeProperty("--cover-w");
       const b = box.getBoundingClientRect();
       const below = cover.getBoundingClientRect().bottom - b.bottom; // File + Alt text rows
-      const height = actions.getBoundingClientRect().bottom - below - b.top;
+      const panels = [...fields.querySelectorAll<HTMLElement>(`.${styles.panel}`)].reduce((sum, p) => sum + p.offsetHeight, 0);
+      const height = actions.getBoundingClientRect().bottom - panels - below - b.top;
       const column = fields.clientWidth - actions.parentElement!.offsetWidth - parseFloat(getComputedStyle(fields).columnGap);
       const width = Math.min(column, Math.max(560, height * 2));
       cover.style.setProperty("--cover-w", `${Math.floor(width)}px`);
@@ -376,6 +380,28 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
     observer.observe(actions.parentElement!);
     return () => observer.disconnect();
   }, []);
+
+  // WRITE / RAW .MD: the same body, two views (switching reads it afresh)
+  const modeSwitch = (
+    <Segmented
+      label="Mode"
+      options={[
+        { value: "write", label: "Write" },
+        { value: "raw", label: "Raw .md" },
+      ]}
+      value={mode}
+      onChange={setMode}
+    />
+  );
+  // ...and Preview beside them, never far from where you write (owner, 2 Oct 69)
+  const modeRow = (
+    <>
+      {modeSwitch}
+      <button type="button" className={`${styles.link} ${styles.modePreview}`} onClick={() => openPreview()}>
+        Preview
+      </button>
+    </>
+  );
 
   // ---------- RAW .MD ----------
 
@@ -409,14 +435,23 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
   // browser's history, so Back — the button, or Safari's swipe from the edge — closes
   // the preview rather than leaving the editor; Close, Esc, Back to Blog and the swipe
   // in Preview all go the same way (owner, 2 Oct 69).
-  const [previewing, setPreviewing] = useState(false);
+  // It slides in from the right over the editor, the way the swipe puts it away
+  // ("entering": held over the screen, the editor still showing beneath); once in, the
+  // editor hides and the page is the preview's, from its top. It used to swap in at
+  // once, a blink (owner, 2 Oct 69).
+  const [previewing, setPreviewing] = useState<false | "entering" | "open">(false);
   const scrollRef = useRef(0);
   const openPreview = () => {
     scrollRef.current = window.scrollY;
     window.history.pushState({ preview: true }, "");
-    setPreviewing(true);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setPreviewing(still ? "open" : "entering");
   };
+  const previewIn = useCallback(() => setPreviewing((v) => (v ? "open" : v)), []);
+  // Before the frame is drawn, so the swap from held-over to the page never shows
+  useLayoutEffect(() => {
+    if (previewing === "open") window.scrollTo({ top: 0, behavior: "instant" });
+  }, [previewing]);
   const closePreview = useCallback(() => window.history.back(), []);
   useEffect(() => {
     if (!previewing) return;
@@ -443,10 +478,16 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
         <Preview
           post={previewPost}
           coverUrl={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)]?.url : undefined}
+          entering={previewing === "entering"}
+          onIn={previewIn}
           onClose={closePreview}
         />
       )}
-      <div hidden={previewing}>
+      <div hidden={previewing === "open"}>
+      {/* The bar sticks to the top only as far as the end of this block, so the WRITE /
+          RAW row, reaching the top, pushes it up and off — one bar at a time, done by
+          the browser itself (owner, 2 Oct 69; the scripted push stuttered on the iPhone) */}
+      <div className={styles.head}>
       <header ref={barRef} className={styles.bar}>
         <TransitionLink href="/admin" className={styles.back}>
           ← Publishing
@@ -518,7 +559,7 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
       </header>
       {error && <p className={styles.error}>{error}</p>}
 
-      <main ref={pageRef} className={styles.page}>
+      <div className={styles.page}>
         <label className={styles.titleField}>
           <input
             className={styles.title}
@@ -681,27 +722,22 @@ export default function Editor({ post, entry: first, allTags }: { post: Post | n
         </div>
 
         <MetaRow form={form} file={file} entry={entry} checks={checks} published={published} />
+      </div>
+      </div>
 
-        <div className={styles.tools}>
-          <Segmented
-            label="Mode"
-            options={[
-              { value: "write", label: "Write" },
-              { value: "raw", label: "Raw .md" },
-            ]}
-            value={mode}
-            onChange={setMode}
-            disabled={(m) => m === "write" && "Write — the formatted view — comes next (5.3d)"}
-          />
-          <span className={styles.toolsNote}>Markdown, frontmatter included · ⌘S saves</span>
-        </div>
+      <main className={styles.pageBody}>
 
-        <RawBox
-          file={file.replace(/^posts\//, "")}
-          text={raw}
-          onChange={onRaw}
-          reset={rawReset}
-        />
+        {mode === "write" ? (
+          <WriteBox body={form.body} onChange={(body) => set({ body })} reset={rawReset} modeSwitch={modeRow} targets={targets} />
+        ) : (
+          <>
+            <div className={styles.tools}>
+              {modeRow}
+              <span className={styles.toolsNote}>Markdown, frontmatter included · ⌘S saves</span>
+            </div>
+            <RawBox file={file.replace(/^posts\//, "")} text={raw} onChange={onRaw} reset={rawReset} />
+          </>
+        )}
       </main>
       </div>
     </>

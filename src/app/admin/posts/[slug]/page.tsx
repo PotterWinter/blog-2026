@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Editor from "@/components/editor/Editor";
 import { getPost, getPosts } from "@/lib/content";
+import { postUrl } from "@/lib/schema";
 
 // 07 Admin post editor. /admin/posts/new is a post not made yet: it gets its id (and
 // its file) on the first save, and the address becomes /admin/posts/<slug> — the same
@@ -11,9 +12,13 @@ export default async function EditPostPage({ params }: PageProps<"/admin/posts/[
   const { slug } = await params;
   const posts = await getPosts({ drafts: true });
   const allTags = [...new Set(posts.flatMap((p) => p.tags))].sort();
-  if (slug === "new") return <Editor post={null} entry={null} allTags={allTags} />;
+  // What WRITE's Link can point to: the published posts, by their address
+  const targets = posts
+    .filter((p) => p.status === "published")
+    .map((p) => ({ title: p.title, href: postUrl(p), section: p.section }));
+  if (slug === "new") return <Editor post={null} entry={null} allTags={allTags} targets={targets} />;
   const post = await getPost(slug);
   if (!post) notFound();
   const entry = posts.find((p) => p.id === post.id) ?? null;
-  return <Editor post={post} entry={entry} allTags={allTags} />;
+  return <Editor post={post} entry={entry} allTags={allTags} targets={targets} />;
 }

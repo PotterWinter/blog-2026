@@ -8,7 +8,9 @@
 
 - push แล้ว (2 ต.ค. 69 เย็น): หน้า login กล่องกว้างเท่าช่องรหัส · สารบัญบน iPad แก้แล้ว (จุดไม่วาร์ป · ลากด้วยนิ้ว หน้าเลื่อนเมื่อนิ้วค้าง 120 ms เลี่ยง WebKit bug 181954 · ทดสอบบน iPad จริงผ่าน) → notes/04-post.md
   - ก่อนหน้า (`50b43bd`): 5.3g Preview · URL รหัสสุ่ม · ชื่อรูป `<code>-<ชื่อ>.webp` · filter Blog/Project · Reset · Message เวลาเดินสด
-- **ถัดไป: 5.3d WRITE (Tiptap)** แบบ Obsidian live preview + เมนู `/` แทรกรูป / โค้ด / Note / YouTube / ตาราง → notes/editor.md · แล้ว 5.4c หน้า Media (โชว์ #id / No. ของแต่ละรูปได้) · 5.4d คลิป
+- **ค้างในเครื่อง ยังไม่ commit:** Preview เลื่อนเข้าจากขวา · 5.3d WRITE รอบ 1 (Tiptap, พิมพ์ markdown แล้วเป็นรูปแบบทันที, toolbar, .md ไม่เปลี่ยนนอกจากที่แก้) → notes/editor.md
+- 5.3d รอบ 2 ทำแล้ว (ยังไม่ commit): Link ⌘K · แถบลอย · เมนู `/` · ตาราง + Output แก้ใน WRITE · iPhone แถบเครื่องมือบนสุดตอนคีย์บอร์ดขึ้น · Preview ข้าง WRITE / RAW · แถว WRITE / RAW ดันแถบบนออก (CSS ล้วน) · build / lint / types ผ่าน
+- **ถัดไป:** สารบัญใน WRITE (ปิด 5.3d) แล้ว 5.3e block รูป / clip / YouTube / ตาราง
 - URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
 - repo จริง: Debouncing (#3) มีรหัสแล้ว · hello-world ยังไม่มี → เปิด Editor แล้วกด Save changes หนึ่งครั้ง
 - login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
@@ -96,7 +98,7 @@
   - ตัวแก้ข้อความ WRITE = Tiptap (เจ้าของเลือก 1 ต.ค. 69)
   - [x] 5.3c หน้า Editor + โหมด RAW .MD — ทดสอบกับ GitHub จริงผ่าน (1 ต.ค. 69): Draft / Publish / Delete เป็น commit เดียวต่อครั้ง · repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีรูป — ใส่ตอน 5.4)
   - [x] ชื่อไฟล์ `posts/<id>-<slug>.md` · hello-world ย้ายชื่อเองตอน save ครั้งถัดไป
-  - [ ] 5.3d โหมด WRITE (ต้องเลือกตัวแก้ข้อความก่อน — แนะนำ Tiptap)
+  - [ ] 5.3d โหมด WRITE — รอบ 1 เสร็จ (พิมพ์ / toolbar / แปลง .md) · เหลือ link, แถบลอย, `/`, สารบัญ, มือถือ
   - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
   - [ ] 5.3f Checks ตรวจจริง
   - [x] 5.3g 07P preview (หน้าซ้อนในแท็บเดิม, 2 ต.ค. 69)

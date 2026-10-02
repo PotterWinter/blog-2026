@@ -17,13 +17,30 @@ import styles from "./Editor.module.css";
 export default function Preview({
   post,
   coverUrl,
+  entering,
+  onIn,
   onClose,
 }: {
   post: ForReaders<Post>;
   coverUrl?: string; // a cover picked but not saved: shown from memory
+  entering: boolean; // sliding in over the editor (see Editor)
+  onIn: () => void; // ...and it's in
   onClose: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // Sliding in, it starts a screen's width to the right: html and body clip sideways
+  // meanwhile, or iOS Safari zooms out to fit the wider page (as in the swipe below)
+  useEffect(() => {
+    if (!entering) return;
+    const pages = [document.documentElement, document.body];
+    pages.forEach((el) => (el.style.overflowX = "clip"));
+    // In anyway if the slide never reports its end (a tab in the background doesn't run it)
+    const late = window.setTimeout(onIn, 700);
+    return () => {
+      clearTimeout(late);
+      pages.forEach((el) => (el.style.overflowX = ""));
+    };
+  }, [entering, onIn]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -111,6 +128,10 @@ export default function Preview({
     <div
       ref={rootRef}
       className={styles.preview}
+      data-entering={entering || undefined}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget) onIn();
+      }}
       // Links in the post to the site's own pages would leave the editor and what's
       // unsaved: Back to Blog / Projects closes the preview instead (owner, 2 Oct 69), the
       // rest stay put. Links out, and the contents rail, still work
@@ -134,7 +155,9 @@ export default function Preview({
         <div className={postStyles.railZone}>
           <PostHeader post={post} coverUrl={coverUrl} />
           <PostBody markdown={post.body} />
-          <ContentsRail />
+          {/* Placed once it's in: held over the editor, the page's height and scroll
+              aren't the preview's yet, and the rail measures both */}
+          {!entering && <ContentsRail />}
         </div>
         {post.section === "project" && <ProjectEnd />}
       </main>

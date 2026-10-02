@@ -95,174 +95,177 @@ function remarkAlerts() {
 
 // 04 body: the markdown in one 880px column, styled per v4. Code blocks, YouTube,
 // heading "#" links and the contents rail come in 3.3b / 3.3c.
-export default function PostBody({ markdown }: { markdown: string }) {
+// `bare`: just the content, for a block of it shown inside WRITE's own column
+export default function PostBody({ markdown, bare = false }: { markdown: string; bare?: boolean }) {
+  const content = (
+    <Markdown
+      remarkPlugins={[remarkGfm, remarkAlerts, remarkImageLayouts]}
+      components={{
+        h2: ({ children }) => <h2 id={headingId(textOf(children))}>{children}</h2>,
+        h3: ({ children }) => <h3 id={headingId(textOf(children))}>{children}</h3>,
+        a: ({ href = "", children }) => {
+          const external = /^https?:\/\//.test(href);
+          // A link to another page of the site plays the page transition
+          if (href.startsWith("/")) {
+            return (
+              <TransitionLink href={href} className={styles.link}>
+                {children}
+              </TransitionLink>
+            );
+          }
+          return (
+            <a
+              href={href}
+              className={styles.link}
+              {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              {children}
+              {external && (
+                <svg
+                  viewBox="0 0 20 20"
+                  width="0.65em"
+                  height="0.65em"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinecap="square"
+                  aria-hidden="true"
+                  className={styles.out}
+                >
+                  <path vectorEffect="non-scaling-stroke" d="M1 19 18.5 1.5M10.5 1.5h8v8" />
+                </svg>
+              )}
+            </a>
+          );
+        },
+        ul: ({ children }) => <ul className={styles.ul}>{children}</ul>,
+        // The marker takes the first column; everything the item holds (text, code,
+        // links) stays together in the second
+        li: ({ children }) => (
+          <li>
+            <div>{children}</div>
+          </li>
+        ),
+        // Markers read 01, 02, … (CSS counter)
+        ol: ({ children, start }) => (
+          <ol
+            className={styles.ol}
+            style={start ? { counterReset: `item ${start - 1}` } : undefined}
+          >
+            {children}
+          </ol>
+        ),
+        // An image on its own line is a figure, not a paragraph (a figure inside a
+        // <p> isn't valid HTML)
+        // A paragraph that is only an image is a figure; one that is only a YouTube
+        // link is the video ([caption](youtube link "3:32")). Neither may sit in a <p>.
+        p: ({ node, children }) => {
+          const only = node?.children.length === 1 ? node.children[0] : null;
+          const onlyImages = node?.children.every(
+            (c) =>
+              (c.type === "element" && c.tagName === "img") ||
+              (c.type === "text" && !c.value.trim()),
+          );
+          if (onlyImages) return <>{children}</>;
+          if (only?.type === "element" && only.tagName === "a") {
+            const id = youTubeId(String(only.properties.href ?? ""));
+            if (id) {
+              return (
+                <YouTube
+                  id={id}
+                  caption={textOf(children)}
+                  duration={only.properties.title ? String(only.properties.title) : undefined}
+                />
+              );
+            }
+          }
+          return <p>{children}</p>;
+        },
+        // A quote marked by remarkAlerts is the v4 Note box; any other is a pull quote
+        blockquote: ({ node, children }) => {
+          const alert = node?.properties.dataAlert;
+          if (!alert) return <blockquote>{children}</blockquote>;
+          return (
+            <aside className={styles.note}>
+              <span className="label">{String(alert)}</span>
+              <div>{children}</div>
+            </aside>
+          );
+        },
+        // Fenced code: the v4 frame (inline code stays as it is)
+        pre: ({ node }) => {
+          const code = node?.children[0];
+          if (code?.type !== "element" || code.tagName !== "code") return null;
+          const lang = String(
+            (code.properties.className as string[] | undefined)?.[0] ?? "",
+          ).replace(/^language-/, "");
+          const meta = String((code.data as { meta?: string } | undefined)?.meta ?? "");
+          const text = code.children.map((c) => ("value" in c ? c.value : "")).join("");
+          return <CodeBlock lang={lang} meta={meta} code={text} />;
+        },
+        table: ({ children }) => (
+          <div className={styles.tableWrap}>
+            <table>{children}</table>
+          </div>
+        ),
+        // Images laid out by a <!-- … --> comment (remarkImageLayouts)
+        div: ({ node, children }) => {
+          const layout = String(node?.properties.dataLayout ?? "");
+          if (!layout) return <div>{children}</div>;
+          const ratio = String(node?.properties.dataRatio ?? "");
+          const images = (node?.children ?? []).flatMap((c) =>
+            c.type === "element" && c.tagName === "img"
+              ? [
+                  {
+                    src: mediaSrc(String(c.properties.src ?? "")),
+                    alt: String(c.properties.alt ?? ""),
+                    caption: String(c.properties.title ?? c.properties.alt ?? ""),
+                  },
+                ]
+              : [],
+          );
+          if (layout === "carousel") return <Carousel slides={images} ratio={ratio} />;
+          if (layout === "two") {
+            return (
+              <div className={styles.two} data-ratio={ratio || "4:5"}>
+                {images.slice(0, 2).map((img) => (
+                  <figure key={img.src}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
+                    <img src={img.src} alt={img.alt} loading="lazy" />
+                    {img.caption && <figcaption>{img.caption}</figcaption>}
+                  </figure>
+                ))}
+              </div>
+            );
+          }
+          // fit-height / full: one image
+          const [img] = images;
+          return (
+            <figure
+              className={`${styles.figure} ${styles[layout === "full" ? "full" : "fitHeight"]}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
+              <img src={img.src} alt={img.alt} loading="lazy" />
+              {img.caption && <figcaption>{img.caption}</figcaption>}
+            </figure>
+          );
+        },
+        img: ({ src, alt, title }) => (
+          <figure className={styles.figure}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
+            <img src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} loading="lazy" />
+            {title && <figcaption>{title}</figcaption>}
+          </figure>
+        ),
+      }}
+    >
+      {markdown}
+    </Markdown>
+  );
+  if (bare) return content;
   return (
     <div className={styles.body}>
-      <article className={styles.prose}>
-        <Markdown
-          remarkPlugins={[remarkGfm, remarkAlerts, remarkImageLayouts]}
-          components={{
-            h2: ({ children }) => <h2 id={headingId(textOf(children))}>{children}</h2>,
-            h3: ({ children }) => <h3 id={headingId(textOf(children))}>{children}</h3>,
-            a: ({ href = "", children }) => {
-              const external = /^https?:\/\//.test(href);
-              // A link to another page of the site plays the page transition
-              if (href.startsWith("/")) {
-                return (
-                  <TransitionLink href={href} className={styles.link}>
-                    {children}
-                  </TransitionLink>
-                );
-              }
-              return (
-                <a
-                  href={href}
-                  className={styles.link}
-                  {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                >
-                  {children}
-                  {external && (
-                    <svg
-                      viewBox="0 0 20 20"
-                      width="0.65em"
-                      height="0.65em"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.2"
-                      strokeLinecap="square"
-                      aria-hidden="true"
-                      className={styles.out}
-                    >
-                      <path vectorEffect="non-scaling-stroke" d="M1 19 18.5 1.5M10.5 1.5h8v8" />
-                    </svg>
-                  )}
-                </a>
-              );
-            },
-            ul: ({ children }) => <ul className={styles.ul}>{children}</ul>,
-            // The marker takes the first column; everything the item holds (text, code,
-            // links) stays together in the second
-            li: ({ children }) => (
-              <li>
-                <div>{children}</div>
-              </li>
-            ),
-            // Markers read 01, 02, … (CSS counter)
-            ol: ({ children, start }) => (
-              <ol
-                className={styles.ol}
-                style={start ? { counterReset: `item ${start - 1}` } : undefined}
-              >
-                {children}
-              </ol>
-            ),
-            // An image on its own line is a figure, not a paragraph (a figure inside a
-            // <p> isn't valid HTML)
-            // A paragraph that is only an image is a figure; one that is only a YouTube
-            // link is the video ([caption](youtube link "3:32")). Neither may sit in a <p>.
-            p: ({ node, children }) => {
-              const only = node?.children.length === 1 ? node.children[0] : null;
-              const onlyImages = node?.children.every(
-                (c) =>
-                  (c.type === "element" && c.tagName === "img") ||
-                  (c.type === "text" && !c.value.trim()),
-              );
-              if (onlyImages) return <>{children}</>;
-              if (only?.type === "element" && only.tagName === "a") {
-                const id = youTubeId(String(only.properties.href ?? ""));
-                if (id) {
-                  return (
-                    <YouTube
-                      id={id}
-                      caption={textOf(children)}
-                      duration={only.properties.title ? String(only.properties.title) : undefined}
-                    />
-                  );
-                }
-              }
-              return <p>{children}</p>;
-            },
-            // A quote marked by remarkAlerts is the v4 Note box; any other is a pull quote
-            blockquote: ({ node, children }) => {
-              const alert = node?.properties.dataAlert;
-              if (!alert) return <blockquote>{children}</blockquote>;
-              return (
-                <aside className={styles.note}>
-                  <span className="label">{String(alert)}</span>
-                  <div>{children}</div>
-                </aside>
-              );
-            },
-            // Fenced code: the v4 frame (inline code stays as it is)
-            pre: ({ node }) => {
-              const code = node?.children[0];
-              if (code?.type !== "element" || code.tagName !== "code") return null;
-              const lang = String(
-                (code.properties.className as string[] | undefined)?.[0] ?? "",
-              ).replace(/^language-/, "");
-              const meta = String((code.data as { meta?: string } | undefined)?.meta ?? "");
-              const text = code.children.map((c) => ("value" in c ? c.value : "")).join("");
-              return <CodeBlock lang={lang} meta={meta} code={text} />;
-            },
-            table: ({ children }) => (
-              <div className={styles.tableWrap}>
-                <table>{children}</table>
-              </div>
-            ),
-            // Images laid out by a <!-- … --> comment (remarkImageLayouts)
-            div: ({ node, children }) => {
-              const layout = String(node?.properties.dataLayout ?? "");
-              if (!layout) return <div>{children}</div>;
-              const ratio = String(node?.properties.dataRatio ?? "");
-              const images = (node?.children ?? []).flatMap((c) =>
-                c.type === "element" && c.tagName === "img"
-                  ? [
-                      {
-                        src: mediaSrc(String(c.properties.src ?? "")),
-                        alt: String(c.properties.alt ?? ""),
-                        caption: String(c.properties.title ?? c.properties.alt ?? ""),
-                      },
-                    ]
-                  : [],
-              );
-              if (layout === "carousel") return <Carousel slides={images} ratio={ratio} />;
-              if (layout === "two") {
-                return (
-                  <div className={styles.two} data-ratio={ratio || "4:5"}>
-                    {images.slice(0, 2).map((img) => (
-                      <figure key={img.src}>
-                        {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-                        <img src={img.src} alt={img.alt} loading="lazy" />
-                        {img.caption && <figcaption>{img.caption}</figcaption>}
-                      </figure>
-                    ))}
-                  </div>
-                );
-              }
-              // fit-height / full: one image
-              const [img] = images;
-              return (
-                <figure
-                  className={`${styles.figure} ${styles[layout === "full" ? "full" : "fitHeight"]}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-                  <img src={img.src} alt={img.alt} loading="lazy" />
-                  {img.caption && <figcaption>{img.caption}</figcaption>}
-                </figure>
-              );
-            },
-            img: ({ src, alt, title }) => (
-              <figure className={styles.figure}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-                <img src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} loading="lazy" />
-                {title && <figcaption>{title}</figcaption>}
-              </figure>
-            ),
-          }}
-        >
-          {markdown}
-        </Markdown>
-      </article>
+      <article className={styles.prose}>{content}</article>
     </div>
   );
 }
