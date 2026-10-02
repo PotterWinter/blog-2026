@@ -4,6 +4,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown, gfmToMarkdown } from "mdast-util-gfm";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { gfm } from "micromark-extension-gfm";
+import { isClip } from "./clips.ts";
 
 // WRITE (5.3d): a post's markdown body ↔ the Tiptap document the editor shows.
 //
@@ -84,13 +85,59 @@ function inline(nodes: PhrasingContent[], marks: Marks = []): JSONContent[] | nu
 
 const youTube = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/|youtu\.be\/)/;
 
+// ---------- images (5.3e) ----------
+// A figure: one image, or several laid out by the comment above them (PostBody):
+// <!-- two 4:5 --> <!-- two 16:10 --> <!-- carousel --> <!-- carousel 4:5 -->
+// <!-- fit height --> <!-- full -->. None = single, the column's width.
+export type FigureImage = { src: string; alt: string; caption: string };
+export type Layout = "single" | "fit height" | "full" | "two" | "carousel";
+const LAYOUT = /^<!--\s*(two|carousel|fit height|full)(?:\s+(4:5|16:10))?\s*-->$/;
+
+// A paragraph that's only images (each on its own line), or null
+function imagesOf(n: RootContent): FigureImage[] | null {
+  if (n.type !== "paragraph") return null;
+  const images: FigureImage[] = [];
+  for (const c of n.children) {
+    if (c.type === "image") images.push({ src: c.url, alt: c.alt ?? "", caption: c.title ?? "" });
+    else if (c.type !== "text" || c.value.trim()) return null;
+  }
+  return images.length ? images : null;
+}
+
+const figure = (layout: Layout, ratio: string, images: FigureImage[]): JSONContent => ({
+  type: "figure",
+  attrs: { layout, ratio, images },
+});
+
+export function figureMd(layout: Layout, ratio: string, images: FigureImage[]): string {
+  const lines = images
+    .filter((i) => i.src)
+    .map((i) => {
+      const alt = i.alt.replace(/([\\[\]])/g, "\\$1");
+      const title = i.caption ? ` "${i.caption.replace(/(["\\])/g, "\\$1")}"` : "";
+      return `![${alt}](${i.src}${title})`;
+    });
+  if (layout === "single") return lines.join("\n\n");
+  return [`<!-- ${layout}${ratio ? ` ${ratio}` : ""} -->`, ...lines].join("\n");
+}
+
 // One block of the body, or null = keep it raw
 function block(n: RootContent): JSONContent | null {
   switch (n.type) {
     case "paragraph": {
-      // A paragraph that's only a YouTube link is the video on the page
+      // One image on its own: a single figure (several with no layout: kept raw); one
+      // clip (an .mp4 / .webm, written as an image is) its own block (5.4d)
+      const images = imagesOf(n);
+      if (images?.length === 1 && isClip(images[0].src)) return { type: "clip", attrs: { ...images[0] } };
+      if (images) return images.length === 1 && !images.some((i) => isClip(i.src)) ? figure("single", "", images) : null;
+      // A paragraph that's only a YouTube link is the video on the page:
+      // [caption](youtube link "3:32") — a block of its own (5.3e)
       const only = n.children.length === 1 ? n.children[0] : null;
-      if (only?.type === "link" && youTube.test(only.url)) return null;
+      if (only?.type === "link" && youTube.test(only.url)) {
+        if (!only.children.every((c) => c.type === "text")) return null; // styled words: raw
+        const caption = only.children.map((c) => (c.type === "text" ? c.value : "")).join("");
+        return { type: "youtube", attrs: { url: only.url, caption, duration: only.title ?? "" } };
+      }
       const content = inline(n.children);
       return content && { type: "paragraph", content };
     }
@@ -192,14 +239,23 @@ export function mdToDoc(md: string): JSONContent {
     // A layout comment and the images under it are one block
     const next = kids[i + 1];
     if (n.type === "html" && /^<!--/.test(n.value) && next?.type === "paragraph") {
-      content.push({ type: "raw", attrs: { src: slice(n, next) } });
+      const layout = LAYOUT.exec(n.value.trim());
+      const found = imagesOf(next);
+      const images = found?.some((i) => isClip(i.src)) ? null : found; // clips aren't laid out
+      const src = slice(n, next);
+      content.push(
+        layout && images
+          ? { ...figure(layout[1] as Layout, layout[2] ?? "", images), attrs: { layout: layout[1], ratio: layout[2] ?? "", images, src } }
+          : { type: "raw", attrs: { src } },
+      );
       i += 1;
       continue;
     }
     const b = block(n);
     content.push(
       b
-        ? { ...b, attrs: { ...b.attrs, src: slice(n) } }
+        ? // (a clip's src is its file: its markdown is kept as `source`)
+          { ...b, attrs: { ...b.attrs, [b.type === "clip" ? "source" : "src"]: slice(n) } }
         : { type: "raw", attrs: { src: slice(n) } },
     );
   }
@@ -336,9 +392,31 @@ function canonical(src: string): string {
   return c;
 }
 
+export function youtubeMd(url: string, caption: string, duration: string): string {
+  if (!url.trim()) return "";
+  const text = caption.replace(/([\\[\]])/g, "\\$1");
+  const title = duration ? ` "${duration.replace(/(["\\])/g, "\\$1")}"` : "";
+  return `[${text}](${url.trim()}${title})`;
+}
+
 function blockMd(n: JSONContent, keep = true): string {
   if (n.type === "raw") return String(n.attrs?.src ?? "");
   let md: string;
+  if (n.type === "clip") {
+    md = figureMd("single", "", [{ src: n.attrs?.src ?? "", alt: n.attrs?.alt ?? "", caption: n.attrs?.caption ?? "" }]);
+    const src = keep ? n.attrs?.source : null;
+    return src && canonical(src) === md ? src : md;
+  }
+  if (n.type === "youtube") {
+    md = youtubeMd(n.attrs?.url ?? "", n.attrs?.caption ?? "", n.attrs?.duration ?? "");
+    const src = keep ? n.attrs?.src : null;
+    return src && canonical(src) === md ? src : md;
+  }
+  if (n.type === "figure") {
+    md = figureMd(n.attrs?.layout ?? "single", n.attrs?.ratio ?? "", n.attrs?.images ?? []);
+    const src = keep ? n.attrs?.src : null;
+    return src && canonical(src) === md ? src : md;
+  }
   if (n.type === "note") {
     const inner = (n.content ?? []).map((c) => blockMd(c, false)).join("\n\n");
     const kind = String(n.attrs?.kind ?? "NOTE");
@@ -354,5 +432,6 @@ export function docToMd(doc: JSONContent): string {
   return (doc.content ?? [])
     .filter((b) => !(b.type === "paragraph" && !b.content?.length))
     .map((b) => blockMd(b))
+    .filter(Boolean) // a figure with every image taken out
     .join("\n\n");
 }

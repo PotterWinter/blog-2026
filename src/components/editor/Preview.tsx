@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { ClipMap } from "@/lib/clips";
 import type { ForReaders, Post } from "@/lib/content";
 import ContentsRail from "../post/ContentsRail";
 import postStyles from "../post/Post.module.css";
@@ -20,12 +21,14 @@ export default function Preview({
   entering,
   onIn,
   onClose,
+  clips,
 }: {
   post: ForReaders<Post>;
   coverUrl?: string; // a cover picked but not saved: shown from memory
   entering: boolean; // sliding in over the editor (see Editor)
   onIn: () => void; // ...and it's in
   onClose: () => void;
+  clips: ClipMap; // saved ones by path, waiting ones as "clip:<key>"
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   // Sliding in, it starts a screen's width to the right: html and body clip sideways
@@ -154,7 +157,7 @@ export default function Preview({
       <main data-post>
         <div className={postStyles.railZone}>
           <PostHeader post={post} coverUrl={coverUrl} />
-          <PostBody markdown={post.body} />
+          <PostBody markdown={post.body} clips={clips} />
           {/* Placed once it's in: held over the editor, the page's height and scroll
               aren't the preview's yet, and the rail measures both */}
           {!entering && <ContentsRail />}

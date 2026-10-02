@@ -8,9 +8,12 @@
 
 - push แล้ว (2 ต.ค. 69 เย็น): หน้า login กล่องกว้างเท่าช่องรหัส · สารบัญบน iPad แก้แล้ว (จุดไม่วาร์ป · ลากด้วยนิ้ว หน้าเลื่อนเมื่อนิ้วค้าง 120 ms เลี่ยง WebKit bug 181954 · ทดสอบบน iPad จริงผ่าน) → notes/04-post.md
   - ก่อนหน้า (`50b43bd`): 5.3g Preview · URL รหัสสุ่ม · ชื่อรูป `<code>-<ชื่อ>.webp` · filter Blog/Project · Reset · Message เวลาเดินสด
-- **ค้างในเครื่อง ยังไม่ commit:** Preview เลื่อนเข้าจากขวา · 5.3d WRITE รอบ 1 (Tiptap, พิมพ์ markdown แล้วเป็นรูปแบบทันที, toolbar, .md ไม่เปลี่ยนนอกจากที่แก้) → notes/editor.md
-- 5.3d รอบ 2 ทำแล้ว (ยังไม่ commit): Link ⌘K · แถบลอย · เมนู `/` · ตาราง + Output แก้ใน WRITE · iPhone แถบเครื่องมือบนสุดตอนคีย์บอร์ดขึ้น · Preview ข้าง WRITE / RAW · แถว WRITE / RAW ดันแถบบนออก (CSS ล้วน) · build / lint / types ผ่าน
-- **ถัดไป:** สารบัญใน WRITE (ปิด 5.3d) แล้ว 5.3e block รูป / clip / YouTube / ตาราง
+- push แล้ว (2 ต.ค. 69 ค่ำ, `a35720b`): 5.3d WRITE — Tiptap · พิมพ์ markdown แล้วเป็นรูปแบบทันที · toolbar · Link ⌘K · แถบลอย · เมนู `/` · ตาราง + Output · Preview เลื่อนเข้าจากขวา + ปุ่มข้าง WRITE / RAW · แถว WRITE / RAW ดันแถบบนออก (CSS ล้วน) → notes/editor.md
+- **ค้างในเครื่อง ยังไม่ commit (เจ้าของพักก่อน 2 ต.ค. 69 ค่ำ):** สารบัญใน WRITE (ปิด 5.3d) · มือถือแบบ Gmail (ปุ่ม Aa + แถบลอยเหนือคีย์บอร์ด) · Undo / Redo · 5.3e: block รูป · YouTube · ลบแบบกดค้าง + Undo → lint / types / round-trip ผ่าน · พิมพ์ "commit แล้ว push" ได้เลย
+- **5.4d คลิป ✅ (ยังไม่ commit):** Blob store `blog-2026-clips` เชื่อมแล้ว · อัปโหลด / Save / ลบ ทดสอบกับ Blob จริงผ่าน · Blob ล็อก = ค้างเฟรมแรก → notes/media.md
+- **iPhone แถบเครื่องมือ:** กลับเป็นแถบติดบนสุดตอนคีย์บอร์ดขึ้น (แบบที่อยู่บนเว็บจริง) + แถว WRITE / RAW หลบระหว่างนั้น (ยังไม่ commit · ต้องดูบนเครื่องจริง) → notes/editor.md
+- **ถัดไป:** 5.3f Checks → notes/editor.md
+- ทำแล้ว (ยังไม่ commit): ขีดขาวใต้ footer หน้า admin (Safari) · footer ท้ายหน้า Editor ตาม v4 → notes/admin.md, notes/editor.md
 - URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
 - repo จริง: Debouncing (#3) มีรหัสแล้ว · hello-world ยังไม่มี → เปิด Editor แล้วกด Save changes หนึ่งครั้ง
 - login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
@@ -98,14 +101,15 @@
   - ตัวแก้ข้อความ WRITE = Tiptap (เจ้าของเลือก 1 ต.ค. 69)
   - [x] 5.3c หน้า Editor + โหมด RAW .MD — ทดสอบกับ GitHub จริงผ่าน (1 ต.ค. 69): Draft / Publish / Delete เป็น commit เดียวต่อครั้ง · repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีรูป — ใส่ตอน 5.4)
   - [x] ชื่อไฟล์ `posts/<id>-<slug>.md` · hello-world ย้ายชื่อเองตอน save ครั้งถัดไป
-  - [ ] 5.3d โหมด WRITE — รอบ 1 เสร็จ (พิมพ์ / toolbar / แปลง .md) · เหลือ link, แถบลอย, `/`, สารบัญ, มือถือ
+  - [x] 5.3d โหมด WRITE (พิมพ์ markdown · toolbar · link · แถบลอย · `/` · ตาราง · Output · สารบัญ · มือถือ)
   - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
   - [ ] 5.3f Checks ตรวจจริง
   - [x] 5.3g 07P preview (หน้าซ้อนในแท็บเดิม, 2 ต.ค. 69)
 - [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
   - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)
   - [x] 5.4b รูปในเนื้อหา: ปุ่ม Image / ลากวาง / paste · ตั้งชื่อเองก่อน Save
-  - [ ] 5.4c หน้า Media · 5.4d คลิป (Vercel Blob)
+  - [ ] 5.4c หน้า Media
+  - [x] 5.4d คลิป (Vercel Blob + media.json, 2 ต.ค. 69)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 

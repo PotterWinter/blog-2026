@@ -34,3 +34,15 @@
 - `upload:photo` ไม่ไปจับ `upload:photo-2` (เทียบทั้งคำ)
 - Save ตอน cursor ยังอยู่ในกล่อง RAW: ข้อความในกล่องเปลี่ยนเป็น path จริงทันที cursor อยู่ที่เดิม
 - เอารูปออกจากเนื้อหาแล้ว Save = ไฟล์รูปนั้นถูกลบใน commit เดียวกัน (กลไกเดิมของ 5.4a)
+
+## 5.4d คลิป (2 ต.ค. 69 ค่ำ) ✅ ทดสอบกับ Blob จริงแล้ว
+- **ที่เก็บ:** Vercel Blob store `blog-2026-clips` (public, sin1) — เจ้าของสร้างใน dashboard (ตัวเชื่อม Vercel ได้ 403) · ติ๊ก "read-write token" ตอน connect → `BLOB_READ_WRITE_TOKEN` (ไม่ติ๊ก = ได้แค่ BLOB_STORE_ID แบบ OIDC ใช้ใน dev ไม่ได้) · dev: บรรทัดเดียวกันใน `.env.development.local`
+- ฟรี (Hobby, ต่อเดือน): เก็บ 1 GB · ดาวน์โหลด 10 GB · อ่านที่ไม่โดน cache 10,000 · อัปโหลด 2,000 · เกิน = ไม่เสียเงิน แต่ Blob ล็อก 30 วัน
+- **ใน .md:** เขียนแบบรูป `![alt](../media/2026/<code>-ชื่อ.mp4 "caption")` · **`media.json`** ใน content repo บอกว่า path นั้นอยู่ไหนจริง: `{ url (Blob), poster (webp ใน git), bytes, seconds, width, height }` (`lib/clips.ts`)
+- **อัปโหลด** (Clip block · ปุ่ม Clip · ⇧⌘M · `/clip` · ลากวาง / paste ไฟล์วิดีโอ): MP4 / WebM ≤5 MB · browser ดึง**เฟรมแรก**ทำ poster (`clipFrame.ts`) → poster ไปทางรูป (รอ Save) · ไฟล์ส่งจาก browser ตรงไป Blob (`/api/clip` ออก token ให้เฉพาะคน login · ชนิด + ขนาดจำกัด) · ก่อน Save ในเนื้อหาเป็น `clip:<key>`
+- **Save:** `clip:<key>` → `../media/<ปี>/<code>-<key>.mp4` · media.json + poster + .md **commit เดียว** · คลิปของโพสต์ที่เอาออกจากเนื้อหา → ลบ entry + poster ใน commit เดียวกัน แล้วลบไฟล์ใน Blob หลัง commit
+- **หน้าเว็บ** (`post/Clip.tsx`): โชว์เฟรมแรกก่อนเสมอ · โหลดไฟล์เมื่อเลื่อนเกือบถึง (200px) · เล่น muted loop · ออกจากจอ = หยุด · **โหลดไม่ได้ (Blob ล็อก) = ค้างเฟรมแรก** (เจ้าของ, 2 ต.ค. 69) · reduced motion = ไม่เล่นเอง
+- ทดสอบใน scratch (คลิปทดสอบ + media.json ปลอม): หน้าเว็บเล่นได้ · URL เสีย → เป็นรูปเฟรมแรก · WRITE โชว์ block · อัปโหลดตอนไม่มี token → "Clip not added · Blob isn't connected" · `next build` ผ่าน
+- **ทดสอบกับ Blob จริง (scratch, fixtures):** อัปโหลด → Save → .md `../media/2026/yaolsqam-t.mp4` + media.json + poster webp · หน้าเว็บเล่นจาก Blob · เลือก block → กดค้างลบ → Save → entry + poster + ไฟล์ใน Blob หายครบ · ไฟล์ทดสอบใน Blob ลบหมดแล้ว (store ว่าง)
+- บั๊กที่เจอระหว่างทดสอบ: path ของ poster ที่ server คืนมามี key แบบ `upload:<key>` (โค้ดคลิปหาแบบไม่มี) · block Clip ไม่ถูกนับเป็น block ที่เลือกได้ (แถบลบไม่ขึ้น) → แก้แล้ว
+- ยังไม่ทำ: ลบ draft ทั้งโพสต์ยังไม่ลบคลิปของมันใน media.json / Blob

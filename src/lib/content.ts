@@ -2,6 +2,7 @@ import "server-only";
 
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { MEDIA_JSON, parseClips, type ClipMap } from "./clips.ts";
 import {
   buildIndex,
   postUrl,
@@ -65,6 +66,13 @@ async function fromDisk(file: string): Promise<Buffer | null> {
 async function readText(file: string, tags: string[]): Promise<string | null> {
   if (LOCAL_DIR) return (await fromDisk(file))?.toString("utf8") ?? null;
   return (await (await fromGitHub(file, tags))?.text()) ?? null;
+}
+
+// ---------- clips (5.4d) ----------
+// Where each clip a post names really is (lib/clips): read with the posts, cleared with
+// them when a save changes it
+export async function getClips(): Promise<ClipMap> {
+  return parseClips(await readText(MEDIA_JSON, ["media"]));
 }
 
 // ---------- posts ----------

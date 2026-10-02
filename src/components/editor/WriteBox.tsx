@@ -22,9 +22,12 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { Plugin } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { docToMd, mdToDoc } from "@/lib/richtext";
 import { useHoverTip } from "../admin/useHoverTip";
 import {
+  BlockBar,
   BubbleBar,
   LinkPopover,
   SLASH as SLASH_ITEMS,
@@ -38,8 +41,13 @@ import {
   type Slash,
 } from "./WriteMenus";
 import postStyles from "../post/Post.module.css";
-import PostBody from "../post/PostBody";
+import ContentsRail from "../post/ContentsRail";
+import PostBody, { headingId, youTubeId } from "../post/PostBody";
 import styles from "./Editor.module.css";
+import { clipOpeners, imageOpeners, linkOpeners } from "./openers";
+import { ClipBlock } from "./WriteClip";
+import { Figure, ImagesContext, selectOnPress, type Images } from "./WriteFigure";
+import { YouTubeBlock } from "./WriteYouTube";
 
 // WRITE (5.3d, v4 07): the body as the post shows it, typed into directly. Markdown
 // typed at the start of a line turns into what it stands for as you type — "## " a
@@ -184,6 +192,33 @@ function CodeView({ node, updateAttributes, editor, getPos }: NodeViewProps) {
   );
 }
 
+// Each heading gets the id the post page gives it (from its words), so the contents
+// rail can find it — drawn on, never written into the .md
+const HeadingIds = Extension.create({
+  name: "headingIds",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          decorations: (state) => {
+            const marks: Decoration[] = [];
+            state.doc.forEach((node, pos) => {
+              if (node.type.name === "heading" && node.textContent.trim()) {
+                marks.push(
+                  Decoration.node(pos, pos + node.nodeSize, {
+                    id: `w-${headingId(node.textContent)}`,
+                  }),
+                );
+              }
+            });
+            return DecorationSet.create(state.doc, marks);
+          },
+        },
+      }),
+    ];
+  },
+});
+
 // What WRITE can't edit yet: shown as the post shows it, untouched in the .md
 const Raw = Node.create({
   name: "raw",
@@ -218,13 +253,15 @@ const kindOf = (src: string) =>
             ? "YouTube"
             : "Block";
 
-function RawView({ node, selected }: NodeViewProps) {
+function RawView(props: NodeViewProps) {
+  const { node, selected } = props;
   const src = String(node.attrs.src ?? "");
   return (
     <NodeViewWrapper
       className={styles.writeRaw}
       data-selected={selected || undefined}
       contentEditable={false}
+      onMouseDown={(e: React.MouseEvent) => selectOnPress(e, props)}
     >
       <span className={styles.writeRawTag}>{kindOf(src)} · edit in Raw .md for now</span>
       <PostBody markdown={src} bare />
@@ -236,7 +273,7 @@ function RawView({ node, selected }: NodeViewProps) {
 
 type Tool = {
   label: ReactNode;
-  icon?: ReactNode; // on the bar over an iPhone's keyboard, where it reads as iOS
+  off?: (e: TiptapEditor) => boolean; // greyed out (nothing to undo)
   name: string;
   keys: string;
   run: (e: TiptapEditor) => void;
@@ -249,38 +286,6 @@ const plain = (e: TiptapEditor) => {
   if (e.isActive("blockquote")) c.lift("blockquote");
   c.setParagraph().unsetAllMarks().run();
 };
-
-const icon = (d: string) => (
-  <svg
-    viewBox="0 0 24 24"
-    width="22"
-    height="22"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d={d} />
-  </svg>
-);
-const ICONS = {
-  quote: icon(
-    "M10 7H6.5A1.5 1.5 0 0 0 5 8.5V12h5V7Zm0 5c0 3-1.5 4.5-4 5M19 7h-3.5A1.5 1.5 0 0 0 14 8.5V12h5V7Zm0 5c0 3-1.5 4.5-4 5",
-  ),
-  note: icon("M5 5h14v14H5zM8.5 9.5h7M8.5 12.5h7M8.5 15.5h4"),
-  code: icon("m9 7-5 5 5 5M15 7l5 5-5 5"),
-  link: icon(
-    "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
-  ),
-  table: icon("M4 5h16v14H4zM4 10h16M4 14.5h16M12 10v9"),
-  done: icon("M4 8h16M4 12h16M7 16h10M9 19.5l3 2 3-2"),
-};
-
-// The link popover lives in WriteBox; the toolbar, the bar over a selection and ⌘K
-// reach it through here
-const linkOpeners = new WeakMap<TiptapEditor, () => void>();
 
 const TOOLS: (Tool | "|")[] = [
   {
@@ -326,7 +331,6 @@ const TOOLS: (Tool | "|")[] = [
   {
     label: "“",
     name: "Pull quote",
-    icon: ICONS.quote,
     keys: "⇧⌘.",
     run: (e) => e.chain().focus().toggleBlockquote().run(),
     on: (e) => e.isActive("blockquote"),
@@ -334,7 +338,6 @@ const TOOLS: (Tool | "|")[] = [
   {
     label: "Note",
     name: "Note box",
-    icon: ICONS.note,
     keys: "⌥⌘N",
     run: (e) => e.chain().focus().toggleWrap("note").run(),
     on: (e) => e.isActive("note"),
@@ -342,7 +345,6 @@ const TOOLS: (Tool | "|")[] = [
   {
     label: "<>",
     name: "Code — words selected: inline · nothing selected: a code block",
-    icon: ICONS.code,
     keys: "⌘E",
     run: (e) =>
       e.state.selection.empty && !e.isActive("code")
@@ -353,7 +355,6 @@ const TOOLS: (Tool | "|")[] = [
   {
     label: "Link",
     name: "Link — to a post, or a URL",
-    icon: ICONS.link,
     keys: "⌘K",
     run: (e) => linkOpeners.get(e)?.(),
     on: (e) => e.isActive("link"),
@@ -361,15 +362,44 @@ const TOOLS: (Tool | "|")[] = [
   {
     label: "Table",
     name: "Table — Tab moves cell to cell",
-    icon: ICONS.table,
     keys: "/table",
     run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run(),
     on: (e) => e.isActive("table"),
   },
   "|",
-  { label: "Image", name: "Image — comes with 5.3e", keys: "⇧⌘I", run: () => {} },
-  { label: "Clip", name: "Clip — comes with 5.3e", keys: "⇧⌘M", run: () => {} },
-  { label: "YouTube", name: "YouTube — comes with 5.3e", keys: "⇧⌘Y", run: () => {} },
+  {
+    label: "Image",
+    name: "Image — or drop / paste one into the text",
+    keys: "⇧⌘I",
+    run: (e) => imageOpeners.get(e)?.("single"),
+  },
+  {
+    label: "Clip",
+    name: "Clip — MP4 / WebM up to 5 MB, muted on loop",
+    keys: "⇧⌘M",
+    run: (e) => clipOpeners.get(e)?.(),
+  },
+  {
+    label: "YouTube",
+    name: "YouTube — or paste its link on an empty line",
+    keys: "⇧⌘Y",
+    run: (e) => e.chain().focus().insertContent({ type: "youtube" }).run(),
+  },
+  "|",
+  {
+    label: "↶",
+    name: "Undo",
+    keys: "⌘Z",
+    run: (e) => e.chain().focus().undo().run(),
+    off: (e) => !e.can().undo(),
+  },
+  {
+    label: "↷",
+    name: "Redo",
+    keys: "⇧⌘Z",
+    run: (e) => e.chain().focus().redo().run(),
+    off: (e) => !e.can().redo(),
+  },
 ];
 
 // Keys from EDITOR-SPEC that Tiptap doesn't give already
@@ -379,6 +409,14 @@ const Keys = Extension.create({
     return {
       "Mod-Alt-0": () => (plain(this.editor), true),
       "Mod-k": () => (linkOpeners.get(this.editor)?.(), true),
+      // A block selected: Esc lets go of it, the caret just after
+      Escape: () => {
+        const sel = this.editor.state.selection as { node?: unknown; to: number };
+        return sel.node ? this.editor.commands.setTextSelection(sel.to) : false;
+      },
+      "Mod-Shift-i": () => (imageOpeners.get(this.editor)?.("single"), true),
+      "Mod-Shift-m": () => (clipOpeners.get(this.editor)?.(), true),
+      "Mod-Shift-y": () => this.editor.commands.insertContent({ type: "youtube" }),
       "Mod-Shift-.": () => this.editor.commands.toggleBlockquote(),
       "Mod-e": () => {
         const e = this.editor;
@@ -390,41 +428,76 @@ const Keys = Extension.create({
   },
 });
 
-function Toolbar({ editor, dock = false }: { editor: TiptapEditor; dock?: boolean }) {
+// A tap on a button keeps the keyboard up: on iOS the tap's click took the focus from
+// the text, so the keyboard dropped and the page jumped at every H3 (owner, 2 Oct 69).
+// The tap is acted on at touchend, and its click (and the focus move) cancelled; a
+// finger that moved was scrolling the row, and does nothing.
+function useTapKeepsFocus(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const row = ref.current;
+    if (!row) return;
+    let start: { x: number; y: number } | null = null;
+    const down = (e: TouchEvent) => {
+      const t = e.touches[0];
+      start = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+    };
+    const up = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      const button = (e.target as Element).closest("button");
+      if (!start || !button || button.disabled) return;
+      if (Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) return;
+      e.preventDefault();
+      button.click();
+    };
+    row.addEventListener("touchstart", down, { passive: true });
+    row.addEventListener("touchend", up, { passive: false });
+    return () => {
+      row.removeEventListener("touchstart", down);
+      row.removeEventListener("touchend", up);
+    };
+  }, [ref]);
+}
+
+// `pill`: the phone's floating bar (FormatPill) — the same buttons, those not ready yet
+// left out
+function Toolbar({ editor, pill = false }: { editor: TiptapEditor; pill?: boolean }) {
   const zone = useRef<HTMLDivElement>(null);
   useHoverTip(zone);
+  useTapKeepsFocus(zone);
   // Re-drawn as the caret moves, so the buttons show what it's in
-  const on = useEditorState({
+  const state = useEditorState({
     editor,
     // Lit only while you're in the text: unfocused, the caret's place means nothing
-    selector: ({ editor: e }) =>
-      TOOLS.map((t) => (t !== "|" && t.on && e.isFocused ? t.on(e) : false)),
+    selector: ({ editor: e }) => ({
+      on: TOOLS.map((t) => (t !== "|" && t.on && e.isFocused ? t.on(e) : false)),
+      off: TOOLS.map((t) => (t !== "|" && t.off ? t.off(e) : false)),
+    }),
   });
   return (
     <div
       ref={zone}
-      className={dock ? styles.dockTools : styles.writeTools}
+      className={pill ? styles.pillTools : styles.writeTools}
       role="toolbar"
       aria-label="Format"
     >
       {TOOLS.map((t, i) =>
         t === "|" ? (
-          !dock && <span key={i} className={styles.writeSep} />
-        ) : dock && t.name.includes("comes") ? null : (
+          <span key={i} className={styles.writeSep} />
+        ) : pill && t.name.includes("comes") ? null : (
           <button
             key={t.name}
             type="button"
-            className={dock ? styles.dockTool : styles.writeTool}
-            data-on={on[i] || undefined}
-            data-tip={dock ? undefined : `${t.name} · ${t.keys}`}
+            className={pill ? styles.pillTool : styles.writeTool}
+            data-on={state.on[i] || undefined}
+            data-tip={pill ? undefined : `${t.name} · ${t.keys}`}
             aria-label={t.name}
-            aria-pressed={on[i]}
-            disabled={t.name.includes("comes")}
+            aria-pressed={state.on[i]}
+            disabled={t.name.includes("comes") || state.off[i]}
             // Keep the caret (and the selection, and the keyboard) in the text
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => t.run(editor)}
           >
-            {(dock && t.icon) || t.label}
+            {t.label}
           </button>
         ),
       )}
@@ -432,46 +505,34 @@ function Toolbar({ editor, dock = false }: { editor: TiptapEditor; dock?: boolea
   );
 }
 
-// A touch screen (iPhone, iPad): the toolbar rides on top of the keyboard while you're
-// typing, as in Notes, instead of in the row up the page (owner, 2 Oct 69)
-const coarse = "(pointer: coarse)";
-function useTouch() {
-  return useSyncExternalStore(
-    (on) => {
-      const m = window.matchMedia(coarse);
-      m.addEventListener("change", on);
-      return () => m.removeEventListener("change", on);
-    },
-    () => window.matchMedia(coarse).matches,
-    () => false,
-  );
-}
-
-// Shown while the keyboard is up for the text, and gone with it, at the top of what's
-// on screen (owner, 2 Oct 69: first it sat on the keys, as in Notes — Safari's own
-// bars came between, and with the keyboard up the page's sticky WRITE / RAW row slid
-// away). The visual viewport is what's on screen above the keyboard; the bar follows
-// its top as the page scrolls. The keyboard counts as up when that's well short of the
-// screen; an iPad with its own keyboard plugged in has none on screen, and no bar.
-function KeyboardDock({ editor }: { editor: TiptapEditor }) {
+// The phone: no format row up the page. While the keyboard is up for the text, the
+// format bar sits at the top of what's on screen, glass, following it as the page
+// scrolls; the WRITE / RAW row steps aside meanwhile, so the two don't fight over the
+// top (owner, 2 Oct 69 — tried after: bars over the keys, which Safari's own bars come
+// between, and a floating Aa; this one worked best on the phone). The visual viewport
+// is what's on screen above the keyboard. The keyboard counts as up when that's well
+// short of the screen; ⌄ puts it away.
+function KeyboardTop({ editor }: { editor: TiptapEditor }) {
   const [focused, setFocused] = useState(false);
   const [keys, setKeys] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const doneRef = useRef<HTMLButtonElement>(null);
+  useTapKeepsFocus(doneRef);
   useEffect(() => {
-    let hide = 0;
-    // A tap on the bar takes the focus for a moment: hide only if it doesn't come back
+    let gone = 0;
+    // A tap on the bar takes the focus for a moment: let go only if it stays gone
     const focus = () => {
-      clearTimeout(hide);
+      clearTimeout(gone);
       setFocused(true);
     };
     const blur = () => {
-      clearTimeout(hide);
-      hide = window.setTimeout(() => setFocused(false), 150);
+      clearTimeout(gone);
+      gone = window.setTimeout(() => setFocused(false), 150);
     };
     editor.on("focus", focus);
     editor.on("blur", blur);
     return () => {
-      clearTimeout(hide);
+      clearTimeout(gone);
       editor.off("focus", focus);
       editor.off("blur", blur);
     };
@@ -497,22 +558,56 @@ function KeyboardDock({ editor }: { editor: TiptapEditor }) {
       vv.removeEventListener("scroll", place);
     };
   }, [focused, keys]);
+  // The WRITE / RAW row steps aside while the bar is up (Editor.module.css)
+  const shown = focused && keys;
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-keys", shown);
+    return () => document.documentElement.removeAttribute("data-keys");
+  }, [shown]);
   if (!focused) return null;
   return createPortal(
-    <div ref={barRef} className={styles.dock} data-shown={keys || undefined}>
-      <Toolbar editor={editor} dock />
+    <div ref={barRef} className={styles.topBar} data-shown={keys || undefined}>
+      <Toolbar editor={editor} pill />
       <button
         type="button"
-        className={styles.dockDone}
+        ref={doneRef}
+        className={styles.topBarDone}
         aria-label="Hide the keyboard"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => editor.commands.blur()}
       >
-        {ICONS.done}
+        ⌄
       </button>
     </div>,
     document.body,
   );
+}
+
+// A touch screen (iPhone, iPad): no bar over a selection there — iOS has its own menu
+function useMedia(query: string) {
+  return useSyncExternalStore(
+    (on) => {
+      const m = window.matchMedia(query);
+      m.addEventListener("change", on);
+      return () => m.removeEventListener("change", on);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}
+
+// A click on the rail: the caret to the end of that heading, which flashes grey (the
+// page glides there itself). Not by touch — the keyboard would come up over it.
+function toHeading(editor: TiptapEditor, id: string) {
+  const el = document.getElementById(id);
+  if (!el || !editor.view.dom.contains(el)) return;
+  el.animate([{ backgroundColor: "var(--surface)" }, { backgroundColor: "transparent" }], {
+    duration: 900,
+    easing: "ease-out",
+  });
+  if (window.matchMedia("(pointer: coarse)").matches) return;
+  const end = editor.view.state.doc.resolve(editor.view.posAtDOM(el, 0)).end();
+  editor.chain().setTextSelection(end).focus(undefined, { scrollIntoView: false }).run();
 }
 
 export default function WriteBox({
@@ -521,6 +616,7 @@ export default function WriteBox({
   reset,
   modeSwitch,
   targets,
+  images,
 }: {
   body: string;
   onChange: (body: string) => void;
@@ -529,6 +625,7 @@ export default function WriteBox({
   reset: number;
   modeSwitch: ReactNode; // WRITE / RAW .MD, first in the sticky row
   targets: LinkTarget[]; // what Link's To field searches
+  images: Images; // seeing, uploading and naming images (Editor)
 }) {
   // The blank line(s) between the frontmatter and the text, kept as the file had them
   const leadRef = useRef(/^\n*/.exec(body)![0]);
@@ -586,10 +683,47 @@ export default function WriteBox({
       TableCell.extend({ content: "paragraph" }),
       Source,
       Keys,
+      HeadingIds,
+      Figure,
+      YouTubeBlock,
+      ClipBlock,
     ],
     content: mdToDoc(body),
     editorProps: {
       handleKeyDown: (_view, e) => keyRef.current(e),
+      handlePaste: (view, e) => {
+        // A YouTube link pasted on an empty line: the video's block
+        const text = e.clipboardData?.getData("text/plain").trim() ?? "";
+        const { $from, empty } = view.state.selection;
+        if (
+          empty &&
+          youTubeId(text) &&
+          $from.parent.type.name === "paragraph" &&
+          !$from.parent.textContent
+        ) {
+          editorRef.current
+            ?.chain()
+            .insertContent({ type: "youtube", attrs: { url: text } })
+            .run();
+          return true;
+        }
+        const files = [...(e.clipboardData?.files ?? [])].filter((f) =>
+          /^(image|video)\//.test(f.type),
+        );
+        if (!files.length) return false;
+        void insertRef.current(files);
+        return true;
+      },
+      handleDrop: (view, e) => {
+        const files = [...(e.dataTransfer?.files ?? [])].filter((f) =>
+          /^(image|video)\//.test(f.type),
+        );
+        if (!files.length) return false;
+        e.preventDefault();
+        const at = view.posAtCoords({ left: e.clientX, top: e.clientY });
+        void insertRef.current(files, at?.pos);
+        return true;
+      },
       // A click on a link opens it in the popover: edit or remove it
       handleClick: (view, pos, e) => {
         const mark = view.state.doc
@@ -603,6 +737,7 @@ export default function WriteBox({
       attributes: {
         class: `${postStyles.prose} ${styles.writeText}`,
         "aria-label": "Body",
+        "data-rail-text": "", // where the contents rail reads the headings
         // Not a form: iOS offers "AutoFill Contact" over the keyboard otherwise
         autocomplete: "off",
       },
@@ -647,11 +782,64 @@ export default function WriteBox({
       return false;
     };
   });
+  const fileRef = useRef<HTMLInputElement>(null);
+  const clipRef = useRef<HTMLInputElement>(null);
+  const layoutRef = useRef<"single" | "two" | "carousel">("single");
   useEffect(() => {
     if (!editor) return;
     linkOpeners.set(editor, () => setLink(linkAt(editor)));
-    return () => void linkOpeners.delete(editor);
+    imageOpeners.set(editor, (layout) => {
+      layoutRef.current = layout;
+      fileRef.current?.click();
+    });
+    clipOpeners.set(editor, () => clipRef.current?.click());
+    return () => {
+      linkOpeners.delete(editor);
+      imageOpeners.delete(editor);
+      clipOpeners.delete(editor);
+    };
   }, [editor]);
+
+  // Images picked, dropped or pasted: uploaded (made WebP, held until Save), then one
+  // Image block where the caret is — several at once become a carousel
+  const imagesRef = useRef(images);
+  useEffect(() => {
+    imagesRef.current = images;
+  });
+  const insertImages = async (
+    files: File[],
+    at?: number,
+    want: "single" | "two" | "carousel" = "single",
+  ) => {
+    if (!editor) return;
+    // Videos: each its own Clip block, up in Blob first (5.4d)
+    for (const file of files.filter((f) => f.type.startsWith("video/"))) {
+      const src = await imagesRef.current.addClip(file);
+      if (!src) continue;
+      const node = { type: "clip", attrs: { src } };
+      const chain = editor.chain().focus();
+      (at != null ? chain.insertContentAt(at, node) : chain.insertContent(node)).run();
+    }
+    const picked = files.filter((f) => f.type.startsWith("image/"));
+    if (!picked.length) return;
+    const srcs = await imagesRef.current.add(picked);
+    if (!srcs.length) return;
+    const wanted = want;
+    const layout = wanted !== "single" ? wanted : srcs.length > 1 ? "carousel" : "single";
+    const list = (
+      layout === "single" ? srcs.slice(0, 1) : layout === "two" ? srcs.slice(0, 2) : srcs
+    ).map((src) => ({ src, alt: "", caption: "" }));
+    const node = {
+      type: "figure",
+      attrs: { layout, ratio: layout === "two" ? "4:5" : "", images: list },
+    };
+    const chain = editor.chain().focus();
+    (at != null ? chain.insertContentAt(at, node) : chain.insertContent(node)).run();
+  };
+  const insertRef = useRef(insertImages);
+  useEffect(() => {
+    insertRef.current = insertImages;
+  });
 
   useEffect(() => {
     editorRef.current = editor;
@@ -666,26 +854,56 @@ export default function WriteBox({
     editor.commands.setContent(mdToDoc(body), { emitUpdate: false });
   }, [editor, reset, body]);
 
-  const touch = useTouch();
+  const touch = useMedia("(pointer: coarse)");
+  const phone = useMedia("(max-width: 767px)");
   return (
     <>
       <div className={styles.tools}>
         {modeSwitch}
-        {editor && !touch && <Toolbar editor={editor} />}
+        {editor && !phone && <Toolbar editor={editor} />}
       </div>
-      {editor && touch && <KeyboardDock editor={editor} />}
+      {editor && phone && <KeyboardTop editor={editor} />}
       {editor && !touch && !link && (
         <BubbleBar editor={editor} onLink={() => setLink(linkAt(editor))} />
       )}
       {editor && <TableBar editor={editor} />}
+      {editor && <BlockBar editor={editor} />}
       {editor && link && (
         <LinkPopover editor={editor} edit={link} targets={targets} onClose={() => setLink(null)} />
       )}
       {editor && slash && !link && (
         <SlashMenu editor={editor} slash={slash} pick={pick} onPick={setPick} onRun={runSlash} />
       )}
-      <div className={`${postStyles.body} ${styles.write}`}>
-        <EditorContent editor={editor} />
+      {/* As on the post page: the text in its column, the contents rail at the right,
+          built from the headings as they're typed (EDITOR-SPEC) */}
+      <div className={`${postStyles.railZone} ${styles.writeZone}`} data-post>
+        <div className={`${postStyles.body} ${styles.write}`}>
+          <ImagesContext.Provider value={images}>
+            <EditorContent editor={editor} />
+          </ImagesContext.Provider>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              void insertImages([...(e.target.files ?? [])], undefined, layoutRef.current);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={clipRef}
+            type="file"
+            accept="video/mp4,video/webm"
+            hidden
+            onChange={(e) => {
+              void insertImages([...(e.target.files ?? [])]);
+              e.target.value = "";
+            }}
+          />
+        </div>
+        {editor && <ContentsRail live ends={false} onJump={(id) => toHeading(editor, id)} />}
       </div>
     </>
   );

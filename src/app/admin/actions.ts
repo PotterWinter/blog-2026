@@ -1,5 +1,6 @@
 "use server";
 
+import type { WaitingClip } from "@/lib/clips";
 import type { PostInput } from "@/lib/edit";
 import { currentSession } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
@@ -21,8 +22,9 @@ async function run(action: () => Promise<Saved>): Promise<Result> {
 }
 
 // pending: the images picked since the last save, committed with it (5.4)
-export async function save(input: PostInput, pending: Pending[] = []) {
-  return run(() => savePost(input, pending));
+// clips: the ones picked since the last save, up in Blob already (5.4d)
+export async function save(input: PostInput, pending: Pending[] = [], clips: WaitingClip[] = []) {
+  return run(() => savePost(input, pending, clips));
 }
 
 export async function publish(id: number) {

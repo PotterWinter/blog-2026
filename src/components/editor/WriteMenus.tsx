@@ -5,6 +5,7 @@ import { useEditorState } from "@tiptap/react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Editor.module.css";
+import { clipOpeners, imageOpeners } from "./openers";
 
 // WRITE's floating pieces (5.3d, EDITOR-SPEC): the link popover, the black bar over a
 // selection, and the "/" menu. Each is drawn on the page (a portal into body) at the
@@ -290,11 +291,15 @@ export const SLASH: SlashItem[] = [
     hint: "### · 01.1",
     run: (e) => e.chain().focus().setHeading({ level: 3 }).run(),
   },
-  { label: "Image", hint: "5.3e", later: true },
-  { label: "Two images", hint: "5.3e", later: true },
-  { label: "Carousel", hint: "5.3e", later: true },
-  { label: "Clip", hint: "5.3e", later: true },
-  { label: "YouTube", hint: "5.3e", later: true },
+  { label: "Image", hint: "or drop / paste one", run: (e) => imageOpeners.get(e)?.("single") },
+  { label: "Two images", hint: "side by side", run: (e) => imageOpeners.get(e)?.("two") },
+  { label: "Carousel", hint: "one slide at a time", run: (e) => imageOpeners.get(e)?.("carousel") },
+  { label: "Clip", hint: "MP4 / WebM · 5 MB", run: (e) => clipOpeners.get(e)?.() },
+  {
+    label: "YouTube",
+    hint: "or paste its link",
+    run: (e) => e.chain().focus().insertContent({ type: "youtube" }).run(),
+  },
   { label: "Code block", hint: "```", run: (e) => e.chain().focus().setCodeBlock().run() },
   {
     label: "Quote",
@@ -455,4 +460,132 @@ export function TableBar({ editor }: { editor: TiptapEditor }) {
     </div>,
     document.body,
   );
+}
+
+// ---------- a block selected: hold to delete, then Undo ----------
+
+const blockName = (type: string, layout?: string) =>
+  type === "figure"
+    ? layout === "carousel"
+      ? "Carousel"
+      : "Image"
+    : type === "youtube"
+      ? "YouTube"
+      : type === "clip"
+        ? "Clip"
+        : type === "horizontalRule"
+          ? "Divider"
+          : "Block";
+
+const HOLD = 900; // ms the pill is held for the block to go (EDITOR-SPEC)
+
+// EDITOR-SPEC "Removing things": a block clicked (an image, a video, a divider) is
+// selected — its border black — and a black bar rises at the bottom: "Image selected ·
+// Esc to deselect · × Hold to delete". Held 0.9 s, red fills the pill left to right and
+// the block goes; let go early and it drains back. Pointing at the pill turns the
+// block's border red. Then "Image removed · Undo ⌘Z" for 8 s.
+export function BlockBar({ editor }: { editor: TiptapEditor }) {
+  const picked = useEditorState({
+    editor,
+    selector: ({ editor: e }) => {
+      const sel = e.state.selection as {
+        node?: { type: { name: string }; attrs: Record<string, unknown> };
+        from: number;
+      };
+      const node = sel.node;
+      if (!node || !["figure", "youtube", "clip", "raw", "horizontalRule"].includes(node.type.name))
+        return null;
+      return { pos: sel.from, name: blockName(node.type.name, String(node.attrs.layout ?? "")) };
+    },
+  });
+  const [holding, setHolding] = useState(false);
+  const [gone, setGone] = useState<string | null>(null); // what was removed, for the toast
+  const timer = useRef(0);
+  const toastTimer = useRef(0);
+
+  const dom = picked ? (editor.view.nodeDOM(picked.pos) as HTMLElement | null) : null;
+  const danger = (on: boolean) => dom?.toggleAttribute("data-danger", on);
+  const start = () => {
+    if (!picked) return;
+    setHolding(true);
+    timer.current = window.setTimeout(() => {
+      setHolding(false);
+      danger(false);
+      editor.chain().focus().deleteSelection().run();
+      setGone(picked.name);
+      clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setGone(null), 8000);
+    }, HOLD);
+  };
+  const stop = () => {
+    clearTimeout(timer.current);
+    setHolding(false);
+  };
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+  // A new selection or an edit: the toast's Undo would undo something else
+  useEffect(() => {
+    if (!gone) return;
+    const off = () => setGone(null);
+    const t = window.setTimeout(() => editor.on("update", off), 0);
+    return () => {
+      clearTimeout(t);
+      editor.off("update", off);
+    };
+  }, [gone, editor]);
+
+  if (picked) {
+    return createPortal(
+      <div className={styles.blockBar} role="toolbar" aria-label="Selected block">
+        <span>
+          {picked.name} selected · <span className={styles.blockHint}>Esc to deselect</span>
+        </span>
+        <button
+          type="button"
+          className={styles.hold}
+          data-holding={holding || undefined}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            start();
+          }}
+          onPointerUp={stop}
+          onPointerLeave={() => {
+            stop();
+            danger(false);
+          }}
+          onPointerEnter={() => danger(true)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <span className={styles.holdFill} aria-hidden="true" />
+          <span className={styles.holdLabel}>× Hold to delete</span>
+        </button>
+      </div>,
+      document.body,
+    );
+  }
+  if (gone) {
+    return createPortal(
+      <div className={styles.blockBar} role="status">
+        <span>{gone} removed</span>
+        <button
+          type="button"
+          className={styles.undo}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            editor.chain().focus().undo().run();
+            setGone(null);
+          }}
+        >
+          Undo ⌘Z
+        </button>
+      </div>,
+      document.body,
+    );
+  }
+  return null;
 }

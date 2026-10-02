@@ -967,7 +967,9 @@
   margin-inline: auto;
 }
 
-.figure img {
+.figure img,
+.figure video {
+  display: block;
   width: auto;
   max-width: 100%;
   height: auto;

@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
-import Markdown from "react-markdown";
+import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import TransitionLink from "../TransitionLink";
+import { clipKey, isClip, type ClipMap } from "@/lib/clips";
 import Carousel from "./Carousel";
+import Clip from "./Clip";
 import CodeBlock from "./CodeBlock";
 import styles from "./Post.module.css";
 import YouTube from "./YouTube";
 
 // The video id from a youtube.com/watch?v=, youtu.be/ or /shorts/ link; null if the
 // link isn't YouTube
-function youTubeId(href: string): string | null {
+export function youTubeId(href: string): string | null {
   const m =
     /^https?:\/\/(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)([\w-]{11})/.exec(
       href,
@@ -96,10 +98,21 @@ function remarkAlerts() {
 // 04 body: the markdown in one 880px column, styled per v4. Code blocks, YouTube,
 // heading "#" links and the contents rail come in 3.3b / 3.3c.
 // `bare`: just the content, for a block of it shown inside WRITE's own column
-export default function PostBody({ markdown, bare = false }: { markdown: string; bare?: boolean }) {
+// `clips`: where each clip the post names really is (media.json; lib/clips)
+export default function PostBody({
+  markdown,
+  bare = false,
+  clips = {},
+}: {
+  markdown: string;
+  bare?: boolean;
+  clips?: ClipMap;
+}) {
   const content = (
     <Markdown
       remarkPlugins={[remarkGfm, remarkAlerts, remarkImageLayouts]}
+      // The editor's Preview shows images and clips still waiting for Save
+      urlTransform={(url) => (/^(clip|upload):/.test(url) ? url : defaultUrlTransform(url))}
       components={{
         h2: ({ children }) => <h2 id={headingId(textOf(children))}>{children}</h2>,
         h3: ({ children }) => <h3 id={headingId(textOf(children))}>{children}</h3>,
@@ -250,13 +263,21 @@ export default function PostBody({ markdown, bare = false }: { markdown: string;
             </figure>
           );
         },
-        img: ({ src, alt, title }) => (
-          <figure className={styles.figure}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-            <img src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} loading="lazy" />
-            {title && <figcaption>{title}</figcaption>}
-          </figure>
-        ),
+        // A clip (.mp4 / .webm) is written as an image is; media.json says where it is
+        img: ({ src, alt, title }) =>
+          isClip(String(src ?? "")) ? (
+            <Clip
+              entry={clips[clipKey(String(src))] ?? clips[String(src)]}
+              alt={alt ?? ""}
+              caption={title ?? undefined}
+            />
+          ) : (
+            <figure className={styles.figure}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
+              <img src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} loading="lazy" />
+              {title && <figcaption>{title}</figcaption>}
+            </figure>
+          ),
       }}
     >
       {markdown}

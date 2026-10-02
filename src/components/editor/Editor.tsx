@@ -14,8 +14,11 @@ import MetaRow from "./MetaRow";
 import Preview from "./Preview";
 import RawBox from "./RawBox";
 import WriteBox from "./WriteBox";
+import type { Images } from "./WriteFigure";
 import type { LinkTarget } from "./WriteMenus";
 import { UPLOAD, type Waiting } from "./waiting";
+import { firstFrame } from "./clipFrame";
+import { CLIP, CLIP_MAX, CLIP_TYPES, clipKey, placeClips, waitingClips, type ClipMap, type WaitingClip } from "@/lib/clips";
 import { shrinkForUpload } from "./shrink";
 import styles from "./Editor.module.css";
 
@@ -71,11 +74,13 @@ export default function Editor({
   entry: first,
   allTags,
   targets,
+  clips: savedClips,
 }: {
   post: Post | null;
   entry: IndexEntry | null;
   allTags: string[];
   targets: LinkTarget[]; // posts a link in the text can go to
+  clips: ClipMap; // media.json: where the clips posts name really are (5.4d)
 }) {
   const { go } = usePageTransition();
   const barRef = useRef<HTMLElement>(null);
@@ -166,22 +171,39 @@ export default function Editor({
 
   const doSave = async () => {
     // The images still waiting (5.4) that the post points at go with it
-    const used = waitingKeys(`${form.cover ?? ""}\n${form.body}`);
+    // — and the clips (5.4d), in Blob already, with their first frames
+    const usedClips = waitingClips(form.body);
+    const used = new Set([...waitingKeys(`${form.cover ?? ""}\n${form.body}`), ...usedClips]);
     const sent = Object.values(pending).filter(({ key }) => used.has(key));
-    const result = await call("Saving", () => save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 }))));
+    const clipsSent = Object.values(waitingClipsRef.current).filter(({ key }) => usedClips.has(key));
+    const result = await call("Saving", () =>
+      save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 })), clipsSent),
+    );
     if (!result) return null;
     // Where they went: the post now says their paths, and nothing waits any more
     const paths = result.uploads ?? {};
+    const clipPaths = Object.fromEntries(
+      clipsSent.flatMap((c) => (paths[`upload:${c.key}`] ? [[c.key, paths[`upload:${c.key}`].replace(/\.webp$/, `.${c.url.split(".").pop()}`)]] : [])),
+    );
+    if (clipsSent.length) {
+      setClipMap((m) => ({
+        ...m,
+        ...Object.fromEntries(
+          clipsSent.flatMap(({ key, ...c }) => (clipPaths[key] ? [[clipPaths[key], { ...c, poster: paths[`upload:${key}`] }]] : [])),
+        ),
+      }));
+      for (const c of clipsSent) delete waitingClipsRef.current[c.key];
+    }
     // The slug as the server settled it ("post-37" for a Thai title, "-37" if taken)
     const next = {
       ...form,
       slug: result.slug,
       cover: form.cover && placeWaiting(form.cover, paths),
-      body: placeWaiting(form.body, paths, "../"),
+      body: placeClips(placeWaiting(form.body, paths, "../"), clipPaths),
     };
     setForm(next);
     setSaved(JSON.stringify(next));
-    if (sent.length) setRawReset((n) => n + 1);
+    if (sent.length || clipsSent.length) setRawReset((n) => n + 1);
     for (const p of sent) URL.revokeObjectURL(p.url);
     pendingRef.current = Object.fromEntries(Object.entries(pendingRef.current).filter(([key]) => !sent.some((p) => p.key === key)));
     setPending(pendingRef.current);
@@ -263,6 +285,10 @@ export default function Editor({
   const [pending, setPending] = useState<Record<string, Waiting>>({});
   // The same, for uploads one after another (state is a render behind); set together
   const pendingRef = useRef(pending);
+  // Clips picked since the last save (5.4d): up in Blob, waiting to be named in the post
+  const waitingClipsRef = useRef<Record<string, WaitingClip>>({});
+  // Where saved clips are (media.json), plus those this page has saved since it opened
+  const [clipMap, setClipMap] = useState<ClipMap>(savedClips);
   const [uploading, setUploading] = useState(false);
   const saveWord = published ? "Save changes" : "Save";
 
@@ -320,6 +346,84 @@ export default function Editor({
     set({ body: swap(form.body), cover: form.cover && swap(form.cover) });
     setRawReset((n) => n + 1);
   };
+  // WRITE's Image blocks (5.3e): an image picked there is made a WebP and held here
+  // under its key until Save, as the cover is; the block shows it from memory. One
+  // after another; the note under Save says what's waiting.
+  const images: Images = {
+    url: (src) => (src.startsWith(UPLOAD) ? (pending[src.slice(UPLOAD.length)]?.url ?? "") : src.replace(/^(\.\.\/)+/, "/")),
+    waiting: (src) => {
+      const image = src.startsWith(UPLOAD) ? pending[src.slice(UPLOAD.length)] : undefined;
+      return image ? { name: image.key, width: image.width, height: image.height } : null;
+    },
+    add: async (files) => {
+      const srcs: string[] = [];
+      const failed: string[] = [];
+      let last: Waiting | null = null;
+      for (const file of files) {
+        const result = await prepare(file, "image");
+        if (result.ok) {
+          srcs.push(`${UPLOAD}${result.image.key}`);
+          last = result.image;
+        } else failed.push(`${file.name}: ${result.error}`);
+      }
+      if (failed.length) setNote({ text: `Not added · ${failed.join(" · ")}`, tone: "bad" });
+      else if (last) {
+        const what = srcs.length > 1 ? `${srcs.length} images ready` : `Image ready · ${sized(last)}`;
+        setNote({ text: `${what} · goes up with ${saveWord}`, tone: "muted" });
+      }
+      return srcs;
+    },
+    rename: (src, typed) => renameImage(src.slice(UPLOAD.length), typed),
+    clip: (src) => {
+      if (!src.startsWith(CLIP)) return clipMap[clipKey(src)];
+      const key = src.slice(CLIP.length);
+      const waiting = waitingClipsRef.current[key];
+      return waiting && { ...waiting, poster: pending[key]?.url ?? "" };
+    },
+    addClip: async (file) => {
+      if (!CLIP_TYPES.includes(file.type)) {
+        setNote({ text: "Clip not added · MP4 or WebM only", tone: "bad" });
+        return null;
+      }
+      if (file.size > CLIP_MAX) {
+        setNote({ text: `Clip not added · ${(file.size / 1024 / 1024).toFixed(1)} MB, over 5 MB`, tone: "bad" });
+        return null;
+      }
+      try {
+        // Its first frame goes the images' way (the key names both); the file goes
+        // straight to Blob from here (/api/clip hands out the token)
+        const frame = await firstFrame(file);
+        const poster = await prepare(frame.poster, "image");
+        if (!poster.ok) throw new Error(poster.error);
+        const key = poster.image.key;
+        const ext = file.type === "video/webm" ? "webm" : "mp4";
+        const { upload: toBlob } = await import("@vercel/blob/client");
+        const blob = await toBlob(`clips/${key}.${ext}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/clip",
+          contentType: file.type,
+        });
+        waitingClipsRef.current[key] = {
+          key,
+          url: blob.url,
+          bytes: file.size,
+          seconds: frame.seconds,
+          width: frame.width,
+          height: frame.height,
+        };
+        setNote({ text: `Clip ready · ${(file.size / 1024 / 1024).toFixed(1)} MB · goes in with ${saveWord}`, tone: "muted" });
+        return `${CLIP}${key}`;
+      } catch (error) {
+        const why = error instanceof Error ? error.message : "upload failed";
+        // /api/clip refused the token: Blob not connected here (no BLOB_READ_WRITE_TOKEN),
+        // or signed out
+        const said = /client token/i.test(why) ? "Blob isn't connected (BLOB_READ_WRITE_TOKEN) — or sign in again" : why;
+        setNote({ text: `Clip not added · ${said}`, tone: "bad" });
+        return null;
+      }
+    },
+  };
+
   // media/2026/3lcdqaxt-… (a new post's code comes with its first save)
   const stem = `media/${new Date().getFullYear()}/${entry?.code ?? "<code>"}-`;
 
@@ -481,6 +585,12 @@ export default function Editor({
           entering={previewing === "entering"}
           onIn={previewIn}
           onClose={closePreview}
+          clips={{
+            ...clipMap,
+            ...Object.fromEntries(
+              Object.keys(waitingClipsRef.current).map((key) => [`${CLIP}${key}`, images.clip(`${CLIP}${key}`)!]),
+            ),
+          }}
         />
       )}
       <div hidden={previewing === "open"}>
@@ -728,7 +838,7 @@ export default function Editor({
       <main className={styles.pageBody}>
 
         {mode === "write" ? (
-          <WriteBox body={form.body} onChange={(body) => set({ body })} reset={rawReset} modeSwitch={modeRow} targets={targets} />
+          <WriteBox body={form.body} onChange={(body) => set({ body })} reset={rawReset} modeSwitch={modeRow} targets={targets} images={images} />
         ) : (
           <>
             <div className={styles.tools}>
@@ -739,6 +849,16 @@ export default function Editor({
           </>
         )}
       </main>
+      {/* v4 07: the file at the foot of the page, on ink as the hub's repo bar, so the
+          page ends somewhere (owner, 2 Oct 69) — where the post lives, whether it's on
+          the site, and the last commit made to it */}
+      <footer className={styles.term}>
+        <span>{file}</span>
+        <span className={styles.termDim}>
+          {published ? `live · ${entry ? postUrl(entry) : ""}` : id == null ? "not saved yet" : "draft · not on the site"}
+        </span>
+        {entry?.lastCommit && <span className={styles.termDim}>last commit {entry.lastCommit}</span>}
+      </footer>
       </div>
     </>
   );

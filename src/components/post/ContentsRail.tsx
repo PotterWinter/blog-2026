@@ -27,37 +27,66 @@ const DWELL = 120;
 // that heading (on a tablet by finger, once it rests there — see slideTo). A click jumps to an
 // entry; by touch, one tap opens the names and a tap on one goes there.
 // From 1280 it sits in the page margin; below that it shrinks to the screen's edge.
-export default function ContentsRail() {
+// In the editor's WRITE (5.3d) the same rail runs on the text being typed: `live` reads
+// the headings again as they change (EDITOR-SPEC: "updates as you type"), `ends: false`
+// leaves out Title and End (the page there is the editor, not the post), and `onJump`
+// hears where a click took the page (WRITE puts the caret there).
+export default function ContentsRail({
+  live = false,
+  ends = true,
+  onJump,
+}: {
+  live?: boolean;
+  ends?: boolean;
+  onJump?: (id: string) => void;
+} = {}) {
   const navRef = useRef<HTMLElement>(null);
   const dotRef = useRef<HTMLSpanElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const onJumpRef = useRef(onJump);
+  useEffect(() => {
+    onJumpRef.current = onJump;
+  });
 
   // "Title" = the post's title (back to the top), then the article's numbered headings
   // (h2 = section, h3 = sub-section), and always last "End" = Previous | Next. Title and
   // End carry no number (owner, 30 Sep 69)
   useEffect(() => {
     const post = navRef.current?.closest("[data-post]");
-    const article = post?.querySelector("article");
+    const article = post?.querySelector("[data-rail-text]") ?? post?.querySelector("article");
     const title = post?.querySelector<HTMLElement>("#post-title");
-    if (!post || !article || !title) return;
-    let n = 0;
-    let m = 0;
-    const found = [...article.querySelectorAll<HTMLElement>("h2[id], h3[id]")].map((h) => {
-      const sub = h.tagName === "H3";
-      if (sub) m += 1;
-      else {
-        n += 1;
-        m = 0;
-      }
-      const num = sub ? `${String(n).padStart(2, "0")}.${m}` : String(n).padStart(2, "0");
-      return { id: h.id, label: `${num} ${h.textContent ?? ""}`, sub };
+    if (!post || !article || (ends && !title)) return;
+    const collect = () => {
+      let n = 0;
+      let m = 0;
+      const found = [...article.querySelectorAll<HTMLElement>("h2[id], h3[id]")].map((h) => {
+        const sub = h.tagName === "H3";
+        if (sub) m += 1;
+        else {
+          n += 1;
+          m = 0;
+        }
+        const num = sub ? `${String(n).padStart(2, "0")}.${m}` : String(n).padStart(2, "0");
+        return { id: h.id, label: `${num} ${h.textContent ?? ""}`, sub };
+      });
+      const end = post.querySelector("#post-end") ? [{ id: "post-end", label: "End", sub: false }] : [];
+      const next = ends ? [{ id: "post-title", label: "Title", sub: false }, ...found, ...end] : found;
+      // Unchanged (typing in a paragraph): keep the same list, so the rail isn't rebuilt
+      setItems((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    };
+    collect();
+    if (!live) return;
+    let queued = 0;
+    const observer = new MutationObserver(() => {
+      if (!queued) queued = requestAnimationFrame(() => ((queued = 0), collect()));
     });
-    const end = post.querySelector("#post-end")
-      ? [{ id: "post-end", label: "End", sub: false }]
-      : [];
-    setItems([{ id: "post-title", label: "Title", sub: false }, ...found, ...end]);
-  }, []);
+    observer.observe(article, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["id"] });
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(queued);
+    };
+  }, [live, ends]);
 
   useEffect(() => {
     const nav = navRef.current;
@@ -385,6 +414,7 @@ export default function ContentsRail() {
       gliding = true;
       if (k !== cur) place(k, cur >= 0);
       window.scrollTo({ top: topOf(k), behavior: "smooth" });
+      if (tries === 3) onJumpRef.current?.(items[k].id);
       clearInterval(fix);
       let last = -1;
       fix = window.setInterval(() => {
@@ -658,7 +688,7 @@ export default function ContentsRail() {
     };
   }, [items]);
 
-  if (items.length < 2) return <aside ref={navRef} hidden />;
+  if (items.length < (ends ? 2 : 1)) return <aside ref={navRef} hidden />;
   return (
     <aside className={styles.rail} aria-label="Contents">
       <nav ref={navRef} className={styles.toc} data-blend>

@@ -5,6 +5,7 @@ import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
 import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { clipsIn, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
 import { placeUploads, type Pending } from "./media";
 import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
@@ -145,6 +146,7 @@ async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promi
 // reads; a write clears what it touched)
 export function refresh(slugs: string[]) {
   revalidateTag("index", { expire: 0 });
+  revalidateTag("media", { expire: 0 });
   for (const slug of slugs) revalidateTag(`post:${slug}`, { expire: 0 });
 }
 
@@ -190,9 +192,14 @@ const done = async ({ plan, sha }: { plan: Plan; sha: string | null }, id: numbe
 };
 
 // With the images picked since the last save (5.4): they're committed with the post,
-// and where the post says "upload:<key>" it now says their path
-export async function savePost(input: PostInput, pending: Pending[] = []): Promise<Saved> {
+// and where the post says "upload:<key>" it now says their path.
+// Clips (5.4d) are in Blob already: their posters are among the images (same key), and
+// "clip:<key>" becomes the clip's own path — the poster's, ending .mp4 — with its
+// media.json entry in the same commit. A clip of this post's its text no longer points
+// at loses its entry and its poster here, and its file in Blob once the commit is in.
+export async function savePost(input: PostInput, pending: Pending[] = [], clips: WaitingClip[] = []): Promise<Saved> {
   let placed: Record<string, string> = {};
+  let gone: string[] = [];
   const result = await commit(async (read) => {
     const index = await read.index();
     const now = new Date();
@@ -203,10 +210,47 @@ export async function savePost(input: PostInput, pending: Pending[] = []): Promi
     placed = paths;
     const previous = before ? ((await read.file(before.file)) ?? "") : "";
     const cover = input.cover && placeWaiting(input.cover, paths);
-    const plan = planSave(index, { ...input, cover, body: placeWaiting(input.body, paths, "../") }, now, previous, code);
-    return { ...plan, changes: [...changes, ...plan.changes] };
+    const clipPaths = Object.fromEntries(
+      clips.flatMap((c) => (paths[`upload:${c.key}`] ? [[c.key, paths[`upload:${c.key}`].replace(/\.webp$/, `.${c.url.split(".").pop()}`)]] : [])),
+    );
+    const body = placeClips(placeWaiting(input.body, paths, "../"), clipPaths);
+    const plan = planSave(index, { ...input, cover, body }, now, previous, code);
+
+    // media.json: this save's clips in, the ones its text let go of out
+    const map: ClipMap = parseClips(await read.file(MEDIA_JSON));
+    const was = JSON.stringify(map);
+    for (const c of clips) {
+      const at = clipPaths[c.key];
+      if (!at) continue;
+      const { url, bytes, seconds, width, height } = c;
+      map[at] = { url, bytes, seconds, width, height, poster: paths[`upload:${c.key}`] };
+    }
+    const kept = clipsIn(body);
+    const removed: Change[] = [];
+    gone = [];
+    for (const at of clipsIn(previous)) {
+      if (kept.has(at) || !map[at]) continue;
+      removed.push({ path: map[at].poster, text: null });
+      gone.push(map[at].url);
+      delete map[at];
+    }
+    const media: Change[] = JSON.stringify(map) === was ? [] : [{ path: MEDIA_JSON, text: JSON.stringify(map, null, 2) + "\n" }];
+    return { ...plan, changes: [...changes, ...plan.changes, ...removed, ...media] };
   });
+  if (gone.length) await dropClips(gone);
   return { ...(await done(result, result.plan.entry!.id)), uploads: placed };
+}
+
+// Out of Blob, after the commit that stopped pointing at them. A failure leaves a file
+// nobody links to — it costs space, not a broken page — so the save still stands.
+async function dropClips(urls: string[]) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return;
+  try {
+    const { del } = await import("@vercel/blob");
+    await del(urls);
+  } catch (error) {
+    console.error("Clips left in Blob:", urls, error);
+  }
 }
 
 async function withFile(id: number, read: Reader) {

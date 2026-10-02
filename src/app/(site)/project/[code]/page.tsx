@@ -5,7 +5,7 @@ import styles from "@/components/post/Post.module.css";
 import PostBody from "@/components/post/PostBody";
 import PostHeader from "@/components/post/PostHeader";
 import ProjectEnd from "@/components/post/ProjectEnd";
-import { findPublished, forReaders } from "@/lib/content";
+import { findPublished, forReaders, getClips } from "@/lib/content";
 
 // /project/<code>: published projects only. Drafts, blog posts (they live at /posts/…)
 // and unknown codes get the 404 page; an old /project/<slug> link moves to the code.
@@ -29,7 +29,7 @@ export default async function ProjectPage({ params }: PageProps<"/project/[code]
     <main data-post>
       <div className={styles.railZone}>
         <PostHeader post={post} />
-        <PostBody markdown={post.body} />
+        <PostBody markdown={post.body} clips={await getClips()} />
         <ContentsRail />
       </div>
       <ProjectEnd />
