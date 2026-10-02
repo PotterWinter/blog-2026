@@ -6,14 +6,10 @@
 
 ## ตอนนี้อยู่
 
-- push แล้ว (2 ต.ค. 69 เย็น): หน้า login กล่องกว้างเท่าช่องรหัส · สารบัญบน iPad แก้แล้ว (จุดไม่วาร์ป · ลากด้วยนิ้ว หน้าเลื่อนเมื่อนิ้วค้าง 120 ms เลี่ยง WebKit bug 181954 · ทดสอบบน iPad จริงผ่าน) → notes/04-post.md
-  - ก่อนหน้า (`50b43bd`): 5.3g Preview · URL รหัสสุ่ม · ชื่อรูป `<code>-<ชื่อ>.webp` · filter Blog/Project · Reset · Message เวลาเดินสด
-- push แล้ว (2 ต.ค. 69 ค่ำ, `a35720b`): 5.3d WRITE — Tiptap · พิมพ์ markdown แล้วเป็นรูปแบบทันที · toolbar · Link ⌘K · แถบลอย · เมนู `/` · ตาราง + Output · Preview เลื่อนเข้าจากขวา + ปุ่มข้าง WRITE / RAW · แถว WRITE / RAW ดันแถบบนออก (CSS ล้วน) → notes/editor.md
-- **ค้างในเครื่อง ยังไม่ commit (เจ้าของพักก่อน 2 ต.ค. 69 ค่ำ):** สารบัญใน WRITE (ปิด 5.3d) · มือถือแบบ Gmail (ปุ่ม Aa + แถบลอยเหนือคีย์บอร์ด) · Undo / Redo · 5.3e: block รูป · YouTube · ลบแบบกดค้าง + Undo → lint / types / round-trip ผ่าน · พิมพ์ "commit แล้ว push" ได้เลย
-- **5.4d คลิป ✅ (ยังไม่ commit):** Blob store `blog-2026-clips` เชื่อมแล้ว · อัปโหลด / Save / ลบ ทดสอบกับ Blob จริงผ่าน · Blob ล็อก = ค้างเฟรมแรก → notes/media.md
-- **iPhone แถบเครื่องมือ:** กลับเป็นแถบติดบนสุดตอนคีย์บอร์ดขึ้น (แบบที่อยู่บนเว็บจริง) + แถว WRITE / RAW หลบระหว่างนั้น (ยังไม่ commit · ต้องดูบนเครื่องจริง) → notes/editor.md
-- **ถัดไป:** 5.3f Checks → notes/editor.md
-- ทำแล้ว (ยังไม่ commit): ขีดขาวใต้ footer หน้า admin (Safari) · footer ท้ายหน้า Editor ตาม v4 → notes/admin.md, notes/editor.md
+- push แล้ว (2 ต.ค. 69 ดึก, `09e5e1a`): 5.3d WRITE ครบ (Tiptap · toolbar · Link · แถบลอย · `/` · ตาราง · Output · สารบัญ · Undo/Redo) · 5.3e block รูป / YouTube / ลบแบบกดค้าง + Undo · 5.4d คลิป (Vercel Blob `blog-2026-clips` + media.json) · มือถือ: แถบเครื่องมือติดบนสุดตอนคีย์บอร์ดขึ้น · footer หน้า Editor · ขีดขาวใต้ footer admin → notes/editor.md, notes/media.md
+- **ถัดไป (เจ้าของ, 2 ต.ค. 69 ดึก): Editor ใช้งานจริงยังพังหลายจุด — เจ้าของจะไล่บอกทีละจุดพรุ่งนี้** → แก้ตามนั้นก่อนของใหม่
+- แล้วค่อย 5.3f Checks · 5.4c หน้า Media · 5.5 Settings
+
 - URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
 - repo จริง: Debouncing (#3) มีรหัสแล้ว · hello-world ยังไม่มี → เปิด Editor แล้วกด Save changes หนึ่งครั้ง
 - login: fixtures = `111111` · localhost + repo จริง = แอป บัญชี Code by Korn (dev) · เว็บจริง = บัญชี Code by Korn
