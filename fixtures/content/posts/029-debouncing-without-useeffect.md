@@ -28,7 +28,7 @@ export const search = debounce((q: string) => {
 }, 250)
 ```
 
-```output title="node debounce.ts"
+```output attach title="node debounce.ts"
 $ node --experimental-strip-types debounce.ts
 listening for keystrokes…
 # q="d"     scheduled  +250ms

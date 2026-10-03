@@ -184,6 +184,37 @@ export async function getMedia(parts: string[]): Promise<{ body: ArrayBuffer; ty
   return res && { body: await res.arrayBuffer(), type };
 }
 
+// Every file under media/ and its size ("media/2026/x.webp" → bytes), for the editor's
+// Checks (5.3f: Files, Image size). GitHub: one request for the whole tree, cached and
+// cleared with the media.
+export async function getMediaFiles(): Promise<Record<string, number>> {
+  if (LOCAL_DIR) {
+    const { stat } = await import("node:fs/promises");
+    const out: Record<string, number> = {};
+    const walk = async (dir: string) => {
+      const names = await readdir(path.join(LOCAL_DIR!, dir), { withFileTypes: true }).catch(() => []);
+      for (const n of names) {
+        const file = `${dir}/${n.name}`;
+        if (n.isDirectory()) await walk(file);
+        else out[file] = (await stat(path.join(LOCAL_DIR!, file))).size;
+      }
+    };
+    await walk("media");
+    return out;
+  }
+  const res = await fetch(`https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(TOKEN && { Authorization: `Bearer ${TOKEN}` }),
+    },
+    next: { revalidate: CONTENT_TTL, tags: ["content", "media"] },
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status} listing ${REPO}`);
+  const { tree } = (await res.json()) as { tree: { path: string; type: string; size?: number }[] };
+  return Object.fromEntries(tree.filter((t) => t.type === "blob" && t.path.startsWith("media/")).map((t) => [t.path, t.size ?? 0]));
+}
+
 // The content repo's latest commit, for the admin's status line (06). Cached a minute.
 export async function getRepoHead(): Promise<{ repo: string; branch: string; sha: string; date: string } | null> {
   if (LOCAL_DIR) return null;

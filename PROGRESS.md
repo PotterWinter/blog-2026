@@ -7,8 +7,10 @@
 ## ตอนนี้อยู่
 
 - push แล้ว (2 ต.ค. 69 ดึก, `09e5e1a`): 5.3d WRITE ครบ (Tiptap · toolbar · Link · แถบลอย · `/` · ตาราง · Output · สารบัญ · Undo/Redo) · 5.3e block รูป / YouTube / ลบแบบกดค้าง + Undo · 5.4d คลิป (Vercel Blob `blog-2026-clips` + media.json) · มือถือ: แถบเครื่องมือติดบนสุดตอนคีย์บอร์ดขึ้น · footer หน้า Editor · ขีดขาวใต้ footer admin → notes/editor.md, notes/media.md
-- **ถัดไป (เจ้าของ, 2 ต.ค. 69 ดึก): Editor ใช้งานจริงยังพังหลายจุด — เจ้าของจะไล่บอกทีละจุดพรุ่งนี้** → แก้ตามนั้นก่อนของใหม่
-- แล้วค่อย 5.3f Checks · 5.4c หน้า Media · 5.5 Settings
+- push แล้ว (3 ต.ค. 69): 5.3f Checks ตรวจจริง (Links ถาม server, Files / ขนาดจาก media/, TODO) · มือถือ: แถบเครื่องมือซ่อนตอนเลื่อน, ไม่มี ⌄, Undo / Redo ชี้ซ้าย-ขวา, ปุ่ม I ใหม่, ใต้ footer ดำทั้งแถบ (body สีเข้ม) · กรอบโค้ด: `ชื่อ ✎.ts` + dropdown ชนิด + Attach ↑ / Detach ↓ (ติดกันเฉพาะ `attach`) · หน้าเว็บ: แถบโค้ด `ชื่อ … TypeScript Copy`, carousel ปัดตามนิ้ว, สารบัญตัดที่ 240px · Preview: เปิดตรงที่เขียน, ปิดแบบสไลด์, ท้ายมี Previous | Next (กดไม่ได้) → notes/editor.md
+- **ถัดไป: เจ้าของไล่ทดสอบ Editor ต่อ: Link · Table · Image · Clip · YouTube** (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview) แล้วแก้ตามที่บอก
+- แล้วค่อย 5.4c หน้า Media · 5.5 Settings
+- Unpublish คง popup ยืนยัน (เจ้าของ, 3 ต.ค. 69)
 
 - URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
 - repo จริง: Debouncing (#3) มีรหัสแล้ว · hello-world ยังไม่มี → เปิด Editor แล้วกด Save changes หนึ่งครั้ง
@@ -17,6 +19,9 @@
 - ทดสอบ: copy โปรเจกต์ใน scratchpad รันที่ port 3001 (fixtures, `111111`) — ไม่ชน dev ของเจ้าของที่ 3000 · Safari ทดสอบผ่าน safaridriver · วิดีโอ iPad (HEVC) เปิดผ่าน safaridriver ดึงเฟรมได้
 
 ## ทำต่อ
+
+- [ ] **เจ้าของ: เปิด Debouncing (#3) และ Test website system (#4) ใน Editor → กด Attach ↑ ที่กรอบ Output → Save** (กรอบติดกันเฉพาะที่มี `attach` แล้ว ไม่งั้น Output แยกห่างจากโค้ด)
+- [ ] เจ้าของลองบน iPhone: ปัด carousel ตามนิ้ว · Preview เปิดตรงที่เขียน / ปิดแบบสไลด์
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
 - [x] ลบ `sessions.json` ออกจาก content repo แล้ว · หลัง push ทุกเครื่องต้อง login ใหม่ครั้งเดียว
@@ -98,8 +103,8 @@
   - [x] 5.3c หน้า Editor + โหมด RAW .MD — ทดสอบกับ GitHub จริงผ่าน (1 ต.ค. 69): Draft / Publish / Delete เป็น commit เดียวต่อครั้ง · repo จริงมี hello-world (No. 1) + Debouncing without useEffect (#3, No. 2, ยังไม่มีรูป — ใส่ตอน 5.4)
   - [x] ชื่อไฟล์ `posts/<id>-<slug>.md` · hello-world ย้ายชื่อเองตอน save ครั้งถัดไป
   - [x] 5.3d โหมด WRITE (พิมพ์ markdown · toolbar · link · แถบลอย · `/` · ตาราง · Output · สารบัญ · มือถือ)
-  - [ ] 5.3e block รูป / clip / YouTube / code / ตาราง
-  - [ ] 5.3f Checks ตรวจจริง
+  - [x] 5.3e block รูป / clip / YouTube / code / ตาราง
+  - [x] 5.3f Checks ตรวจจริง (3 ต.ค. 69 · รอเจ้าของดูบนจอ)
   - [x] 5.3g 07P preview (หน้าซ้อนในแท็บเดิม, 2 ต.ค. 69)
 - [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
   - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)

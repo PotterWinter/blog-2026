@@ -62,6 +62,7 @@ header.header {
   display: flex;
   flex-direction: column;
   min-height: 100svh;
+  background: var(--paper);
 }
 
 .hub {
@@ -1208,6 +1209,14 @@ header.header {
   font-family: var(--ff-mono);
   font-size: 12px;
   color: var(--line);
+}
+
+/* Pages ending in it: the body ink, the page itself paper on top (the hub's .frame,
+   the editor's .sheet). On the iPhone, Safari fills the strip under its bottom bar
+   with the body's colour — white, under a black footer (owner, 3 Oct 69). html's
+   colour, or a taller footer, didn't reach it. */
+:global(body):has(.term) {
+  background: var(--ink);
 }
 
 .termDim {

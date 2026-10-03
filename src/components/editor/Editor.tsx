@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
+import { checkLinks, publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
 import { postFile, postUrl, type IndexEntry, type Post } from "@/lib/schema";
@@ -18,8 +18,9 @@ import type { Images } from "./WriteFigure";
 import type { LinkTarget } from "./WriteMenus";
 import { UPLOAD, type Waiting } from "./waiting";
 import { firstFrame } from "./clipFrame";
-import { CLIP, CLIP_MAX, CLIP_TYPES, clipKey, placeClips, waitingClips, type ClipMap, type WaitingClip } from "@/lib/clips";
+import { CLIP, CLIP_MAX, CLIP_TYPES, clipKey, isClip, placeClips, waitingClips, type ClipMap, type WaitingClip } from "@/lib/clips";
 import { shrinkForUpload } from "./shrink";
+import { anchorIn, type Anchor } from "./anchor";
 import styles from "./Editor.module.css";
 
 // 07 Admin post editor (v4 07 / EDITOR-SPEC). The form is the post: title, slug, where
@@ -75,12 +76,16 @@ export default function Editor({
   allTags,
   targets,
   clips: savedClips,
+  pages,
+  media,
 }: {
   post: Post | null;
   entry: IndexEntry | null;
   allTags: string[];
   targets: LinkTarget[]; // posts a link in the text can go to
   clips: ClipMap; // media.json: where the clips posts name really are (5.4d)
+  pages: string[]; // the site's own addresses that open (Checks › Links)
+  media: Record<string, number> | null; // media/ in the repo and the sizes (Checks › Files); null = couldn't list
 }) {
   const { go } = usePageTransition();
   const barRef = useRef<HTMLElement>(null);
@@ -137,8 +142,6 @@ export default function Editor({
   const needsCode = !!entry && !entry.code;
   const changed = JSON.stringify(form) !== saved; // something typed since the last save
   const dirty = changed || needsCode;
-  const checks = postChecks(form);
-  const bad = checks.filter((c) => c.ok === false).length;
 
   // Any edit: what the last press said is over — "Saved · live now" no longer holds once
   // there's something new to save (owner, 2 Oct 69)
@@ -193,6 +196,10 @@ export default function Editor({
         ),
       }));
       for (const c of clipsSent) delete waitingClipsRef.current[c.key];
+    }
+    // The images just committed are in media/ now (Checks › Files)
+    if (sent.length) {
+      setMediaFiles((m) => m && { ...m, ...Object.fromEntries(sent.flatMap((p) => (paths[`${UPLOAD}${p.key}`] ? [[paths[`${UPLOAD}${p.key}`], p.bytes]] : []))) });
     }
     // The slug as the server settled it ("post-37" for a Thai title, "-37" if taken)
     const next = {
@@ -424,6 +431,48 @@ export default function Editor({
     },
   };
 
+  // ---------- Checks (5.3f) ----------
+  // Worked out from the form on each render. Files: in the repo (media/), waiting for
+  // Save, or a clip in media.json. Links: the site's own by its addresses; another
+  // site's asked from the server (below), grey until it answers.
+  const [mediaFiles, setMediaFiles] = useState(media);
+  const [answers, setAnswers] = useState<Record<string, "ok" | "broken">>({});
+  const fileOf = (src: string) => {
+    if (src.startsWith(UPLOAD)) return pending[src.slice(UPLOAD.length)] ?? null;
+    if (src.startsWith(CLIP)) return waitingClipsRef.current[src.slice(CLIP.length)] ?? null;
+    if (isClip(src)) return clipMap[clipKey(src)] ?? null;
+    if (!mediaFiles) return undefined;
+    const bytes = mediaFiles[clipKey(src)];
+    return bytes == null ? null : { bytes };
+  };
+  const link = (href: string) => {
+    if (/^https?:\/\//.test(href)) return answers[href];
+    if (!href.startsWith("/")) return "ok"; // #heading, mailto:
+    const path = href.replace(/[?#].*$/, "").replace(/(.)\/$/, "$1");
+    if (path.startsWith("/media/")) return fileOf(path) === null ? "broken" : "ok";
+    return pages.includes(path) ? "ok" : "broken";
+  };
+  const checks = postChecks(form, { body: form.body, title: form.title, links: form.links, file: fileOf, link });
+  const bad = checks.filter((c) => c.ok === false).length;
+
+  // Another site's links: asked a moment after the typing stops, each once per page
+  const asked = useRef(new Set<string>());
+  const outside = useMemo(
+    () => [...`${form.body}\n${form.links.map((l) => `(${l.url})`).join("\n")}`.matchAll(/\]?\((https?:\/\/[^)\s]+)/g)].map((m) => m[1]),
+    [form.body, form.links],
+  );
+  useEffect(() => {
+    const fresh = [...new Set(outside)].filter((u) => !asked.current.has(u));
+    if (!fresh.length) return;
+    const timer = window.setTimeout(async () => {
+      for (const u of fresh) asked.current.add(u);
+      const got = await checkLinks(fresh).catch(() => null);
+      if (got) setAnswers((a) => ({ ...a, ...got }));
+      else for (const u of fresh) asked.current.delete(u); // signed out, offline: ask again later
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [outside]);
+
   // media/2026/3lcdqaxt-… (a new post's code comes with its first save)
   const stem = `media/${new Date().getFullYear()}/${entry?.code ?? "<code>"}-`;
 
@@ -543,23 +592,36 @@ export default function Editor({
   // ("entering": held over the screen, the editor still showing beneath); once in, the
   // editor hides and the page is the preview's, from its top. It used to swap in at
   // once, a blink (owner, 2 Oct 69).
-  const [previewing, setPreviewing] = useState<false | "entering" | "open">(false);
+  const [previewing, setPreviewing] = useState<false | "entering" | "open" | "leaving">(false);
   const scrollRef = useRef(0);
+  // Where you were in WRITE: the preview opens there (anchor.ts) — from RAW, at the top
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
   const openPreview = () => {
     scrollRef.current = window.scrollY;
+    setAnchor(mode === "write" ? anchorIn(document.querySelector(`.${styles.writeText}`)) : null);
     window.history.pushState({ preview: true }, "");
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setPreviewing(still ? "open" : "entering");
   };
-  const previewIn = useCallback(() => setPreviewing((v) => (v ? "open" : v)), []);
-  // Before the frame is drawn, so the swap from held-over to the page never shows
+  const previewIn = useCallback(() => setPreviewing((v) => (v === "entering" ? "open" : v)), []);
+  const previewOut = useCallback(() => setPreviewing(false), []);
+  // Leaving, it slides off to the right as it came (owner, 3 Oct 69 — it used to vanish
+  // at once, a blink): held over the screen again at the height you'd read to, the
+  // editor back beneath it where you left it
+  const [readTo, setReadTo] = useState(0);
   useLayoutEffect(() => {
-    if (previewing === "open") window.scrollTo({ top: 0, behavior: "instant" });
+    if (previewing === "leaving") window.scrollTo({ top: scrollRef.current, behavior: "instant" });
   }, [previewing]);
   const closePreview = useCallback(() => window.history.back(), []);
   useEffect(() => {
     if (!previewing) return;
     const back = () => {
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (previewing === "open" && !still) {
+        setReadTo(window.scrollY);
+        setPreviewing("leaving");
+        return;
+      }
       setPreviewing(false);
       requestAnimationFrame(() => window.scrollTo({ top: scrollRef.current, behavior: "instant" }));
     };
@@ -583,6 +645,9 @@ export default function Editor({
           post={previewPost}
           coverUrl={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)]?.url : undefined}
           entering={previewing === "entering"}
+          leaving={previewing === "leaving" ? readTo : null}
+          onOut={previewOut}
+          anchor={anchor}
           onIn={previewIn}
           onClose={closePreview}
           clips={{
@@ -593,7 +658,7 @@ export default function Editor({
           }}
         />
       )}
-      <div hidden={previewing === "open"}>
+      <div className={styles.sheet} hidden={previewing === "open"}>
       {/* The bar sticks to the top only as far as the end of this block, so the WRITE /
           RAW row, reaching the top, pushes it up and off — one bar at a time, done by
           the browser itself (owner, 2 Oct 69; the scripted push stuttered on the iPhone) */}

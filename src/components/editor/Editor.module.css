@@ -207,6 +207,11 @@
 
 /* Its bottom padding is the gap above the WRITE / RAW row: inside .head, so the bar
    lets go only as the row arrives (a sticky box keeps to its parent's content) */
+/* The whole editor, on paper: the body under it is ink (Admin.module.css .term) */
+.sheet {
+  background: var(--paper);
+}
+
 .page {
   padding: 40px var(--page-x) 48px;
 }
@@ -1040,7 +1045,8 @@
 
 /* Sliding in from the right, held over the screen (the editor beneath stays as it
    was); once in, it's the page (Editor) */
-.preview[data-entering] {
+.preview[data-entering],
+.preview[data-leaving] {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -1055,10 +1061,26 @@
   }
 }
 
+/* ...and off again the way it came (owner, 3 Oct 69) */
+.preview[data-leaving] {
+  animation: preview-out 0.3s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+@keyframes preview-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
 /* No rise-in: everything is there when it opens (the admin has no reveal observer) */
 .preview [data-reveal][data-reveal] {
   opacity: 1;
   transform: none;
+}
+
+/* Previous | Next, words only: no long-arrow pointer, nothing to press */
+.preview :global(#post-end) span {
+  cursor: default;
 }
 
 /* A slim bar over the post: what this is, Close */
@@ -1197,31 +1219,87 @@
   position: relative;
 }
 
-.writeInfo {
+/* A code frame's bar in WRITE (owner, 3 Oct 69): its name typed straight in, the
+   extension after it from the language; the language a list; joined or not a button */
+.writeName {
+  display: flex;
   flex: 1;
+  align-items: baseline;
   min-width: 0;
+}
+
+.writeField {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  max-width: 100%;
+  border-bottom: 1px solid var(--line);
+  cursor: text;
+}
+
+.writeField:focus-within {
+  border-bottom-color: var(--ink);
+}
+
+.writePencil {
+  flex: none;
+  align-self: center;
+  margin: 0 3px 0 2px;
+  color: var(--muted);
+}
+
+.writeInfo {
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  color: var(--muted);
+  color: var(--ink);
   outline: none;
 }
 
-.writeInfo:focus {
+.writeInfo::placeholder {
+  color: var(--muted);
+}
+
+.writeExt {
+  color: var(--muted);
+}
+
+/* What it is ("TypeScript"), at the right: on an underline, the browser's own list over
+   it unseen, so a press opens the list (on the iPhone, its wheel) */
+.writeLang {
+  position: relative;
+  flex: none;
+  cursor: pointer;
+}
+
+.writeLangShown {
+  display: inline-block;
+  min-width: 2ch;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.writeLang:hover .writeLangShown,
+.writeLang:focus-within .writeLangShown {
   color: var(--ink);
+  border-bottom-color: var(--ink);
 }
 
-/* The info string shows when the bar is pointed at or being edited: otherwise the bar
-   reads as on 04 (file name · line count) */
-.writeInfo:not(:focus) {
+.writeLang select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   opacity: 0;
-  transition: opacity 0.15s;
+  font-size: 16px; /* iOS: no zoom on focus */
+  cursor: pointer;
 }
 
-.writeCode > div:first-child:hover .writeInfo {
-  opacity: 1;
-}
+
+/* The info string shows all the time, grey (owner, 3 Oct 69): it was there only on
+   hover, and nothing said the bar could be typed into */
 
 /* A block WRITE can't edit yet: drawn as on the page, a small tag above, its outline
    black when selected (Backspace / Delete removes it) */
@@ -1461,9 +1539,9 @@
   border-bottom-color: var(--error);
 }
 
-/* Two code frames in a row join, as on 04 (.code + .code) — here each sits in its own
+/* A frame marked attach joins the one above, as on 04 — here each sits in its own
    node-view box, so the rule is said again one level up */
-.writeText > :global(.node-codeBlock) + :global(.node-codeBlock) > .writeCode {
+.writeText > :global(.node-codeBlock) + :global(.node-codeBlock) > .writeCode[data-attach] {
   margin-top: -28px;
   border-top: 0;
 }
@@ -1720,6 +1798,13 @@
   pointer-events: auto;
 }
 
+/* Out of the way while the page moves under a finger, back when it's still */
+.topBar[data-shown][data-moving] {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 0.08s;
+}
+
 /* Inside it the buttons sit on the bar itself, not on a pill of their own */
 .topBar .pillTools {
   border: 0;
@@ -1729,21 +1814,14 @@
   box-shadow: none;
 }
 
-.topBarDone {
-  flex: none;
-  width: 44px;
-  height: 36px;
-  border: 0;
-  border-left: 0.5px solid rgba(17, 17, 16, 0.15);
-  background: none;
-  font-size: 20px;
-  line-height: 1;
-  color: var(--muted);
-  -webkit-tap-highlight-color: transparent;
-}
-
+/* Its words and its top rule only: the rule under it stays, so the page still shows
+   where its top is (owner, 3 Oct 69) */
 @media (max-width: 767px) {
   :global(html[data-keys]) .tools {
+    border-top-color: transparent;
+  }
+
+  :global(html[data-keys]) .tools > * {
     visibility: hidden;
   }
 }

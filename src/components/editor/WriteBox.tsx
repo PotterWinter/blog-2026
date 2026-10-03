@@ -20,6 +20,8 @@ import {
   type NodeViewProps,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { langLabel } from "@/lib/codeLangs";
+import { canonical, known, langOptions, OUTPUT, readInfo, typedName, writeInfo } from "./codeInfo";
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Plugin } from "@tiptap/pm/state";
@@ -139,49 +141,80 @@ const Code = CodeBlock.extend({
   },
 });
 
-const titleOf = (info: string) => /title="([^"]*)"/.exec(info)?.[1] ?? "";
+// "attach" in a frame's info joins it onto the frame above (EDITOR-SPEC). Only then —
+// two frames in a row with nothing said keep their gap (owner, 3 Oct 69). An Output is
+// any frame with Output picked as its language; Attach ↑ joins it.
 
 function CodeView({ node, updateAttributes, editor, getPos }: NodeViewProps) {
   const info = String(node.attrs.info ?? "");
-  const lang = info.split(/\s+/)[0] ?? "";
-  const output = lang === "output" || lang === "console";
-  const lines = node.textContent.split("\n").length;
+  const parts = readInfo(info);
+  const code = canonical(parts.lang);
+  const output = code === OUTPUT;
+  const joined = parts.attach;
+  const put = (next: typeof parts) => updateAttributes({ info: writeInfo(next) });
+  // A frame right above: this one can join onto it
+  const underCode = useEditorState({
+    editor,
+    selector: ({ editor: e }) => {
+      const pos = getPos();
+      return pos != null && e.state.doc.resolve(pos).nodeBefore?.type.name === "codeBlock";
+    },
+  });
   return (
-    <NodeViewWrapper className={`${postStyles.code} ${styles.writeCode}`}>
+    <NodeViewWrapper className={`${postStyles.code} ${styles.writeCode}`} data-attach={joined || undefined}>
       <div className={postStyles.codeBar} contentEditable={false}>
-        <span>{output ? "Output" : titleOf(info) || (lang ? `snippet.${lang}` : "snippet")}</span>
-        <input
-          className={styles.writeInfo}
-          value={info}
-          onChange={(e) => updateAttributes({ info: e.target.value })}
-          placeholder='ts title="search.ts"'
-          aria-label="Language and file name"
-          spellCheck={false}
-        />
-        <span>
-          {lines} {lines === 1 ? "line" : "lines"}
+        {/* As the page's bar reads (owner, 3 Oct 69): the name first, typed in its box,
+            the extension after it from the language (an Output's command, none); what it
+            is at the right, picked from a list (Output last, Text for none). A name typed
+            with an extension the list knows ("app.py"): the language follows on leaving
+            the box. */}
+        <span className={styles.writeName}>
+          {/* A field (owner, 3 Oct 69): on an underline, a pencil before the
+              extension; anywhere on it (the extension too) puts the caret in */}
+          <label className={styles.writeField}>
+          <input
+            className={styles.writeInfo}
+            value={parts.name}
+            onChange={(e) => put({ ...parts, name: e.target.value })}
+            onBlur={(e) => {
+              const next = typedName(parts, e.target.value.trim());
+              if (writeInfo(next) !== info) put(next);
+            }}
+            placeholder={output ? "command" : "name"}
+            aria-label={output ? "Command that printed this" : "File name"}
+            // Mono: one ch a letter, so the extension sits right after the last one
+            style={{ width: `${Math.max(parts.name.length, output ? 7 : 4) + 0.5}ch` }}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+          {/* A pencil: this part is typed in (owner, 3 Oct 69) */}
+          <svg className={styles.writePencil} width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8.2 1.8l2 2L4 10H2V8z" />
+          </svg>
+          {known(code) && <span className={styles.writeExt}>.{code}</span>}
+          </label>
         </span>
-        {/* An Output frame joined under this one (two frames in a row always join, on
-            the page too): what a run of it printed (EDITOR-SPEC "attach") */}
-        {!output && (
+        <span className={styles.writeLang}>
+          <span className={styles.writeLangShown}>{langLabel(parts.lang)}</span>
+          <select value={output ? OUTPUT : code} onChange={(e) => put({ ...parts, lang: e.target.value })} aria-label="Language">
+            {langOptions(parts.lang).map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+            <option value={OUTPUT}>Output</option>
+          </select>
+        </span>
+        {/* Joined onto the frame above, or not */}
+        {underCode && (
           <button
             type="button"
             className={styles.writeAttach}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => {
-              const pos = getPos();
-              if (pos == null) return;
-              const at = pos + node.nodeSize;
-              const next = editor.state.doc.nodeAt(at);
-              if (next?.type.name === "codeBlock") return void editor.commands.focus(at + 1);
-              editor
-                .chain()
-                .insertContentAt(at, { type: "codeBlock", attrs: { info: "output" } })
-                .focus(at + 1)
-                .run();
-            }}
+            onClick={() => put({ ...parts, attach: !joined })}
           >
-            + Output
+            {joined ? "Detach ↓" : "Attach ↑"}
           </button>
         )}
       </div>
@@ -271,6 +304,29 @@ function RawView(props: NodeViewProps) {
 
 // ---------- toolbar ----------
 
+// Italic: a slanted I with a thin bar top and bottom, drawn at the letters' height and
+// weight (owner, 3 Oct 69) — the sans' italic I is one stroke that reads as "/", and a
+// serif one looked out of place among the rest
+function ItalicIcon() {
+  return (
+    <svg width="0.81em" height="0.75em" viewBox="0 0 13 12" fill="none" stroke="currentColor" aria-hidden="true">
+      <path d="M8.5 1 4.5 11" strokeWidth="2" />
+      <path d="M5 .6h7M1 11.4h7" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+// Undo / Redo: an arrow that comes round and points left (or right), as in most apps —
+// the ↶ ↷ characters turn up and over, and read as up / down (owner, 3 Oct 69)
+function TurnIcon({ redo = false }: { redo?: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ verticalAlign: "middle", transform: redo ? "scaleX(-1)" : undefined }}>
+      <path d="M5.5 2 2.5 5l3 3" />
+      <path d="M2.5 5h7a4 4 0 0 1 0 8H7" />
+    </svg>
+  );
+}
+
 type Tool = {
   label: ReactNode;
   off?: (e: TiptapEditor) => boolean; // greyed out (nothing to undo)
@@ -308,7 +364,7 @@ const TOOLS: (Tool | "|")[] = [
     on: (e) => e.isActive("bold"),
   },
   {
-    label: <i>I</i>,
+    label: <ItalicIcon />,
     name: "Italic",
     keys: "⌘I",
     run: (e) => e.chain().focus().toggleItalic().run(),
@@ -387,14 +443,14 @@ const TOOLS: (Tool | "|")[] = [
   },
   "|",
   {
-    label: "↶",
+    label: <TurnIcon />,
     name: "Undo",
     keys: "⌘Z",
     run: (e) => e.chain().focus().undo().run(),
     off: (e) => !e.can().undo(),
   },
   {
-    label: "↷",
+    label: <TurnIcon redo />,
     name: "Redo",
     keys: "⇧⌘Z",
     run: (e) => e.chain().focus().redo().run(),
@@ -511,13 +567,12 @@ function Toolbar({ editor, pill = false }: { editor: TiptapEditor; pill?: boolea
 // top (owner, 2 Oct 69 — tried after: bars over the keys, which Safari's own bars come
 // between, and a floating Aa; this one worked best on the phone). The visual viewport
 // is what's on screen above the keyboard. The keyboard counts as up when that's well
-// short of the screen; ⌄ puts it away.
+// short of the screen. No button of our own to put it away: the keyboard's own does,
+// right where the thumb is (owner, 3 Oct 69).
 function KeyboardTop({ editor }: { editor: TiptapEditor }) {
   const [focused, setFocused] = useState(false);
   const [keys, setKeys] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
-  const doneRef = useRef<HTMLButtonElement>(null);
-  useTapKeepsFocus(doneRef);
   useEffect(() => {
     let gone = 0;
     // A tap on the bar takes the focus for a moment: let go only if it stays gone
@@ -549,13 +604,47 @@ function KeyboardTop({ editor }: { editor: TiptapEditor }) {
         if (bar) bar.style.transform = `translateY(${vv.offsetTop}px)`;
       });
     };
+    // A finger moving the page: the bar fades out and comes back where it belongs once
+    // the page has been still a moment (owner, 3 Oct 69). Following the scroll, it's
+    // always a frame behind — Safari says where the screen went only after it went —
+    // so it slid and snapped back. A scroll with no finger (Safari bringing the caret
+    // into view as you type) just moves it.
+    const bar = barRef.current;
+    let still = 0;
+    let moving = false;
+    const settle = () => {
+      clearTimeout(still);
+      // Moved first, shown after, in the same frame: shown first, it lit up for a
+      // frame where it had been before the scroll (a rare flicker, 3 Oct 69)
+      still = window.setTimeout(() => {
+        moving = false;
+        cancelAnimationFrame(raf);
+        if (!bar) return;
+        bar.style.transform = `translateY(${vv.offsetTop}px)`;
+        bar.removeAttribute("data-moving");
+        setKeys(window.innerHeight - vv.height * vv.scale > 150);
+      }, 180);
+    };
+    const drag = (e: TouchEvent) => {
+      if (e.target instanceof Element && barRef.current?.contains(e.target)) return; // swiping along the bar
+      moving = true;
+      barRef.current?.setAttribute("data-moving", "");
+      settle();
+    };
+    const scrolled = () => (moving ? settle() : place());
     place();
     vv.addEventListener("resize", place);
-    vv.addEventListener("scroll", place);
+    vv.addEventListener("scroll", scrolled);
+    window.addEventListener("scroll", scrolled, { passive: true });
+    document.addEventListener("touchmove", drag, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(still);
+      bar?.removeAttribute("data-moving");
       vv.removeEventListener("resize", place);
-      vv.removeEventListener("scroll", place);
+      vv.removeEventListener("scroll", scrolled);
+      window.removeEventListener("scroll", scrolled);
+      document.removeEventListener("touchmove", drag);
     };
   }, [focused, keys]);
   // The WRITE / RAW row steps aside while the bar is up (Editor.module.css)
@@ -568,16 +657,6 @@ function KeyboardTop({ editor }: { editor: TiptapEditor }) {
   return createPortal(
     <div ref={barRef} className={styles.topBar} data-shown={keys || undefined}>
       <Toolbar editor={editor} pill />
-      <button
-        type="button"
-        ref={doneRef}
-        className={styles.topBarDone}
-        aria-label="Hide the keyboard"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => editor.commands.blur()}
-      >
-        ⌄
-      </button>
     </div>,
     document.body,
   );

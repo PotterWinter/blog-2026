@@ -455,10 +455,12 @@
   width: var(--tick-sub-on);
 }
 
+/* Long headings end in "…" past 240px (owner, 3 Oct 69 — v4 has no limit; a long
+   one ran most of the way across the page) */
 .tocLabel {
   position: absolute;
   right: 100%;
-  max-width: calc(100vw - 80px);
+  max-width: min(240px, calc(100vw - 80px));
   margin-right: 10px;
   padding: 5px 8px;
   overflow: hidden;
@@ -596,8 +598,9 @@
   border: var(--rule-row);
 }
 
-/* An Output frame (or any second frame) straight after another joins onto it */
-.code + .code {
+/* A frame marked attach (```output attach) joins onto the one above it; without it,
+   two frames in a row keep their gap (EDITOR-SPEC; owner, 3 Oct 69) */
+.code + .code[data-attach] {
   margin-top: -28px;
   border-top: 0;
 }
@@ -612,6 +615,24 @@
   font-family: var(--ff-mono);
   font-size: 12px;
   color: var(--muted);
+}
+
+.codeName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* What it is, pushed over beside Copy */
+.codeKind {
+  flex: none;
+  margin-left: auto;
+}
+
+.codeKind + .copy {
+  margin-left: 0;
 }
 
 .term {

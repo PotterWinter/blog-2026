@@ -52,3 +52,23 @@ export default function PostNav({ previous, next }: Props) {
     </nav>
   );
 }
+
+// The editor's Preview: the same foot, words only — which posts they'd be isn't the
+// preview's to say, and nothing to press — so you see how deep the page goes (owner,
+// 3 Oct 69)
+export function PostNavStub() {
+  return (
+    <nav id="post-end" className={styles.postNav} aria-hidden="true">
+      <span className={styles.prev}>
+        <span className="label">
+          <Arrow back /> Previous
+        </span>
+      </span>
+      <span className={styles.next}>
+        <span className="label">
+          Next <Arrow />
+        </span>
+      </span>
+    </nav>
+  );
+}

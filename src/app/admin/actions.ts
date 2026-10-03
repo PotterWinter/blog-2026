@@ -2,6 +2,7 @@
 
 import type { WaitingClip } from "@/lib/clips";
 import type { PostInput } from "@/lib/edit";
+import { linkState } from "@/lib/linkcheck";
 import { currentSession } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
 import { deletePost, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
@@ -37,6 +38,15 @@ export async function unpublish(id: number) {
 
 export async function remove(id: number) {
   return run(() => deletePost(id));
+}
+
+// Checks › Links (5.3f): the links to other sites in a post, each "ok" or "broken" —
+// all asked at once
+export async function checkLinks(urls: string[]): Promise<Record<string, "ok" | "broken"> | null> {
+  if (!(await currentSession())) return null;
+  const asked = [...new Set(urls)].filter((u) => /^https?:\/\//.test(u)).slice(0, 30);
+  const states = await Promise.all(asked.map(linkState));
+  return Object.fromEntries(asked.map((u, i) => [u, states[i]]));
 }
 
 // An image picked in the editor (5.4): form fields role ("cover" | "image") and file.

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { anchorOffset, type Anchor } from "./anchor";
 import type { ClipMap } from "@/lib/clips";
 import type { ForReaders, Post } from "@/lib/content";
 import ContentsRail from "../post/ContentsRail";
 import postStyles from "../post/Post.module.css";
 import PostBody from "../post/PostBody";
+import { PostNavStub } from "../post/PostNav";
 import PostHeader from "../post/PostHeader";
 import ProjectEnd from "../post/ProjectEnd";
 import styles from "./Editor.module.css";
@@ -22,7 +24,13 @@ export default function Preview({
   onIn,
   onClose,
   clips,
+  anchor,
+  leaving,
+  onOut,
 }: {
+  leaving: number | null; // sliding off to the right, held at this height (see Editor)
+  onOut: () => void; // ...and it's gone
+  anchor: Anchor | null; // where you were in WRITE: it opens there
   post: ForReaders<Post>;
   coverUrl?: string; // a cover picked but not saved: shown from memory
   entering: boolean; // sliding in over the editor (see Editor)
@@ -31,6 +39,49 @@ export default function Preview({
   clips: ClipMap; // saved ones by path, waiting ones as "clip:<key>"
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // Where you were writing, at the height it sat (anchor.ts): while it slides in, held
+  // over the screen, its own scroll; once in, the page's — before the frame is drawn,
+  // so the swap from one to the other never shows. Images above it come in after (the
+  // cover, figures) and push it down: it's put back each time the page grows, until
+  // you move it yourself — it opened at the top and then jumped (owner, 3 Oct 69).
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || leaving != null) return;
+    // From RAW, or nothing to find: the top
+    if (!anchor) return void (entering || window.scrollTo({ top: 0, behavior: "instant" }));
+    const place = () => {
+      const off = anchorOffset(root, anchor) ?? 0;
+      if (entering) root.scrollTop = off;
+      else window.scrollTo({ top: root.getBoundingClientRect().top + window.scrollY + off, behavior: "instant" });
+    };
+    place();
+    const grows = new ResizeObserver(place);
+    grows.observe(root.querySelector("main") ?? root);
+    const yours = () => grows.disconnect();
+    const events = ["wheel", "touchstart", "keydown", "mousedown"] as const;
+    for (const e of events) window.addEventListener(e, yours, { passive: true, once: true });
+    const done = window.setTimeout(yours, 3000);
+    return () => {
+      grows.disconnect();
+      clearTimeout(done);
+      for (const e of events) window.removeEventListener(e, yours);
+    };
+  }, [entering, anchor, leaving]);
+  // Leaving: held over the screen at the height you'd read to, then off to the right.
+  // Swiped away already (a phone), it's off the screen: gone at once.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || leaving == null) return;
+    if (root.style.transform) return onOut();
+    root.scrollTop = leaving;
+    const pages = [document.documentElement, document.body];
+    pages.forEach((el) => (el.style.overflowX = "clip"));
+    const late = window.setTimeout(onOut, 700);
+    return () => {
+      clearTimeout(late);
+      pages.forEach((el) => (el.style.overflowX = ""));
+    };
+  }, [leaving, onOut]);
   // Sliding in, it starts a screen's width to the right: html and body clip sideways
   // meanwhile, or iOS Safari zooms out to fit the wider page (as in the swipe below)
   useEffect(() => {
@@ -132,8 +183,11 @@ export default function Preview({
       ref={rootRef}
       className={styles.preview}
       data-entering={entering || undefined}
+      data-leaving={leaving != null || undefined}
       onAnimationEnd={(e) => {
-        if (e.target === e.currentTarget) onIn();
+        if (e.target !== e.currentTarget) return;
+        if (leaving != null) onOut();
+        else onIn();
       }}
       // Links in the post to the site's own pages would leave the editor and what's
       // unsaved: Back to Blog / Projects closes the preview instead (owner, 2 Oct 69), the
@@ -158,11 +212,13 @@ export default function Preview({
         <div className={postStyles.railZone}>
           <PostHeader post={post} coverUrl={coverUrl} />
           <PostBody markdown={post.body} clips={clips} />
-          {/* Placed once it's in: held over the editor, the page's height and scroll
-              aren't the preview's yet, and the rail measures both */}
-          {!entering && <ContentsRail />}
+          {/* Placed once it's in, gone as it leaves: held over the editor, the page's
+              height and scroll aren't the preview's, and the rail measures both */}
+          {!entering && leaving == null && <ContentsRail />}
         </div>
-        {post.section === "project" && <ProjectEnd />}
+        {/* The post's end: Previous | Next, words only, nothing to press — so you see
+            where it stops (owner, 3 Oct 69) */}
+        {post.section === "project" ? <ProjectEnd /> : <PostNavStub />}
       </main>
     </div>
   );

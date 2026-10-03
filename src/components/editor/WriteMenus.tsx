@@ -318,7 +318,7 @@ export const SLASH: SlashItem[] = [
     label: "Output",
     hint: "joins the code above",
     run: (e) =>
-      e.chain().focus().setCodeBlock().updateAttributes("codeBlock", { info: "output" }).run(),
+      e.chain().focus().setCodeBlock().updateAttributes("codeBlock", { info: "output attach" }).run(),
   },
   {
     label: "Table",

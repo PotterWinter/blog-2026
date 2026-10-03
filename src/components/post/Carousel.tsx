@@ -8,13 +8,23 @@ export type Slide = { src: string; alt: string; caption: string };
 const pad = (n: number) => String(n).padStart(2, "0");
 
 // 04 carousel (v4 _slider): one image in view, sliding 0.7s; the caption and "01 / 04"
-// under it, then Previous · Next. Loops at both ends. ← → step it once it has focus,
-// and a swipe steps it on touch.
+// under it, then Previous · Next. Loops at both ends. ← → step it once it has focus.
+// By finger, as the Photos app (owner, 3 Oct 69): the images follow it; let go past a
+// fifth of the width, or with a flick, and it steps (0.35s), short of that it springs
+// back; past the first or last it drags heavy. Up and down still scroll the page.
 export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: string }) {
   const [k, setK] = useState(0);
   const n = slides.length;
   const go = (d: number) => setK((i) => (i + d + n) % n);
-  const start = useRef<number | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; y: number; t: number; dx: number; sideways: boolean | null } | null>(null);
+  // Where the track sits: the slide, less the finger's pull while it's down
+  const place = (dx: number, ease: string | null) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.transition = ease ?? "none";
+    track.style.transform = `translateX(calc(${-k * 100}% + ${dx}px))`;
+  };
 
   return (
     <figure
@@ -31,17 +41,52 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
         className={styles.stage}
         data-swipe-own // its own sideways swipe: the editor's Preview leaves it alone
         onPointerDown={(e) => {
-          if (e.pointerType !== "mouse") start.current = e.clientX;
+          if (e.pointerType === "mouse") return;
+          drag.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, sideways: null };
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.clientX - d.x;
+          // The first few px decide: sideways is ours, up and down is the page's
+          if (d.sideways == null && Math.hypot(dx, e.clientY - d.y) > 6) {
+            d.sideways = Math.abs(dx) > Math.abs(e.clientY - d.y);
+            if (d.sideways) e.currentTarget.setPointerCapture(e.pointerId);
+          }
+          if (!d.sideways) return;
+          // Heavy past the ends
+          const edge = (k === 0 && dx > 0) || (k === n - 1 && dx < 0);
+          d.dx = edge ? dx / 3 : dx;
+          place(d.dx, null);
         }}
         onPointerUp={(e) => {
-          if (start.current == null) return;
-          const dx = e.clientX - start.current;
-          start.current = null;
-          if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+          const d = drag.current;
+          drag.current = null;
+          if (!d?.sideways) return;
+          const width = e.currentTarget.clientWidth;
+          const speed = d.dx / Math.max(1, e.timeStamp - d.t);
+          const step = Math.abs(d.dx) > width / 5 || (Math.abs(speed) > 0.5 && Math.abs(d.dx) > 20) ? (d.dx < 0 ? 1 : -1) : 0;
+          const ease = "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)";
+          // Past the ends it springs back (no looping by finger: the photo app doesn't)
+          const next = k + step;
+          if (step && next >= 0 && next < n) {
+            const track = trackRef.current;
+            if (track) track.style.transition = ease;
+            setK(next);
+          } else place(0, ease);
         }}
-        onPointerCancel={() => (start.current = null)}
+        onPointerCancel={() => {
+          drag.current = null;
+          place(0, "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)");
+        }}
       >
-        <div className={styles.track} style={{ transform: `translateX(${-k * 100}%)` }}>
+        <div
+          ref={trackRef}
+          className={styles.track}
+          style={{ transform: `translateX(${-k * 100}%)` }}
+          // A step by button or key: the CSS slide (0.7s) again, after a finger's own
+          onTransitionEnd={(e) => (e.currentTarget.style.transition = "")}
+        >
           {slides.map((s, i) => (
             // eslint-disable-next-line @next/next/no-img-element -- sizes come from the file
             <img
