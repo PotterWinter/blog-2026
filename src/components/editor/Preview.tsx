@@ -27,7 +27,9 @@ export default function Preview({
   anchor,
   leaving,
   onOut,
+  titles,
 }: {
+  titles: Record<string, string>; // the site's posts by address (a link by address alone)
   leaving: number | null; // sliding off to the right, held at this height (see Editor)
   onOut: () => void; // ...and it's gone
   anchor: Anchor | null; // where you were in WRITE: it opens there
@@ -211,7 +213,7 @@ export default function Preview({
       <main data-post>
         <div className={postStyles.railZone}>
           <PostHeader post={post} coverUrl={coverUrl} />
-          <PostBody markdown={post.body} clips={clips} />
+          <PostBody markdown={post.body} clips={clips} titles={titles} />
           {/* Placed once it's in, gone as it leaves: held over the editor, the page's
               height and scroll aren't the preview's, and the rail measures both */}
           {!entering && leaving == null && <ContentsRail />}

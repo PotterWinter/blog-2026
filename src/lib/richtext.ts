@@ -72,6 +72,14 @@ function inline(nodes: PhrasingContent[], marks: Marks = []): JSONContent[] | nu
         more = add({ type: "strike" });
         break;
       case "link":
+        // [](/posts/<code>): a post linked by its address alone. WRITE shows its title
+        // as the link's words, ordinary text (an uneditable piece tripped the iPhone's
+        // caret — owner, 4 Oct 69); written back the same way while they still read
+        // as the title, so a renamed post's links follow
+        if (!n.children.length && POST_HREF.test(n.url)) {
+          out.push({ type: "text", text: titleAt(n.url) ?? n.url, marks: [...marks, { type: "link", attrs: { href: n.url, title: null } }] });
+          continue;
+        }
         more = add({ type: "link", attrs: { href: n.url, title: n.title ?? null } });
         break;
       default:
@@ -82,6 +90,12 @@ function inline(nodes: PhrasingContent[], marks: Marks = []): JSONContent[] | nu
   }
   return out;
 }
+
+// The site's own post or project, by its address
+export const POST_HREF = /^\/(posts|project)\/[a-z0-9-]+\/?$/;
+// Their titles by address, for the conversion running now (mdToDoc / docToMd)
+let titlesNow: Record<string, string> = {};
+const titleAt = (href: string): string | undefined => titlesNow[href.replace(/\/$/, "")];
 
 const youTube = /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/|youtu\.be\/)/;
 
@@ -228,7 +242,8 @@ function quote(n: Blockquote): JSONContent | null {
     : { type: "blockquote", content };
 }
 
-export function mdToDoc(md: string): JSONContent {
+export function mdToDoc(md: string, titles: Record<string, string> = {}): JSONContent {
+  titlesNow = titles;
   const tree = parse(md);
   const content: JSONContent[] = [];
   const kids = tree.children;
@@ -270,6 +285,13 @@ function phrasing(nodes: JSONContent[] = []): PhrasingContent[] {
   for (const n of nodes) {
     if (n.type === "hardBreak") {
       out.push({ type: "break" });
+      continue;
+    }
+    // A post's link reading as its title (or its bare address): its address alone again
+    const only = n.marks?.length === 1 ? n.marks[0] : null;
+    const href = only?.type === "link" ? String(only.attrs?.href ?? "") : "";
+    if (n.type === "text" && POST_HREF.test(href) && !only?.attrs?.title && (n.text === titleAt(href) || n.text === href)) {
+      out.push({ type: "link", url: href, title: null, children: [] });
       continue;
     }
     if (n.type !== "text" || !n.text) continue;
@@ -428,7 +450,8 @@ function blockMd(n: JSONContent, keep = true): string {
   return md;
 }
 
-export function docToMd(doc: JSONContent): string {
+export function docToMd(doc: JSONContent, titles: Record<string, string> = {}): string {
+  titlesNow = titles;
   return (doc.content ?? [])
     .filter((b) => !(b.type === "paragraph" && !b.content?.length))
     .map((b) => blockMd(b))

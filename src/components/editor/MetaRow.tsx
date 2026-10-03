@@ -19,7 +19,7 @@ const everySecond = (tick: () => void) => {
 };
 
 // v4 07's row under the fields: Commit · Post · Content (counted live from the text) ·
-// Checks (live too; Publish with issues asks twice)
+// Checks (live too; issues never hold Publish back, the note after it lists them)
 export default function MetaRow({
   form,
   file,
@@ -71,7 +71,7 @@ export default function MetaRow({
             </span>
             <span className={styles.messageTag}>next save</span>
           </span>
-          <span className={styles.messageNote}>written for you on each save — Draft, or Edit once it&apos;s live · Publish · Delete</span>
+          <span className={styles.messageNote}>Written for you: Save → Draft, or Edit if it&apos;s live · Publish · Unpublish · Delete. Saving again within 30 min updates the last commit.</span>
         </dd>
         <dt className="label">Last commit</dt>
         <dd className={`${styles.mono} ${styles.muted}`}>{entry?.lastCommit ?? "—"}</dd>

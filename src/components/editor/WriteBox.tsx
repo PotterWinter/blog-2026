@@ -695,6 +695,7 @@ export default function WriteBox({
   reset,
   modeSwitch,
   targets,
+  titles,
   images,
 }: {
   body: string;
@@ -704,10 +705,14 @@ export default function WriteBox({
   reset: number;
   modeSwitch: ReactNode; // WRITE / RAW .MD, first in the sticky row
   targets: LinkTarget[]; // what Link's To field searches
+  titles: Record<string, string>; // the site's posts' titles by address (a post linked by address)
   images: Images; // seeing, uploading and naming images (Editor)
 }) {
   // The blank line(s) between the frontmatter and the text, kept as the file had them
   const leadRef = useRef(/^\n*/.exec(body)![0]);
+  // Posts' titles by address: a link to one reads as its title, written back as its
+  // address alone while it still does (richtext)
+  const titlesRef = useRef(titles);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -767,7 +772,7 @@ export default function WriteBox({
       YouTubeBlock,
       ClipBlock,
     ],
-    content: mdToDoc(body),
+    content: mdToDoc(body, titles),
     editorProps: {
       handleKeyDown: (_view, e) => keyRef.current(e),
       handlePaste: (view, e) => {
@@ -821,7 +826,7 @@ export default function WriteBox({
         autocomplete: "off",
       },
     },
-    onUpdate: ({ editor: e }) => onChangeRef.current(`${leadRef.current}${docToMd(e.getJSON())}\n`),
+    onUpdate: ({ editor: e }) => onChangeRef.current(`${leadRef.current}${docToMd(e.getJSON(), titlesRef.current)}\n`),
     onSelectionUpdate: ({ editor: e }) => readSlash(e),
     onTransaction: ({ editor: e, transaction }) => {
       if (transaction.docChanged) readSlash(e);
@@ -930,7 +935,7 @@ export default function WriteBox({
     if (!editor || reset === seenRef.current) return;
     seenRef.current = reset;
     leadRef.current = /^\n*/.exec(body)![0];
-    editor.commands.setContent(mdToDoc(body), { emitUpdate: false });
+    editor.commands.setContent(mdToDoc(body, titlesRef.current), { emitUpdate: false });
   }, [editor, reset, body]);
 
   const touch = useMedia("(pointer: coarse)");
@@ -948,7 +953,7 @@ export default function WriteBox({
       {editor && <TableBar editor={editor} />}
       {editor && <BlockBar editor={editor} />}
       {editor && link && (
-        <LinkPopover editor={editor} edit={link} targets={targets} onClose={() => setLink(null)} />
+        <LinkPopover editor={editor} edit={link} targets={targets} titles={titles} onClose={() => setLink(null)} />
       )}
       {editor && slash && !link && (
         <SlashMenu editor={editor} slash={slash} pick={pick} onPick={setPick} onRun={runSlash} />

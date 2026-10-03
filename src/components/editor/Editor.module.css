@@ -1470,6 +1470,22 @@
 }
 
 /* ---------- WRITE: tables (as 04's .tableWrap) ---------- */
+/* A link to another site wears the page's ↗ here too, so WRITE reads as it'll look
+   live (owner, 4 Oct 69). Drawn after it, never part of the text. */
+.writeText a[href^="http://"]::after,
+.writeText a[href^="https://"]::after {
+  content: "";
+  display: inline-block;
+  width: 0.65em;
+  height: 0.65em;
+  margin-left: 5px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M1 19 18.5 1.5M10.5 1.5h8v8' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='square'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M1 19 18.5 1.5M10.5 1.5h8v8' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='square'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
 .writeText table {
   width: 100%;
   margin-bottom: 28px;

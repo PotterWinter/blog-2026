@@ -103,10 +103,12 @@ export default function PostBody({
   markdown,
   bare = false,
   clips = {},
+  titles = {},
 }: {
   markdown: string;
   bare?: boolean;
   clips?: ClipMap;
+  titles?: Record<string, string>; // the site's posts by address: [](/posts/<code>) reads as its title
 }) {
   const content = (
     <Markdown
@@ -120,9 +122,11 @@ export default function PostBody({
           const external = /^https?:\/\//.test(href);
           // A link to another page of the site plays the page transition
           if (href.startsWith("/")) {
+            // Its address alone ([](/posts/<code>)): the post's title, as it is now
+            const words = textOf(children) ? children : (titles[href.replace(/\/$/, "")] ?? href);
             return (
               <TransitionLink href={href} className={styles.link}>
-                {children}
+                {words}
               </TransitionLink>
             );
           }

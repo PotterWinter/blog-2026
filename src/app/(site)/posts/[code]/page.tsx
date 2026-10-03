@@ -5,7 +5,7 @@ import styles from "@/components/post/Post.module.css";
 import PostBody from "@/components/post/PostBody";
 import PostHeader from "@/components/post/PostHeader";
 import PostNav from "@/components/post/PostNav";
-import { findPublished, forReaders, getClips, getPublished } from "@/lib/content";
+import { findPublished, forReaders, getClips, getPostTitles, getPublished } from "@/lib/content";
 
 // /posts/<code>: published blog posts only. Drafts, projects (they live at /project/…)
 // and unknown codes get the 404 page; an old /posts/<slug> link moves to the code
@@ -34,7 +34,7 @@ export default async function PostPage({ params }: PageProps<"/posts/[code]">) {
           lists the title first and Previous | Next last, as "End" */}
       <div className={styles.railZone}>
         <PostHeader post={post} />
-        <PostBody markdown={post.body} clips={await getClips()} />
+        <PostBody markdown={post.body} clips={await getClips()} titles={await getPostTitles()} />
         <ContentsRail />
       </div>
       <PostNav previous={posts[i - 1] ?? null} next={posts[i + 1] ?? null} />

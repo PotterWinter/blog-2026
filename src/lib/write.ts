@@ -53,8 +53,25 @@ type Reader = {
   exists: (file: string) => Promise<boolean>;
 };
 
+// Saves close together fold into one commit (owner, 4 Oct 69: twenty "Edit #3" in a
+// row said nothing): a save whose last commit reads the same — "Edit #3" after
+// "Edit #3", "Draft #3" after "Draft #3" — under 30 minutes ago replaces it instead of
+// adding one. Its time is this save's, Revisions doesn't climb. Publish, Unpublish and
+// Delete always stand alone. Someone else's commit on top: a new one, as before.
+const FOLD_MS = 30 * 60 * 1000;
+type Head = { message: string; parents: { sha: string }[]; committer: { date: string } };
+const action = (message: string) => / · ((Edit|Draft) #\d+)$/.exec(message)?.[1] ?? null;
+
+function foldsInto(head: Head, plan: Plan, now: number): boolean {
+  const same = action(plan.message);
+  return !!same && action(head.message) === same && head.parents.length === 1 && now - Date.parse(head.committer.date) <= FOLD_MS;
+}
+
 // Read, work out, commit — and on GitHub, again from the top if the branch moved
-async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promise<{ plan: P; sha: string | null }> {
+async function commit<P extends Plan>(
+  work: (read: Reader) => Promise<P>,
+  { fold = false }: { fold?: boolean } = {},
+): Promise<{ plan: P; sha: string | null }> {
   if (LOCAL_DIR) {
     const dir = LOCAL_DIR;
     const plan = await work({
@@ -90,7 +107,7 @@ async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promi
     const ref = await github<{ object: { sha: string } }>(`/git/ref/heads/${BRANCH}`);
     if (ref.status !== 200) fail("reading the branch", ref.status);
     const head = ref.data.object.sha;
-    const parent = await github<{ tree: { sha: string } }>(`/git/commits/${head}`);
+    const parent = await github<Head & { tree: { sha: string } }>(`/git/commits/${head}`);
     if (parent.status !== 200) fail("reading the last commit", parent.status);
 
     const plan = await work({
@@ -98,6 +115,13 @@ async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promi
       file: (file) => readAt(head, file),
       exists: async (file) => (await github(`/contents/${file}?ref=${head}`)).status === 200,
     });
+    // Folding: on top of what the last commit holds, in its place
+    const folding = fold && foldsInto(parent.data, plan, Date.now());
+    if (folding && plan.entry) {
+      const entry = { ...plan.entry, revisions: Math.max(1, plan.entry.revisions - 1) };
+      plan.entry = entry;
+      plan.index = { ...plan.index, posts: plan.index.posts.map((p) => (p.id === entry.id ? entry : p)) };
+    }
     const changes: Change[] = [
       ...plan.changes,
       { path: "index.json", text: JSON.stringify(plan.index, null, 2) + "\n" },
@@ -129,12 +153,21 @@ async function commit<P extends Plan>(work: (read: Reader) => Promise<P>): Promi
     if (tree.status !== 201) fail("writing the files", tree.status);
     const made = await github<{ sha: string }>("/git/commits", {
       method: "POST",
-      body: { message: plan.message, tree: tree.data.sha, parents: [head] },
+      body: { message: plan.message, tree: tree.data.sha, parents: folding ? [parent.data.parents[0].sha] : [head] },
     });
     if (made.status !== 201) fail("making the commit", made.status);
+    // A fold moves the branch sideways, which takes force: only if it's still where it
+    // was read (anything since → start over, and that comes out a new commit)
+    if (folding) {
+      const now = await github<{ object: { sha: string } }>(`/git/ref/heads/${BRANCH}`);
+      if (now.status !== 200 || now.data.object.sha !== head) {
+        if (attempt === TRIES) fail("moving the branch", 422);
+        continue;
+      }
+    }
     const moved = await github(`/git/refs/heads/${BRANCH}`, {
       method: "PATCH",
-      body: { sha: made.data.sha, force: false },
+      body: { sha: made.data.sha, force: folding },
     });
     if (moved.status === 200) return { plan, sha: made.data.sha };
     // 422: not a fast-forward — someone committed since we read. Start over from theirs.
@@ -236,7 +269,7 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
     }
     const media: Change[] = JSON.stringify(map) === was ? [] : [{ path: MEDIA_JSON, text: JSON.stringify(map, null, 2) + "\n" }];
     return { ...plan, changes: [...changes, ...plan.changes, ...removed, ...media] };
-  });
+  }, { fold: true });
   if (gone.length) await dropClips(gone);
   return { ...(await done(result, result.plan.entry!.id)), uploads: placed };
 }

@@ -18,11 +18,13 @@ export default async function EditPostPage({ params }: PageProps<"/admin/posts/[
   // Checks › Links (5.3f): the site's own addresses that open — its pages, each
   // published post by its code and by its slug (an old link moves to the code)
   const pages = ["/", "/about", "/project", ...published.flatMap((p) => [postUrl(p), postUrl({ ...p, code: null })])];
+  // ...and their titles: a post linked by its address alone reads as its title
+  const titles = Object.fromEntries(published.flatMap((p) => [[postUrl(p), p.title], [postUrl({ ...p, code: null }), p.title]]));
   const clips = await getClips();
   // Checks › Files, Image size: what's in media/ and how big. Not listed (GitHub
   // down) = those checks stay grey rather than the editor not opening.
   const media = await getMediaFiles().catch(() => null);
-  const shared = { allTags, targets, pages, clips, media };
+  const shared = { allTags, targets, pages, titles, clips, media };
   if (slug === "new") return <Editor post={null} entry={null} {...shared} />;
   const post = await getPost(slug);
   if (!post) notFound();

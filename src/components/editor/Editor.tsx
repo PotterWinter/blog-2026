@@ -77,6 +77,7 @@ export default function Editor({
   targets,
   clips: savedClips,
   pages,
+  titles,
   media,
 }: {
   post: Post | null;
@@ -85,6 +86,7 @@ export default function Editor({
   targets: LinkTarget[]; // posts a link in the text can go to
   clips: ClipMap; // media.json: where the clips posts name really are (5.4d)
   pages: string[]; // the site's own addresses that open (Checks › Links)
+  titles: Record<string, string>; // their posts' titles, by address (links by address alone)
   media: Record<string, number> | null; // media/ in the repo and the sizes (Checks › Files); null = couldn't list
 }) {
   const { go } = usePageTransition();
@@ -101,7 +103,6 @@ export default function Editor({
       notes.get(first?.id ?? "new") ??
       (first && !first.code ? { text: "Save once to give it its address · /posts/<code>", tone: "muted" } : null),
   );
-  const [warned, setWarned] = useState(false);
   const [asking, setAsking] = useState<"delete" | "unpublish" | "reset" | null>(null);
   const [rawReset, setRawReset] = useState(0);
   const [publishing, setPublishing] = useState(false);
@@ -147,7 +148,6 @@ export default function Editor({
   // there's something new to save (owner, 2 Oct 69)
   const set = (patch: Partial<Form>) => {
     setForm((f) => ({ ...f, ...patch }));
-    setWarned(false);
     if (note) setNote(null);
   };
   // The slug follows the title, always (owner, 2 Oct 69): it names the file and the
@@ -224,22 +224,19 @@ export default function Editor({
   };
 
   const doPublish = async () => {
-    // With issues: say so; a second press publishes anyway (v4)
-    if (bad && !warned) {
-      setWarned(true);
-      setNote({ text: `Fix ${bad} ${bad > 1 ? "issues" : "issue"} before publishing — or press Publish again to publish anyway`, tone: "bad" });
-      return;
-    }
-    setWarned(false);
+    // Issues don't hold it back (owner, 4 Oct 69 — v4 asked for a second press): it
+    // goes out, and the note after says what's still red
     setPublishing(true); // the save before it reads "Publishing…" too
     const target = dirty || id == null ? await doSave() : { id };
     const result = target && (await call("Publishing", () => publish(target.id)));
     setPublishing(false);
     if (result) {
+      const left = checks.filter((c) => c.ok === false).map((c) => c.label);
+      const issues = left.length ? ` · ${left.length} ${left.length > 1 ? "issues" : "issue"} left: ${left.join(", ")}` : "";
       setSavedNote(
         result.live
-          ? { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · ${result.live}`, tone: "bad" }
-          : { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · live now`, tone: "ok" },
+          ? { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · ${result.live}${issues}`, tone: "bad" }
+          : { text: `Published as No. ${result.entry?.no} at ${time(new Date())} · live now${issues}`, tone: left.length ? "bad" : "ok" },
         result.id,
       );
     }
@@ -268,7 +265,6 @@ export default function Editor({
     pendingRef.current = {};
     setPending({});
     setRawReset((n) => n + 1);
-    setWarned(false);
     setNote(lastSaved.current);
   };
 
@@ -459,7 +455,6 @@ export default function Editor({
     return pages.includes(path) ? "ok" : "broken";
   };
   const checks = postChecks(form, { body: form.body, title: form.title, links: form.links, file: fileOf, link });
-  const bad = checks.filter((c) => c.ok === false).length;
 
   // Another site's links: asked when the post opens and after each Save / Publish —
   // not as you type (owner, 4 Oct 69). Each once per page; one typed since reads
@@ -580,7 +575,6 @@ export default function Editor({
     const parsed = fromRaw(text, form.slug || "new"); // throws: RawBox shows why
     // A title typed (or pasted) here makes the slug too, while it's still automatic
     setForm((f) => ({ ...f, ...parsed, slug: slugify(parsed.title) }));
-    setWarned(false);
     if (note) setNote(null);
   };
 
@@ -665,6 +659,7 @@ export default function Editor({
           leaving={previewing === "leaving" ? readTo : null}
           onOut={previewOut}
           anchor={anchor}
+          titles={titles}
           onIn={previewIn}
           onClose={closePreview}
           clips={{
@@ -920,7 +915,7 @@ export default function Editor({
       <main className={styles.pageBody}>
 
         {mode === "write" ? (
-          <WriteBox body={form.body} onChange={(body) => set({ body })} reset={rawReset} modeSwitch={modeRow} targets={targets} images={images} />
+          <WriteBox body={form.body} onChange={(body) => set({ body })} reset={rawReset} modeSwitch={modeRow} targets={targets} titles={titles} images={images} />
         ) : (
           <>
             <div className={styles.tools}>

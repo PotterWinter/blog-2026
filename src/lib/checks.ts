@@ -93,7 +93,9 @@ export function postChecks(p: Checked, seen?: Seen): Check[] {
   const hrefs: string[] = [];
   for (const [whole, words, href] of text.matchAll(LINK)) {
     const block = YOUTUBE.test(href) && lines.has(whole);
-    if (!href || (!words.trim() && !block)) unfinished.push(words.trim() || href);
+    // A post linked by its address alone reads as its title: not unfinished
+    const titled = /^\/(posts|project)\//.test(href);
+    if (!href || (!words.trim() && !block && !titled)) unfinished.push(words.trim() || href);
     if (href) hrefs.push(href);
   }
   for (const l of seen.links) {

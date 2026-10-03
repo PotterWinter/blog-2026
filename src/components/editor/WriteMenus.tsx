@@ -5,7 +5,7 @@ import { useEditorState } from "@tiptap/react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Editor.module.css";
-import { clipOpeners, imageOpeners } from "./openers";
+import { clipOpeners, imageOpeners, linkOpeners } from "./openers";
 
 // WRITE's floating pieces (5.3d, EDITOR-SPEC): the link popover, the black bar over a
 // selection, and the "/" menu. Each is drawn on the page (a portal into body) at the
@@ -63,11 +63,13 @@ export function LinkPopover({
   editor,
   edit,
   targets,
+  titles,
   onClose,
 }: {
   editor: TiptapEditor;
   edit: LinkEdit;
   targets: LinkTarget[];
+  titles: Record<string, string>;
   onClose: () => void;
 }) {
   const [text, setText] = useState(edit.text);
@@ -90,8 +92,10 @@ export function LinkPopover({
     (edit.text ? toRef.current : boxRef.current?.querySelector("input"))?.focus();
   }, [edit.text]);
 
-  const apply = (href: string) => {
-    const words = text || href;
+  // No words given: a post's title (left as it is, it's saved as the post's address
+  // alone and follows a rename — richtext), else the address
+  const apply = (href: string, title?: string) => {
+    const words = text || title || titles[href.replace(/\/$/, "")] || href;
     const chain = editor
       .chain()
       .focus()
@@ -121,7 +125,7 @@ export function LinkPopover({
       setPick((p) => (p - 1 + found.length) % found.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      apply(found.length ? found[pick].href : to.trim());
+      apply(found.length ? found[pick].href : to.trim(), found.length ? found[pick].title : undefined);
     }
   };
 
@@ -167,7 +171,7 @@ export function LinkPopover({
               aria-selected={i === pick}
               data-on={i === pick || undefined}
               onMouseEnter={() => setPick(i)}
-              onClick={() => apply(t.href)}
+              onClick={() => apply(t.href, t.title)}
             >
               <span>{t.title}</span>
               <span className={styles.popHint}>{t.href}</span>
@@ -300,6 +304,7 @@ export const SLASH: SlashItem[] = [
     hint: "or paste its link",
     run: (e) => e.chain().focus().insertContent({ type: "youtube" }).run(),
   },
+  { label: "Link", hint: "⌘K · a post or a URL", run: (e) => linkOpeners.get(e)?.() },
   { label: "Code block", hint: "```", run: (e) => e.chain().focus().setCodeBlock().run() },
   {
     label: "Quote",

@@ -142,6 +142,13 @@ export async function getPublished(section: IndexEntry["section"]) {
   return posts.sort((a, b) => (b.no ?? 0) - (a.no ?? 0)).map(forReaders);
 }
 
+// Every published post's title by its address (/posts/<code>, and its old slug one):
+// a post linked by its address alone reads as its title (PostBody)
+export async function getPostTitles(): Promise<Record<string, string>> {
+  const posts = await getPosts();
+  return Object.fromEntries(posts.flatMap((p) => [[postUrl(p), p.title], [postUrl({ ...p, code: null }), p.title]]));
+}
+
 // A published post by its address (/posts/<code>), in its own section. A slug — an
 // address from before codes (until 2 Oct 69) — moves to the code while it's still the
 // post's own slug; a post with no code yet is served at its slug.

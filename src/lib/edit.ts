@@ -39,7 +39,8 @@ export type Change = { path: string; text: string | null; base64?: string };
 // slugs: the posts whose pages change (their cache is cleared)
 export type Plan = { changes: Change[]; message: string; index: ContentIndex; entry: IndexEntry | null; slugs: string[] };
 
-export type Action = "Publish" | "Edit" | "Draft" | "Delete";
+// Unpublish has its own word (owner, 4 Oct 69 — v4 had four; it read "Draft")
+export type Action = "Publish" | "Edit" | "Draft" | "Unpublish" | "Delete";
 
 // Bangkok time, the owner's: "2026-10-02 14:16:21" for messages, "2026-10-02" for dates,
 // "2026-10-02T14:16:21+07:00" for createdAt
@@ -207,7 +208,7 @@ export function planUnpublish(index: ContentIndex, id: number, file: string, now
   if (before.status === "draft") throw new Error(`#${id} is already a draft`);
   const { data, body } = splitFrontmatter(file, before.slug);
   const meta = toMeta(data, before.slug);
-  const message = commitMessage(now, "Draft", id);
+  const message = commitMessage(now, "Unpublish", id);
   const { entry, changes, slugs } = written({ ...meta, status: "draft", updatedAt: bangkok(now).date }, body, before, now, message);
   return { changes, message, index: withEntry(index, id, entry), entry, slugs };
 }
