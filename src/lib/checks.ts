@@ -17,7 +17,7 @@ export type Seen = {
   title: string;
   links: PostLink[]; // the page's own links (Live site, GitHub…)
   file: (src: string) => { bytes: number } | null | undefined;
-  link: (href: string) => "ok" | "broken" | undefined;
+  link: (href: string) => "ok" | "broken" | "later" | undefined; // later: asked on save
 };
 
 export const IMAGE_MAX = 500 * 1024;
@@ -103,11 +103,12 @@ export function postChecks(p: Checked, seen?: Seen): Check[] {
   const answers = hrefs.map((href) => ({ href, state: seen.link(href) }));
   const broken = [...new Set(answers.filter((a) => a.state === "broken").map((a) => a.href.replace(/^https?:\/\//, "")))];
   const asking = answers.some((a) => a.state === undefined);
+  const onSave = answers.some((a) => a.state === "later");
   const linkNotes = [unfinished.length && `${unfinished.length} unfinished`, broken.length && `${broken.length} broken`].filter(Boolean);
   out.push({
     label: "Links",
-    ok: linkNotes.length ? false : asking ? null : true,
-    note: linkNotes.length ? linkNotes.join(" · ") : asking ? "checking" : "",
+    ok: linkNotes.length ? false : asking || onSave ? null : true,
+    note: linkNotes.length ? linkNotes.join(" · ") : asking ? "checking" : onSave ? "on save" : "",
     tip:
       [unfinished.length && `Unfinished: ${list(unfinished)}`, broken.length && `Open to nothing: ${list(broken)}`]
         .filter(Boolean)

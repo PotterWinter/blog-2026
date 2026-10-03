@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { checkLinks, publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
+import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
 import { postFile, postUrl, type IndexEntry, type Post } from "@/lib/schema";
@@ -201,6 +201,8 @@ export default function Editor({
     if (sent.length) {
       setMediaFiles((m) => m && { ...m, ...Object.fromEntries(sent.flatMap((p) => (paths[`${UPLOAD}${p.key}`] ? [[paths[`${UPLOAD}${p.key}`], p.bytes]] : []))) });
     }
+    // Links typed since: asked now
+    void askLinks(outsideRef.current);
     // The slug as the server settled it ("post-37" for a Thai title, "-37" if taken)
     const next = {
       ...form,
@@ -436,7 +438,8 @@ export default function Editor({
   // Save, or a clip in media.json. Links: the site's own by its addresses; another
   // site's asked from the server (below), grey until it answers.
   const [mediaFiles, setMediaFiles] = useState(media);
-  const [answers, setAnswers] = useState<Record<string, "ok" | "broken">>({});
+  // Another site's links, by what the server said ("asking" while it's out)
+  const [answers, setAnswers] = useState<Record<string, "ok" | "broken" | "asking">>({});
   const fileOf = (src: string) => {
     if (src.startsWith(UPLOAD)) return pending[src.slice(UPLOAD.length)] ?? null;
     if (src.startsWith(CLIP)) return waitingClipsRef.current[src.slice(CLIP.length)] ?? null;
@@ -446,7 +449,10 @@ export default function Editor({
     return bytes == null ? null : { bytes };
   };
   const link = (href: string) => {
-    if (/^https?:\/\//.test(href)) return answers[href];
+    if (/^https?:\/\//.test(href)) {
+      const said = answers[href];
+      return said === "asking" ? undefined : (said ?? "later");
+    }
     if (!href.startsWith("/")) return "ok"; // #heading, mailto:
     const path = href.replace(/[?#].*$/, "").replace(/(.)\/$/, "$1");
     if (path.startsWith("/media/")) return fileOf(path) === null ? "broken" : "ok";
@@ -455,23 +461,34 @@ export default function Editor({
   const checks = postChecks(form, { body: form.body, title: form.title, links: form.links, file: fileOf, link });
   const bad = checks.filter((c) => c.ok === false).length;
 
-  // Another site's links: asked a moment after the typing stops, each once per page
-  const asked = useRef(new Set<string>());
+  // Another site's links: asked when the post opens and after each Save / Publish —
+  // not as you type (owner, 4 Oct 69). Each once per page; one typed since reads
+  // "on save" until then.
   const outside = useMemo(
     () => [...`${form.body}\n${form.links.map((l) => `(${l.url})`).join("\n")}`.matchAll(/\]?\((https?:\/\/[^)\s]+)/g)].map((m) => m[1]),
     [form.body, form.links],
   );
-  useEffect(() => {
-    const fresh = [...new Set(outside)].filter((u) => !asked.current.has(u));
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const askLinks = useCallback(async (urls: string[]) => {
+    const fresh = [...new Set(urls)].filter((u) => !answersRef.current[u]);
     if (!fresh.length) return;
-    const timer = window.setTimeout(async () => {
-      for (const u of fresh) asked.current.add(u);
-      const got = await checkLinks(fresh).catch(() => null);
-      if (got) setAnswers((a) => ({ ...a, ...got }));
-      else for (const u of fresh) asked.current.delete(u); // signed out, offline: ask again later
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [outside]);
+    setAnswers((a) => ({ ...a, ...Object.fromEntries(fresh.map((u) => [u, "asking" as const])) }));
+    // A route of its own (/api/links): a server action would queue Save behind it
+    const got = await fetch("/api/links", { method: "POST", body: JSON.stringify(fresh) })
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, "ok" | "broken">>) : null))
+      .catch(() => null);
+    setAnswers((a) => {
+      const next = { ...a, ...got };
+      if (!got) for (const u of fresh) delete next[u]; // signed out, offline: next time
+      return next;
+    });
+  }, []);
+  const outsideRef = useRef(outside);
+  outsideRef.current = outside;
+  useEffect(() => {
+    void askLinks(outsideRef.current);
+  }, [askLinks]);
 
   // media/2026/3lcdqaxt-… (a new post's code comes with its first save)
   const stem = `media/${new Date().getFullYear()}/${entry?.code ?? "<code>"}-`;
