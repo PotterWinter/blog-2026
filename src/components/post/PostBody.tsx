@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import FitImage from "./FitImage";
+import TableScroll from "./TableScroll";
 import TransitionLink from "../TransitionLink";
 import { clipKey, isClip, type ClipMap } from "@/lib/clips";
 import Carousel from "./Carousel";
@@ -26,6 +28,33 @@ export function headingId(text: string) {
     .toLowerCase()
     .replace(/[^a-z0-9฀-๿]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+// A table's columns, each wide enough that its longest cell takes at most 3 lines —
+// left to the browser, a phone squeezed a sentence to a word a line (owner, 4 Oct 69).
+// Short ones (≤ 12 letters) keep their own width; none past 22 letters wide, so a long
+// sentence may run longer rather than take the screen. Wider than the column in all:
+// the table scrolls sideways (TableScroll). Given as --w1…--w8 on the table, the least
+// width of each column's cells (Post.module.css) — a <col>'s width the browser treated
+// as a wish, and squeezed anyway.
+const LINES = 3;
+// Letters as they stand on screen: Thai vowels and tone marks above and below a letter
+// share its place ("ที่นี่" is 2, not 6)
+const graphemes = new Intl.Segmenter("th", { granularity: "grapheme" });
+const letters = (text: string) => [...graphemes.segment(text)].length;
+type Hast = { type: string; tagName?: string; value?: string; children?: Hast[] };
+const hastText = (n: Hast): string => (n.type === "text" ? (n.value ?? "") : (n.children ?? []).map(hastText).join(""));
+function columnWidths(table?: Hast): (string | null)[] {
+  const rows: Hast[] = [];
+  const walk = (n: Hast) => (n.tagName === "tr" ? rows.push(n) : (n.children ?? []).forEach(walk));
+  if (table) walk(table);
+  const longest: number[] = [];
+  for (const row of rows) {
+    (row.children ?? [])
+      .filter((c) => c.tagName === "td" || c.tagName === "th")
+      .forEach((c, i) => (longest[i] = Math.max(longest[i] ?? 0, letters(hastText(c).trim()))));
+  }
+  return longest.map((n) => (n > 12 ? `${Math.min(22, Math.ceil(n / LINES))}ch` : null));
 }
 
 const textOf = (node: ReactNode): string =>
@@ -220,10 +249,16 @@ export default function PostBody({
           const text = code.children.map((c) => ("value" in c ? c.value : "")).join("");
           return <CodeBlock lang={lang} meta={meta} code={text} />;
         },
-        table: ({ children }) => (
-          <div className={styles.tableWrap}>
-            <table>{children}</table>
-          </div>
+        table: ({ node, children }) => (
+          <TableScroll>
+            <table
+              style={Object.fromEntries(
+                columnWidths(node).flatMap((w, i) => (w && i < 8 ? [[`--w${i + 1}`, w]] : [])),
+              )}
+            >
+              {children}
+            </table>
+          </TableScroll>
         ),
         // Images laid out by a <!-- … --> comment (remarkImageLayouts)
         div: ({ node, children }) => {
@@ -255,12 +290,19 @@ export default function PostBody({
               </div>
             );
           }
-          // fit-height / full: one image
+          // full: one image, filling the frame. "fit height" (no longer offered, 4 Oct 69)
+          // reads as Fit.
           const [img] = images;
+          if (layout !== "full") {
+            return (
+              <figure className={styles.figure}>
+                <FitImage src={img.src} alt={img.alt} />
+                {img.caption && <figcaption>{img.caption}</figcaption>}
+              </figure>
+            );
+          }
           return (
-            <figure
-              className={`${styles.figure} ${styles[layout === "full" ? "full" : "fitHeight"]}`}
-            >
+            <figure className={`${styles.figure} ${styles.full}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
               <img src={img.src} alt={img.alt} loading="lazy" />
               {img.caption && <figcaption>{img.caption}</figcaption>}
@@ -277,8 +319,7 @@ export default function PostBody({
             />
           ) : (
             <figure className={styles.figure}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-              <img src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} loading="lazy" />
+              <FitImage src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} />
               {title && <figcaption>{title}</figcaption>}
             </figure>
           ),

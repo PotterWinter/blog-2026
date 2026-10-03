@@ -419,7 +419,7 @@ const TOOLS: (Tool | "|")[] = [
     label: "Table",
     name: "Table — Tab moves cell to cell",
     keys: "/table",
-    run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run(),
+    run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
     on: (e) => e.isActive("table"),
   },
   "|",
@@ -761,7 +761,9 @@ export default function WriteBox({
       Note,
       Raw,
       // Cells hold one paragraph each: a markdown table's cell is one line
-      Table.configure({ resizable: false }),
+      // Each column at least 120px (inline min-width on the table): narrower, a phone
+      // broke words mid-letter; past the column the frame scrolls sideways (owner, 4 Oct 69)
+      Table.configure({ resizable: false, renderWrapper: true, cellMinWidth: 120 }),
       TableRow,
       TableHeader.extend({ content: "paragraph" }),
       TableCell.extend({ content: "paragraph" }),

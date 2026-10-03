@@ -14,7 +14,7 @@ const OFFSET = 96;
 const DRAG = 4;
 const TAP_SLOP = 10;
 // Touch: the names fold away after this long untouched
-const IDLE = 3000;
+const IDLE = 5000; // a tap opens the names for this long (owner, 4 Oct 69: 3s was quick)
 // Tablet drag: the page glides to the entry under the finger once it has rested there
 // this long
 const DWELL = 120;

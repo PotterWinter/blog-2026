@@ -29,6 +29,38 @@ export const ImagesContext = createContext<Images | null>(null);
 
 // A press on a block (not on its fields or buttons) selects it: its border goes black
 // and the bar to delete it rises (WriteMenus BlockBar)
+// A block's own controls — its layout buttons, its fields — are its own: the editor
+// leaves their presses alone. It took them too: a press on FIT selected the block, put
+// the caret in, and up came the phone's keyboard, the page sliding to it (owner,
+// 4 Oct 69). For each block's node view.
+export const ownControls = {
+  stopEvent: ({ event }: { event: Event }) =>
+    event.target instanceof Element && !!event.target.closest("input, textarea, select, button, label"),
+};
+
+// A finger on a block's button (FIT, FULL, Two, Replace…): on iOS, the lift focuses the
+// editor around it — up came the keyboard, the page sliding to the caret (owner, 4 Oct
+// 69; stopEvent alone didn't stop it). A tap — not a scroll — is answered here instead:
+// the lift held back, the button pressed. As the toolbar's buttons are (WriteBox).
+const tapStart = new WeakMap<Element, { x: number; y: number }>();
+export const ownTaps = {
+  onTouchStart: (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (e.touches.length === 1) tapStart.set(e.currentTarget, { x: t.clientX, y: t.clientY });
+    else tapStart.delete(e.currentTarget);
+  },
+  onTouchEnd: (e: React.TouchEvent) => {
+    const start = tapStart.get(e.currentTarget);
+    tapStart.delete(e.currentTarget);
+    const button = (e.target as Element).closest("button");
+    if (!start || !button || button.disabled || !e.currentTarget.contains(button)) return;
+    const t = e.changedTouches[0];
+    if (Math.hypot(t.clientX - start.x, t.clientY - start.y) > 10) return;
+    e.preventDefault();
+    button.click();
+  },
+};
+
 export function selectOnPress(e: React.MouseEvent, props: Pick<NodeViewProps, "editor" | "getPos">) {
   if ((e.target as Element).closest("input, button, textarea, select, a")) return;
   const pos = props.getPos();
@@ -39,28 +71,28 @@ export function selectOnPress(e: React.MouseEvent, props: Pick<NodeViewProps, "e
 
 const LAYOUTS: Record<"single" | "two" | "carousel", { value: string; label: string }[]> = {
   single: [
-    { value: "single", label: "Fit W" },
-    { value: "fit height", label: "Fit H" },
+    { value: "single", label: "Fit" },
     { value: "full", label: "Full" },
   ],
   two: [
     { value: "4:5", label: "4:5" },
     { value: "16:10", label: "16:10" },
   ],
+  // 4:5 first, as for Two (owner, 4 Oct 69); 16:10 is still the default
   carousel: [
-    { value: "", label: "16:10" },
     { value: "4:5", label: "4:5" },
+    { value: "", label: "16:10" },
   ],
 };
 
 // What each layout is, and the size to upload for it (EDITOR-SPEC)
 const hint = (layout: Layout, ratio: string) =>
   layout === "single"
-    ? "Fit width · 880 px column · upload ≥ 1760 px wide"
+    ? "Fit · touches the column's width or the tallest height, whole · upload ≥ 1760 px wide"
     : layout === "fit height"
-      ? "Fit height · 560 tall, its own ratio · centred"
+      ? "Fit · touches the column's width or the tallest height, whole"
       : layout === "full"
-        ? "Full · the column's width · upload ≥ 2560 px wide"
+        ? "Full · fills the column at the tallest height, cropped to it · upload ≥ 1760 px wide"
         : layout === "two"
           ? `Two up · upload ${ratio === "16:10" ? "864 × 540" : "864 × 1080"} (${ratio || "4:5"})`
           : `Carousel · one slide at a time · upload ${ratio === "4:5" ? "896 × 1120" : "1760 × 1100"}`;
@@ -86,7 +118,7 @@ export const Figure = Node.create({
     return ["div", mergeAttributes(HTMLAttributes, { "data-figure": "" })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(FigureView);
+    return ReactNodeViewRenderer(FigureView, ownControls);
   },
 });
 
@@ -122,12 +154,16 @@ function FigureView(props: NodeViewProps) {
     else setImages([...images, ...srcs.map((src) => ({ src, alt: "", caption: "" }))]);
   };
   const setKind = (k: string) => {
+    // The ratio goes along between Two and Carousel, so switching back and forth keeps
+    // it; from one image, 4:5 (owner, 4 Oct 69). Written as each says it: Two's "" is
+    // 4:5, Carousel's "" is 16:10.
+    const now = kind === "two" ? ratio || "4:5" : kind === "carousel" ? ratio || "16:10" : "4:5";
     // Two keeps the first two; going back to one keeps the first
     if (k === "single")
       updateAttributes({ layout: "single", ratio: "", images: images.slice(0, 1) });
     else if (k === "two")
-      updateAttributes({ layout: "two", ratio: "4:5", images: images.slice(0, 2) });
-    else updateAttributes({ layout: "carousel", ratio: "" });
+      updateAttributes({ layout: "two", ratio: now, images: images.slice(0, 2) });
+    else updateAttributes({ layout: "carousel", ratio: now === "16:10" ? "" : "4:5" });
   };
   const option = kind === "single" ? layout : ratio;
   const setOption = (v: string) =>
@@ -158,6 +194,7 @@ function FigureView(props: NodeViewProps) {
       className={styles.fig}
       data-selected={selected || undefined}
       contentEditable={false}
+      {...ownTaps}
     >
       <span className={styles.figLegend}>{kind === "carousel" ? "Carousel" : "Image"}</span>
       <div className={styles.figShow} data-layout={layout} data-ratio={ratio || undefined}>

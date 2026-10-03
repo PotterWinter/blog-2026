@@ -4,7 +4,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import { youTubeId } from "../post/PostBody";
 import styles from "./Editor.module.css";
-import { selectOnPress } from "./WriteFigure";
+import { ownControls, ownTaps, selectOnPress } from "./WriteFigure";
 
 // 5.3e YouTube block: the video's poster as the post shows it (the player itself loads
 // only on the page), and its Link, Caption and Duration. In the .md it's a paragraph
@@ -30,7 +30,7 @@ export const YouTubeBlock = Node.create({
     return ["div", mergeAttributes(HTMLAttributes, { "data-youtube": "" })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(YouTubeView);
+    return ReactNodeViewRenderer(YouTubeView, ownControls);
   },
 });
 
@@ -62,6 +62,7 @@ function YouTubeView(props: NodeViewProps) {
       data-selected={selected || undefined}
       contentEditable={false}
       onMouseDown={(e: React.MouseEvent) => selectOnPress(e, props)}
+      {...ownTaps}
     >
       <span className={styles.figLegend}>YouTube</span>
       <div className={styles.ytBox}>

@@ -1,8 +1,9 @@
 "use client";
 
 import type { Editor as TiptapEditor } from "@tiptap/core";
+import { Selection } from "@tiptap/pm/state";
 import { useEditorState } from "@tiptap/react";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Editor.module.css";
 import { clipOpeners, imageOpeners, linkOpeners } from "./openers";
@@ -327,8 +328,8 @@ export const SLASH: SlashItem[] = [
   },
   {
     label: "Table",
-    hint: "Tab moves cell to cell",
-    run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run(),
+    hint: "3 columns · Tab moves on",
+    run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
   },
 ];
 
@@ -412,8 +413,12 @@ export function TableBar({ editor }: { editor: TiptapEditor }) {
     selector: ({ editor: e }) => {
       if (!e.isFocused || !e.isActive("table")) return null;
       const { $from } = e.state.selection;
+      let first = false;
       for (let d = $from.depth; d > 0; d--) {
-        if ($from.node(d).type.name === "table") return { pos: $from.before(d) };
+        const name = $from.node(d).type.name;
+        // In the row's first cell: a column can go in before it too
+        if (name === "tableCell" || name === "tableHeader") first = $from.index(d - 1) === 0;
+        if (name === "table") return { pos: $from.before(d), first };
       }
       return null;
     },
@@ -441,17 +446,25 @@ export function TableBar({ editor }: { editor: TiptapEditor }) {
       role="toolbar"
       aria-label="Table"
     >
+      {/* Rows, then columns, each + then − (owner, 4 Oct 69) */}
       {btn(
         "+ Row",
         run((c) => c.addRowAfter()),
       )}
       {btn(
-        "+ Column",
-        run((c) => c.addColumnAfter()),
-      )}
-      {btn(
         "− Row",
         run((c) => c.deleteRow()),
+      )}
+      {/* Before the first column: the one place "+ Column" (to the right of the
+          caret's) can't put one — shown only there (owner, 4 Oct 69) */}
+      {state.first &&
+        btn(
+          "+ Column ←",
+          run((c) => c.addColumnBefore()),
+        )}
+      {btn(
+        "+ Column",
+        run((c) => c.addColumnAfter()),
       )}
       {btn(
         "− Column",
@@ -489,20 +502,34 @@ const HOLD = 900; // ms the pill is held for the block to go (EDITOR-SPEC)
 // Esc to deselect · × Hold to delete". Held 0.9 s, red fills the pill left to right and
 // the block goes; let go early and it drains back. Pointing at the pill turns the
 // block's border red. Then "Image removed · Undo ⌘Z" for 8 s.
+// The block selected, if one is
+function pickedBlock(e: TiptapEditor) {
+  const sel = e.state.selection as {
+    node?: { type: { name: string }; attrs: Record<string, unknown> };
+    from: number;
+  };
+  const node = sel.node;
+  if (!node || !["figure", "youtube", "clip", "raw", "horizontalRule"].includes(node.type.name)) return null;
+  return { pos: sel.from, name: blockName(node.type.name, String(node.attrs.layout ?? "")) };
+}
+
+
+// The on-screen keyboard up (a touch screen): what's on screen is well short of the
+// window. Fixed to the bottom, the bar then hung mid-screen over the text (owner,
+// 4 Oct 69) — it waits instead, and shows once the keyboard is down.
+const keyboardUp = () => {
+  const vv = window.visualViewport;
+  return !!vv && window.matchMedia("(pointer: coarse)").matches && window.innerHeight - vv.height * vv.scale > 150;
+};
+const watchKeyboard = (on: () => void) => {
+  const vv = window.visualViewport;
+  vv?.addEventListener("resize", on);
+  return () => vv?.removeEventListener("resize", on);
+};
+
 export function BlockBar({ editor }: { editor: TiptapEditor }) {
-  const picked = useEditorState({
-    editor,
-    selector: ({ editor: e }) => {
-      const sel = e.state.selection as {
-        node?: { type: { name: string }; attrs: Record<string, unknown> };
-        from: number;
-      };
-      const node = sel.node;
-      if (!node || !["figure", "youtube", "clip", "raw", "horizontalRule"].includes(node.type.name))
-        return null;
-      return { pos: sel.from, name: blockName(node.type.name, String(node.attrs.layout ?? "")) };
-    },
-  });
+  const picked = useEditorState({ editor, selector: ({ editor: e }) => pickedBlock(e) });
+  const keys = useSyncExternalStore(watchKeyboard, keyboardUp, () => false);
   const [holding, setHolding] = useState(false);
   const [gone, setGone] = useState<string | null>(null); // what was removed, for the toast
   const timer = useRef(0);
@@ -516,7 +543,21 @@ export function BlockBar({ editor }: { editor: TiptapEditor }) {
     timer.current = window.setTimeout(() => {
       setHolding(false);
       danger(false);
-      editor.chain().focus().deleteSelection().run();
+      // Gone, and the caret in the text nearest where it was — not on the next block,
+      // which kept this bar up as "selected" and the Undo toast waiting (owner, 4 Oct 69)
+      editor
+        .chain()
+        .focus()
+        .deleteSelection()
+        .command(({ tr }) => {
+          // Text only (near() would pick the next block if it's one): the end of the
+          // text before it, else the start of the text after
+          const $at = tr.doc.resolve(Math.min(picked.pos, tr.doc.content.size));
+          const text = Selection.findFrom($at, -1, true) ?? Selection.findFrom($at, 1, true);
+          if (text) tr.setSelection(text);
+          return true;
+        })
+        .run();
       setGone(picked.name);
       clearTimeout(toastTimer.current);
       toastTimer.current = window.setTimeout(() => setGone(null), 8000);
@@ -544,7 +585,7 @@ export function BlockBar({ editor }: { editor: TiptapEditor }) {
     };
   }, [gone, editor]);
 
-  if (picked) {
+  if (picked && !keys) {
     return createPortal(
       <div className={styles.blockBar} role="toolbar" aria-label="Selected block">
         <span>
@@ -573,7 +614,7 @@ export function BlockBar({ editor }: { editor: TiptapEditor }) {
       document.body,
     );
   }
-  if (gone) {
+  if (gone && !keys) {
     return createPortal(
       <div className={styles.blockBar} role="status">
         <span>{gone} removed</span>

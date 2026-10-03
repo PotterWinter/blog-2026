@@ -4,7 +4,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import { useContext, useRef, useState } from "react";
 import styles from "./Editor.module.css";
-import { ImagesContext, selectOnPress } from "./WriteFigure";
+import { ImagesContext, ownControls, ownTaps, selectOnPress } from "./WriteFigure";
 
 // 5.4d Clip block (v4 07 "CLIP"): the clip playing muted on loop as on the page, Replace
 // on it; under it what a clip may be, then File, Alt text, Caption. The file is in
@@ -30,7 +30,7 @@ export const ClipBlock = Node.create({
     return ["div", mergeAttributes(HTMLAttributes, { "data-clip": "" })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ClipView);
+    return ReactNodeViewRenderer(ClipView, ownControls);
   },
 });
 
@@ -60,6 +60,7 @@ function ClipView(props: NodeViewProps) {
       data-selected={selected || undefined}
       contentEditable={false}
       onMouseDown={(e: React.MouseEvent) => selectOnPress(e, props)}
+      {...ownTaps}
     >
       <span className={styles.figLegend}>Clip</span>
       <div className={styles.figTile}>

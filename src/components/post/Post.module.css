@@ -455,12 +455,19 @@
   width: var(--tick-sub-on);
 }
 
+/* Phones: 155px, about 25 letters (padding counted) — a long one covered half the screen (owner, 4 Oct 69) */
+@media (max-width: 767px) {
+  .toc {
+    --toc-label-max: 155px;
+  }
+}
+
 /* Long headings end in "…" past 240px (owner, 3 Oct 69 — v4 has no limit; a long
    one ran most of the way across the page) */
 .tocLabel {
   position: absolute;
   right: 100%;
-  max-width: min(240px, calc(100vw - 80px));
+  max-width: min(var(--toc-label-max, 240px), calc(100vw - 80px));
   margin-right: 10px;
   padding: 5px 8px;
   overflow: hidden;
@@ -945,7 +952,39 @@
 
 .tableWrap {
   margin-bottom: 28px;
+}
+
+/* Sideways in its own frame when it's wider than the column (TableScroll) */
+/* scrollbar-width only: ::-webkit-scrollbar { display: none } makes iOS Safari hide the
+   page's own scroll bar too, until a reload (notes/shared.md, 2 Oct 69) */
+.tableScroll {
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* ...and the bar that says so, under it: a 1px track, a 3px ink thumb */
+.tableBarTrack {
+  position: relative;
+  height: 15px;
+  margin-top: 4px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.tableBarTrack::before {
+  content: "";
+  position: absolute;
+  inset: 7px 0 auto;
+  height: 1px;
+  background: var(--line);
+}
+
+.tableBarThumb {
+  position: absolute;
+  top: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ink);
 }
 
 .tableWrap table {
@@ -965,6 +1004,40 @@
   border-bottom: var(--rule-row);
   text-align: left;
   vertical-align: baseline;
+}
+
+/* Each column at least as wide as lets its longest cell take 3 lines (PostBody's
+   columnWidths, --w1…--w8 on the table) */
+.tableWrap :is(th, td):nth-child(1) {
+  min-width: var(--w1, 0);
+}
+
+.tableWrap :is(th, td):nth-child(2) {
+  min-width: var(--w2, 0);
+}
+
+.tableWrap :is(th, td):nth-child(3) {
+  min-width: var(--w3, 0);
+}
+
+.tableWrap :is(th, td):nth-child(4) {
+  min-width: var(--w4, 0);
+}
+
+.tableWrap :is(th, td):nth-child(5) {
+  min-width: var(--w5, 0);
+}
+
+.tableWrap :is(th, td):nth-child(6) {
+  min-width: var(--w6, 0);
+}
+
+.tableWrap :is(th, td):nth-child(7) {
+  min-width: var(--w7, 0);
+}
+
+.tableWrap :is(th, td):nth-child(8) {
+  min-width: var(--w8, 0);
 }
 
 .tableWrap th {
@@ -999,24 +1072,25 @@
   background: var(--line);
 }
 
-/* <!-- fit height -->: as tall as images get (--img-max; EDITOR-SPEC said 560), its
-   own ratio, centred — for tall photos */
-.fitHeight img {
-  width: auto;
-  max-width: 100%;
-  height: var(--img-max);
-  margin: 0 auto;
+/* Fit (the default): grown or shrunk to touch the frame — the column's width or
+   --img-max tall, whichever it meets first — its own ratio, no white beside it
+   (owner, 4 Oct 69: small ones too). --r is its ratio, set once it loads (FitImage). */
+.figure:not(.full):has(> img) {
+  width: min(100%, calc(var(--img-max) * var(--r, 99)));
 }
 
-.fitHeight figcaption {
-  text-align: center;
+.figure:not(.full) > img {
+  width: 100%;
+  max-height: none;
+  aspect-ratio: var(--r, auto);
 }
 
-/* <!-- full -->: the column's full width always (owner, 30 Sep 69 — not edge to edge
-   as EDITOR-SPEC had it); past --img-max it crops rather than narrowing */
+/* <!-- full -->: fills the frame — the column's width and --img-max tall — cropping
+   what runs over, either way (cover; owner, 4 Oct 69: no gap on any side) */
 .full img {
   width: 100%;
-  max-height: var(--img-max);
+  height: var(--img-max);
+  max-height: none;
   object-fit: cover;
 }
 
