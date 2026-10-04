@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { still } from "@/lib/clips";
 import { type Check, postChecks } from "@/lib/checks";
 import { longDate } from "@/lib/format";
 import type { IndexEntry } from "@/lib/schema";
@@ -384,7 +385,7 @@ function Cover({ src, onClick }: { src: string | null; onClick: () => void }) {
   useHoverTip(ref);
   return (
     <div ref={ref} className={styles.paneCover} data-cover onClick={onClick}>
-      {src && <Image src={`/${src}`} alt="" fill sizes="320px" className={styles.cover} />}
+      {src && <Image src={`/${still(src)}`} alt="" fill sizes="320px" className={styles.cover} />}
     </div>
   );
 }

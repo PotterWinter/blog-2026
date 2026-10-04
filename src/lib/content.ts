@@ -2,7 +2,7 @@ import "server-only";
 
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { MEDIA_JSON, parseClips, type ClipMap } from "./clips.ts";
+import { coverClip, MEDIA_JSON, parseClips, type ClipEntry, type ClipMap } from "./clips.ts";
 import {
   buildIndex,
   postUrl,
@@ -127,7 +127,10 @@ export async function getPost(slug: string): Promise<Post | null> {
 // be in the page's data. The id (the content's key), the file it's in, the last commit
 // message ("Edit #3") and the like stay on the server (owner, 2 Oct 69): readers get the
 // post as it reads, its address and its counts.
-export type ForReaders<T extends PostMeta = PostMeta> = Omit<T, "id" | "file" | "lastCommit" | "revisions" | "createdAt">;
+// coverClip: a cover that's a clip, where it is (media.json) — the cards play it too
+export type ForReaders<T extends PostMeta = PostMeta> = Omit<T, "id" | "file" | "lastCommit" | "revisions" | "createdAt"> & {
+  coverClip?: ClipEntry;
+};
 
 export function forReaders<T extends PostMeta>(post: T): ForReaders<T> {
   const shown: Record<string, unknown> = { ...post };
@@ -137,9 +140,15 @@ export function forReaders<T extends PostMeta>(post: T): ForReaders<T> {
 
 // Highest number first (owner, 2 Oct 69): the order they went out in, newest on top —
 // the same order as by publish date, since both are set on the first publish
+// A clip cover comes with its entry, so a card can play it (owner, 4 Oct 69)
 export async function getPublished(section: IndexEntry["section"]) {
-  const posts = await getPosts({ section });
-  return posts.sort((a, b) => (b.no ?? 0) - (a.no ?? 0)).map(forReaders);
+  const [posts, clips] = await Promise.all([getPosts({ section }), getClips()]);
+  return posts
+    .sort((a, b) => (b.no ?? 0) - (a.no ?? 0))
+    .map((p) => {
+      const clip = coverClip(p.cover, clips);
+      return clip ? { ...forReaders(p), coverClip: clip } : forReaders(p);
+    });
 }
 
 // Every published post's title by its address (/posts/<code>, and its old slug one):

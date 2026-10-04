@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { memo, useEffect, useRef } from "react";
+import { still } from "@/lib/clips";
 import { postIssues } from "@/lib/checks";
 import { postNo, shortDate } from "@/lib/format";
 import { postUrl, type IndexEntry } from "@/lib/schema";
@@ -181,7 +182,7 @@ const Card = memo(function Card({ p, selected }: { p: IndexEntry; selected: bool
     >
       <span className={styles.cardCover}>
         {p.cover && (
-          <Image src={`/${p.cover}`} alt="" fill sizes="(min-width: 1280px) 300px, 45vw" className={styles.cover} />
+          <Image src={`/${still(p.cover)}`} alt="" fill sizes="(min-width: 1280px) 300px, 45vw" className={styles.cover} />
         )}
       </span>
       <span className={styles.cardTop}>

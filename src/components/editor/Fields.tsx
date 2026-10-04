@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { CLIP, isClip, still, type ClipEntry } from "@/lib/clips";
 import type { PostLink } from "@/lib/schema";
+import Segmented from "../Segmented";
 import type { Waiting } from "./waiting";
 import styles from "./Editor.module.css";
 
@@ -223,6 +225,8 @@ export function LinksField({ links, onChange }: { links: PostLink[]; onChange: (
 // crop), 2400 wide covers a 1200px box on a 2× screen.
 
 const RECOMMENDED = "2400 × 1200 recommended · 2:1";
+const RECOMMENDED_CLIP = "MP4 / WebM up to 5 MB · cropped to 2:1";
+const posterSrc = (poster: string) => (/^(https?:|blob:|\/)/.test(poster) ? poster : `/${poster}`);
 
 type Measured = { src: string; width: number; height: number; bytes: number };
 
@@ -259,6 +263,7 @@ export function CoverField({
   waiting,
   stem,
   onRename,
+  clip,
 }: {
   cover: string | null;
   alt: string;
@@ -270,20 +275,40 @@ export function CoverField({
   // Its file name while it waits: media/2026/003-cover- + the name to type over
   stem: string;
   onRename: (key: string, typed: string) => void;
+  clip?: ClipEntry; // the cover's a clip: where it is (waiting: its poster from memory)
 }) {
-  const measured = useMeasure(waiting ? null : cover);
-  const size = waiting ? { ...waiting, src: cover! } : measured;
+  // Image or Clip (owner, 4 Oct 69): what Upload / Replace picks. It follows the cover —
+  // a clip cover shows Clip — and either can be dropped on the box whichever is chosen.
+  const clipCover = !!cover && isClip(cover);
+  const [kind, setKind] = useState<"image" | "clip">(clipCover ? "clip" : "image");
+  const [seen, setSeen] = useState(cover);
+  if (cover !== seen) {
+    setSeen(cover);
+    if (cover) setKind(isClip(cover) ? "clip" : "image");
+  }
+  const measured = useMeasure(waiting || clipCover ? null : cover);
+  const size = clip ? { ...clip, src: cover! } : waiting ? { ...waiting, src: cover! } : measured;
   const off = size && Math.abs(size.width / size.height - 2) > 0.06;
   const pickRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  // A clip waiting for Save keeps the name its first frame was given (the two go together)
+  const clipName = cover?.startsWith(CLIP) ? cover.slice(CLIP.length).replace(/^cover-?/, "") : null;
   return (
     <div className={`${styles.field} ${styles.cover}`}>
       <span className={styles.labelRow}>
-        <span className="label" title="Top image of the post · also used when a link is shared">
+        <span className="label" title="Top image or clip of the post · its still is used when a link is shared">
           Cover
         </span>
-        <span className={styles.coverSize} data-off={off || undefined} title={off ? "Covers are 2:1 — this one will be cropped" : undefined}>
-          {!cover ? RECOMMENDED : size ? `${size.bytes ? `${kb(size.bytes)} · ` : ""}${size.width} × ${size.height}${off ? " · not 2:1" : ""}` : "…"}
+        <span
+          className={styles.coverSize}
+          data-off={(off && !clipCover) || undefined}
+          title={off ? "Covers are 2:1 — this one will be cropped" : undefined}
+        >
+          {!cover
+            ? kind === "clip" ? RECOMMENDED_CLIP : RECOMMENDED
+            : size
+              ? `${size.bytes ? `${kb(size.bytes)} · ` : ""}${size.width} × ${size.height}${clip?.seconds ? ` · ${clip.seconds.toFixed(1)} s` : ""}${off ? (clipCover ? " · cropped to 2:1" : " · not 2:1") : ""}`
+              : "…"}
         </span>
         <span className={styles.coverActs}>
           <button type="button" className={styles.replace} disabled={uploading} onClick={() => pickRef.current?.click()}>
@@ -298,7 +323,7 @@ export function CoverField({
         <input
           ref={pickRef}
           type="file"
-          accept="image/*"
+          accept={kind === "clip" ? "video/mp4,video/webm" : "image/*"}
           hidden
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -319,27 +344,67 @@ export function CoverField({
           e.preventDefault();
           setOver(false);
           const file = e.dataTransfer.files[0];
-          if (file?.type.startsWith("image/")) onUpload(file);
+          if (file && /^(image|video)\//.test(file.type)) onUpload(file);
         }}
       >
-        {waiting ? (
+        {clip ? (
+          // Playing here as it will on the page: muted, on loop, filling the 2:1 box
+          <video
+            key={clip.url}
+            src={clip.url}
+            poster={posterSrc(clip.poster)}
+            className={`${styles.coverImg} ${styles.coverWaiting}`}
+            muted
+            loop
+            autoPlay
+            playsInline
+          />
+        ) : waiting ? (
           // Not in the repo yet: from memory (next/image can't optimise a blob: URL)
           // eslint-disable-next-line @next/next/no-img-element
           <img src={waiting.url} alt="" className={`${styles.coverImg} ${styles.coverWaiting}`} />
         ) : cover ? (
-          <Image src={`/${cover}`} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className={styles.coverImg} />
+          // A clip not in media.json (the .md edited by hand): its still, if there is one
+          <Image src={`/${still(cover)}`} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className={styles.coverImg} />
         ) : (
           <span className={styles.coverEmpty}>
-            No cover · {RECOMMENDED}
+            No cover · {kind === "clip" ? RECOMMENDED_CLIP : RECOMMENDED}
             <br />
-            drop an image here, or Upload
+            drop {kind === "clip" ? "a clip" : "an image"} here, or Upload
           </span>
         )}
-        {uploading && <span className={styles.coverBusy}>Uploading · making a WebP…</span>}
+        {uploading && (
+          <span className={styles.coverBusy}>
+            {kind === "clip" ? "Uploading the clip · taking its first frame…" : "Uploading · making a WebP…"}
+          </span>
+        )}
       </span>
+      {/* A row of its own, as File and Alt text are: up in the label row it squeezed the
+          size into three lines */}
+      <div className={`${styles.inline} ${styles.coverType}`}>
+        <span className="label">Type</span>
+        <Segmented
+          label="Cover type"
+          options={[
+            { value: "image", label: "Image" },
+            { value: "clip", label: "Clip" },
+          ]}
+          value={kind}
+          onChange={setKind}
+        />
+      </div>
       <label className={styles.inline}>
         <span className="label">File</span>
-        {waiting ? (
+        {clipName != null ? (
+          // Up in Blob already, under this name: it stays (renaming would part it from
+          // its first frame)
+          <span className={`${styles.input} ${styles.coverName}`}>
+            <span className={styles.mono}>
+              {stem}
+              {clipName}.{clip?.url.split(".").pop() ?? "mp4"}
+            </span>
+          </span>
+        ) : waiting ? (
           // Not saved yet: the name is its file's, to type over (Enter or leaving keeps it)
           <span className={`${styles.input} ${styles.coverName}`}>
             <span className={styles.mono}>{stem}</span>
@@ -380,7 +445,7 @@ export function CoverField({
         <input
           className={`${styles.input} ${styles.strong}`}
           value={alt}
-          placeholder="What the image shows"
+          placeholder={clipCover ? "What the clip shows" : "What the image shows"}
           onChange={(e) => onChange(cover, e.target.value)}
         />
       </label>

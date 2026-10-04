@@ -33,11 +33,22 @@ export const clipKey = (src: string) => src.replace(/^(\.\.\/)+/, "").replace(/^
 export const waitingClips = (text: string) =>
   new Set([...text.matchAll(WAITING)].map(([m]) => m.slice(CLIP.length)));
 
-export const placeClips = (text: string, paths: Record<string, string>) =>
+// The body's clips are relative to the post ("../media/…"); the cover field's aren't
+export const placeClips = (text: string, paths: Record<string, string>, prefix = "../") =>
   text.replace(WAITING, (m) => {
     const path = paths[m.slice(CLIP.length)];
-    return path ? `../${path}` : m;
+    return path ? prefix + path : m;
   });
+
+// A cover can be a clip (owner, 4 Oct 69): "media/2026/<code>-cover-x.mp4". Its poster
+// is the same path ending .webp (write.ts names the clip after it), so wherever a still
+// is wanted — the cards, the admin, a link's preview — this gives it without media.json
+export const still = (src: string) =>
+  isClip(src) && !src.startsWith(CLIP) ? src.replace(/\.(mp4|webm)$/i, ".webp") : src;
+
+// A clip cover's entry in media.json, if it's one
+export const coverClip = (cover: string | null, clips: ClipMap) =>
+  cover && isClip(cover) ? clips[clipKey(cover)] : undefined;
 
 export function parseClips(text: string | null): ClipMap {
   if (!text) return {};
@@ -49,8 +60,9 @@ export function parseClips(text: string | null): ClipMap {
   }
 }
 
-// The clips a post's text points at, by their media.json key
+// The clips a post's text points at, by their media.json key — its cover too, when the
+// text is the whole .md ("cover: ../media/…" in the frontmatter)
 export const clipsIn = (text: string) =>
   new Set(
-    [...text.matchAll(/\]\((?:\.\.\/)*(media\/\d{4}\/[a-z0-9-]+\.(?:mp4|webm))/g)].map((m) => m[1]),
+    [...text.matchAll(/(?:\]\(|^cover:[ \t]*)(?:\.\.\/)*(media\/\d{4}\/[a-z0-9-]+\.(?:mp4|webm))/gm)].map((m) => m[1]),
   );

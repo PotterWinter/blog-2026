@@ -4,7 +4,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import { useContext, useRef, useState } from "react";
 import styles from "./Editor.module.css";
-import { ImagesContext, ownControls, ownTaps, selectOnPress } from "./WriteFigure";
+import { ImagesContext, ownDrops, ownTaps, selectOnPress } from "./WriteFigure";
 
 // 5.4d Clip block (v4 07 "CLIP"): the clip playing muted on loop as on the page, Replace
 // on it; under it what a clip may be, then File, Alt text, Caption. The file is in
@@ -30,7 +30,7 @@ export const ClipBlock = Node.create({
     return ["div", mergeAttributes(HTMLAttributes, { "data-clip": "" })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(ClipView, ownControls);
+    return ReactNodeViewRenderer(ClipView, ownDrops);
   },
 });
 
@@ -54,40 +54,79 @@ function ClipView(props: NodeViewProps) {
     setBusy(false);
     if (next) updateAttributes({ src: next });
   };
+  // A video dragged over: the box says what letting go does (as the Image block does)
+  const [over, setOver] = useState(false);
+  const videos = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  const drag = {
+    onDragOver: (e: React.DragEvent) => {
+      if (!videos(e) || busy) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setOver(true);
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Element | null)) setOver(false);
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!videos(e)) return;
+      e.preventDefault();
+      setOver(false);
+      const file = [...e.dataTransfer.files].find((f) => f.type.startsWith("video/"));
+      if (!busy) void replace(file);
+    },
+  };
   return (
     <NodeViewWrapper
       className={styles.fig}
       data-selected={selected || undefined}
+      data-over={over || undefined}
       contentEditable={false}
       onMouseDown={(e: React.MouseEvent) => selectOnPress(e, props)}
       {...ownTaps}
+      {...drag}
     >
       <span className={styles.figLegend}>Clip</span>
-      <div className={styles.figTile}>
-        {entry ? (
-          <video
-            key={entry.url}
-            className={styles.clipVideo}
-            src={entry.url}
-            poster={/^(https?:|blob:)/.test(entry.poster) ? entry.poster : `/${entry.poster}`}
-            muted
-            loop
-            playsInline
-            autoPlay
-          />
-        ) : (
-          <div className={styles.ytBox}>
-            <span className={styles.ytEmpty}>
-              {busy ? "Uploading…" : "Clip not found in media.json"}
-            </span>
-          </div>
-        )}
-        <span className={styles.figPills}>
-          <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
-            {busy ? "Uploading…" : "Replace"}
+      {!src ? (
+        // Put in empty from the toolbar, "/" or ⇧⌘M; its clip is picked here (owner, 4 Oct
+        // 69 — as the Image block)
+        <div className={styles.figShow}>
+          <button
+            type="button"
+            className={styles.figAdd}
+            data-over={over || undefined}
+            disabled={busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            {busy ? "Uploading…" : over ? "Drop to add" : "+ Add clip"}
           </button>
-        </span>
-      </div>
+        </div>
+      ) : (
+        <div className={styles.figTile} data-over={over || undefined}>
+          {entry ? (
+            <video
+              key={entry.url}
+              className={styles.clipVideo}
+              src={entry.url}
+              poster={/^(https?:|blob:)/.test(entry.poster) ? entry.poster : `/${entry.poster}`}
+              muted
+              loop
+              playsInline
+              autoPlay
+            />
+          ) : (
+            <div className={styles.ytBox}>
+              <span className={styles.ytEmpty}>
+                {busy ? "Uploading…" : "Clip not found in media.json"}
+              </span>
+            </div>
+          )}
+          <span className={styles.figPills}>
+            <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
+              {busy ? "Uploading…" : "Replace"}
+            </button>
+          </span>
+        </div>
+      )}
       <input
         ref={fileRef}
         type="file"
@@ -102,15 +141,17 @@ function ClipView(props: NodeViewProps) {
         MP4 / WebM · plays muted on loop · max 5 MB · stored in Vercel Blob, its first frame in git
       </span>
       <div className={styles.figImage}>
-        <label className={styles.figRow}>
-          <span className="label">File</span>
-          <span className={styles.figName}>{name}</span>
-          <span className={styles.figMeta}>
-            {entry
-              ? `${mb(entry.bytes)} · ${entry.seconds.toFixed(1)}s · ${entry.width} × ${entry.height}`
-              : ""}
-          </span>
-        </label>
+        {src && (
+          <label className={styles.figRow}>
+            <span className="label">File</span>
+            <span className={styles.figName}>{name}</span>
+            <span className={styles.figMeta}>
+              {entry
+                ? `${mb(entry.bytes)} · ${entry.seconds.toFixed(1)}s · ${entry.width} × ${entry.height}`
+                : ""}
+            </span>
+          </label>
+        )}
         <label className={styles.figRow}>
           <span className="label">Alt text</span>
           <input

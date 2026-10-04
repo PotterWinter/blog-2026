@@ -2,11 +2,13 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { still } from "@/lib/clips";
 import type { ForReaders } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
 import { shortDate } from "@/lib/format";
 import { projectCategories, type ProjectCategory } from "@/lib/site";
 import CategoryFilter from "../home/CategoryFilter";
+import { ClipVideo, FILL } from "../post/Clip";
 import TransitionLink from "../TransitionLink";
 import styles from "./Project.module.css";
 
@@ -82,9 +84,11 @@ export default function ProjectBrowser({ projects, initial }: Props) {
               </span>
             </div>
             <div className={styles.cover}>
-              {project.cover && (
+              {project.coverClip ? (
+                <ClipVideo entry={project.coverClip} alt={project.coverAlt} className={styles.image} style={FILL} />
+              ) : project.cover && (
                 <Image
-                  src={`/${project.cover}`}
+                  src={`/${still(project.cover)}`}
                   alt={project.coverAlt}
                   fill
                   sizes="(min-width: 1280px) 430px, (min-width: 768px) 45vw, 100vw"

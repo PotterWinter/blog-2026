@@ -5,7 +5,7 @@ import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
 import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
-import { clipsIn, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
+import { clipKey, clipsIn, isClip, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
 import { placeUploads, type Pending } from "./media";
 import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
@@ -242,10 +242,11 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
     const { changes, paths } = await placeUploads(pending, code, read.exists, now);
     placed = paths;
     const previous = before ? ((await read.file(before.file)) ?? "") : "";
-    const cover = input.cover && placeWaiting(input.cover, paths);
     const clipPaths = Object.fromEntries(
       clips.flatMap((c) => (paths[`upload:${c.key}`] ? [[c.key, paths[`upload:${c.key}`].replace(/\.webp$/, `.${c.url.split(".").pop()}`)]] : [])),
     );
+    // The cover may be a clip as well (owner, 4 Oct 69): "clip:cover-x" → its path
+    const cover = input.cover && placeClips(placeWaiting(input.cover, paths), clipPaths, "");
     const body = placeClips(placeWaiting(input.body, paths, "../"), clipPaths);
     const plan = planSave(index, { ...input, cover, body }, now, previous, code);
 
@@ -259,6 +260,7 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
       map[at] = { url, bytes, seconds, width, height, poster: paths[`upload:${c.key}`] };
     }
     const kept = clipsIn(body);
+    if (cover && isClip(cover)) kept.add(clipKey(cover));
     const removed: Change[] = [];
     gone = [];
     for (const at of clipsIn(previous)) {
@@ -311,7 +313,11 @@ export async function unpublishPost(id: number): Promise<Saved> {
   return done(result, id);
 }
 
+// Its clips go with it (owner, 4 Oct 69 — they stayed in Blob): those its text and its
+// cover point at, named for it (<code>- or <id>-, as its own images are), lose their
+// media.json entry and their poster in the same commit, and their file in Blob after it
 export async function deletePost(id: number): Promise<Saved> {
+  let gone: string[] = [];
   const result = await commit(async (read) => {
     const { index, file } = await withFile(id, read);
     // The posts after it in its section move down a number, in the same commit
@@ -322,7 +328,31 @@ export async function deletePost(id: number): Promise<Saved> {
         return { entry, text };
       }),
     );
-    return planDelete(index, id, new Date(), file, later);
+    const plan = planDelete(index, id, new Date(), file, later);
+
+    const post = index.posts.find((p) => p.id === id)!;
+    const names = [String(id).padStart(3, "0"), ...(post.code ? [post.code] : [])].join("|");
+    const own = new RegExp(`^media/\\d{4}/(?:${names})-`);
+    const map: ClipMap = parseClips(await read.file(MEDIA_JSON));
+    const removed: Change[] = [];
+    gone = [];
+    for (const at of clipsIn(file)) {
+      if (!map[at] || !own.test(at)) continue;
+      removed.push({ path: map[at].poster, text: null });
+      gone.push(map[at].url);
+      delete map[at];
+    }
+    if (!removed.length) return plan;
+    const taken = new Set(plan.changes.map((c) => c.path));
+    return {
+      ...plan,
+      changes: [
+        ...plan.changes,
+        ...removed.filter((c) => !taken.has(c.path)),
+        { path: MEDIA_JSON, text: JSON.stringify(map, null, 2) + "\n" },
+      ],
+    };
   });
+  if (gone.length) await dropClips(gone);
   return done(result, id);
 }

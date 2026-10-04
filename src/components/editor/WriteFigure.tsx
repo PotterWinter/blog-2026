@@ -23,7 +23,8 @@ export type Images = {
   rename: (src: string, typed: string) => void;
   // Clips (5.4d): where one is ("clip:<key>" waiting, or its saved path), and uploading one
   clip: (src: string) => ClipEntry | undefined;
-  addClip: (file: File) => Promise<string | null>; // → "clip:<key>"
+  // → "clip:<key>"; the cover's poster is named "cover-<name>" as a cover image is
+  addClip: (file: File, role?: "cover" | "image") => Promise<string | null>;
 };
 export const ImagesContext = createContext<Images | null>(null);
 
@@ -59,6 +60,14 @@ export const ownTaps = {
     e.preventDefault();
     button.click();
   },
+};
+
+// ...and files dragged onto a block are its own too (the Image and Clip blocks take them
+// in): the editor would put them in a new block beside it
+export const ownDrops = {
+  stopEvent: ({ event }: { event: Event }) =>
+    ownControls.stopEvent({ event }) ||
+    (event instanceof DragEvent && !!event.dataTransfer?.types.includes("Files")),
 };
 
 export function selectOnPress(e: React.MouseEvent, props: Pick<NodeViewProps, "editor" | "getPos">) {
@@ -118,7 +127,7 @@ export const Figure = Node.create({
     return ["div", mergeAttributes(HTMLAttributes, { "data-figure": "" })];
   },
   addNodeView() {
-    return ReactNodeViewRenderer(FigureView, ownControls);
+    return ReactNodeViewRenderer(FigureView, ownDrops);
   },
 });
 
@@ -144,14 +153,47 @@ function FigureView(props: NodeViewProps) {
     setSlot(at);
     fileRef.current?.click();
   };
-  const picked = async (files: File[]) => {
-    if (!ctx || !files.length) return;
+  // Picked or dropped: into slot `at` (replacing it), or -1 added — as many as there's
+  // room for
+  const room = kind === "two" ? images.length < 2 : kind === "carousel" || !images.length;
+  const put = async (files: File[], at: number) => {
+    const space = kind === "carousel" ? files.length : (kind === "two" ? 2 : 1) - images.length;
+    const take = files.filter((f) => f.type.startsWith("image/")).slice(0, at >= 0 ? 1 : space);
+    if (!ctx || !take.length) return;
     setBusy(true);
-    const srcs = await ctx.add(slot >= 0 ? files.slice(0, 1) : files);
+    const srcs = await ctx.add(take);
     setBusy(false);
     if (!srcs.length) return;
-    if (slot >= 0) edit(slot, { src: srcs[0] });
+    if (at >= 0) edit(at, { src: srcs[0] });
     else setImages([...images, ...srcs.map((src) => ({ src, alt: "", caption: "" }))]);
+  };
+  const picked = (files: File[]) => put(files, slot);
+
+  // A file dragged over the block: where it would land lights up — a slot to replace,
+  // or the add box (owner, 4 Oct 69: "ready for it before you let go")
+  const [over, setOver] = useState<number | null>(null);
+  const target = (e: React.DragEvent) => {
+    const t = (e.target as Element).closest<HTMLElement>("[data-slot]");
+    if (t) return Number(t.dataset.slot);
+    return room ? -1 : kind === "two" ? 1 : 0; // full: the last one gives way
+  };
+  const files = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  const drag = {
+    onDragOver: (e: React.DragEvent) => {
+      if (!files(e) || busy) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setOver(target(e));
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Element | null)) setOver(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!files(e)) return;
+      e.preventDefault();
+      setOver(null);
+      if (!busy) void put([...e.dataTransfer.files], target(e));
+    },
   };
   const setKind = (k: string) => {
     // The ratio goes along between Two and Carousel, so switching back and forth keeps
@@ -170,7 +212,7 @@ function FigureView(props: NodeViewProps) {
     kind === "single" ? updateAttributes({ layout: v, ratio: "" }) : updateAttributes({ ratio: v });
 
   const tile = (im: FigureImage, i: number) => (
-    <div key={i} className={styles.figTile}>
+    <div key={i} className={styles.figTile} data-slot={i} data-over={over === i || undefined}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a preview, its own size */}
       <img src={ctx?.url(im.src) ?? im.src} alt={im.alt} />
       <span className={styles.figPills}>
@@ -187,21 +229,34 @@ function FigureView(props: NodeViewProps) {
       </span>
     </div>
   );
-  const room = kind === "two" ? images.length < 2 : kind === "carousel";
 
   return (
     <NodeViewWrapper
       className={styles.fig}
       data-selected={selected || undefined}
+      data-over={over != null || undefined}
       contentEditable={false}
       {...ownTaps}
+      {...drag}
     >
       <span className={styles.figLegend}>{kind === "carousel" ? "Carousel" : "Image"}</span>
       <div className={styles.figShow} data-layout={layout} data-ratio={ratio || undefined}>
         {images.map(tile)}
         {room && (
-          <button type="button" className={styles.figAdd} disabled={busy} onClick={() => pick(-1)}>
-            {busy ? "Uploading…" : kind === "carousel" ? "+ Add slide" : "+ Add image"}
+          <button
+            type="button"
+            className={styles.figAdd}
+            data-over={over === -1 || undefined}
+            disabled={busy}
+            onClick={() => pick(-1)}
+          >
+            {busy
+              ? "Uploading…"
+              : over === -1
+                ? "Drop to add"
+                : kind === "carousel"
+                  ? "+ Add slide"
+                  : "+ Add image"}
           </button>
         )}
       </div>

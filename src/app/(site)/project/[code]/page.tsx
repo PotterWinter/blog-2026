@@ -5,6 +5,7 @@ import styles from "@/components/post/Post.module.css";
 import PostBody from "@/components/post/PostBody";
 import PostHeader from "@/components/post/PostHeader";
 import ProjectEnd from "@/components/post/ProjectEnd";
+import { coverClip } from "@/lib/clips";
 import { findPublished, forReaders, getClips, getPostTitles } from "@/lib/content";
 
 // /project/<code>: published projects only. Drafts, blog posts (they live at /posts/…)
@@ -25,11 +26,12 @@ export async function generateMetadata({ params }: PageProps<"/project/[code]">)
 export default async function ProjectPage({ params }: PageProps<"/project/[code]">) {
   const post = await load((await params).code);
   if (!post) notFound();
+  const clips = await getClips();
   return (
     <main data-post>
       <div className={styles.railZone}>
-        <PostHeader post={post} />
-        <PostBody markdown={post.body} clips={await getClips()} titles={await getPostTitles()} />
+        <PostHeader post={post} clip={coverClip(post.cover, clips)} />
+        <PostBody markdown={post.body} clips={clips} titles={await getPostTitles()} />
         <ContentsRail />
       </div>
       <ProjectEnd />

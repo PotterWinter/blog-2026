@@ -751,6 +751,12 @@
   align-items: baseline;
 }
 
+/* Cover › Type: the Image | Clip switch at its own width */
+.coverType {
+  align-items: center;
+  justify-items: start;
+}
+
 /* Commit › Message (v4): the line, "next save" at its end, on an ink underline; the
    note under it grey */
 .message {
@@ -923,13 +929,21 @@
   border-bottom-color: var(--ink);
 }
 
-/* On a phone the format buttons take the next line, so this line holds WRITE / RAW .MD
-   and Preview: Preview to the right edge (owner, 2 Oct 69) */
+/* On a phone the format buttons take the next line, so this line holds WRITE / RAW .MD,
+   Undo / Redo beside them, and Preview at the right edge (owner, 2 Oct 69; Undo / Redo
+   4 Oct — Preview tried beside WRITE / RAW, the edge felt more at home) */
 @media (max-width: 767px) {
   .modePreview {
     order: 1; /* after RAW's note, too */
     margin-left: auto;
   }
+}
+
+.history {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin: -4px -8px; /* the row no taller; the arrows' own padding off the gaps */
 }
 
 .toolsNote {
@@ -1620,8 +1634,40 @@
   user-select: none;
 }
 
-.fig[data-selected] {
+.fig[data-selected],
+.fig[data-over] {
   border-color: var(--ink);
+}
+
+/* A file dragged over: the slot it would replace dims under "Drop to replace"; the add
+   box goes dark and dashed (owner, 4 Oct 69) */
+.figTile[data-over] img,
+.figTile[data-over] video {
+  opacity: 0.35;
+}
+
+.figTile[data-over]::after {
+  content: "Drop to replace";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: 2px dashed var(--ink);
+  outline-offset: -2px;
+  font-size: 14px;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.figTile[data-over] .figPills {
+  visibility: hidden;
+}
+
+.figAdd[data-over] {
+  border: 2px dashed var(--ink);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .figLegend {

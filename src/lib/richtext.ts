@@ -131,6 +131,8 @@ export function figureMd(layout: Layout, ratio: string, images: FigureImage[]): 
       const title = i.caption ? ` "${i.caption.replace(/(["\\])/g, "\\$1")}"` : "";
       return `![${alt}](${i.src}${title})`;
     });
+  // A block put in with no image picked yet: nothing in the .md
+  if (!lines.length) return "";
   if (layout === "single") return lines.join("\n\n");
   return [`<!-- ${layout}${ratio ? ` ${ratio}` : ""} -->`, ...lines].join("\n");
 }

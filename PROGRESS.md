@@ -9,9 +9,10 @@
 - push แล้ว (2 ต.ค. 69 ดึก, `09e5e1a`): 5.3d WRITE ครบ (Tiptap · toolbar · Link · แถบลอย · `/` · ตาราง · Output · สารบัญ · Undo/Redo) · 5.3e block รูป / YouTube / ลบแบบกดค้าง + Undo · 5.4d คลิป (Vercel Blob `blog-2026-clips` + media.json) · มือถือ: แถบเครื่องมือติดบนสุดตอนคีย์บอร์ดขึ้น · footer หน้า Editor · ขีดขาวใต้ footer admin → notes/editor.md, notes/media.md
 - push แล้ว (3 ต.ค. 69): 5.3f Checks ตรวจจริง (Links ถาม server, Files / ขนาดจาก media/, TODO) · มือถือ: แถบเครื่องมือซ่อนตอนเลื่อน, ไม่มี ⌄, Undo / Redo ชี้ซ้าย-ขวา, ปุ่ม I ใหม่, ใต้ footer ดำทั้งแถบ (body สีเข้ม) · กรอบโค้ด: `ชื่อ ✎.ts` + dropdown ชนิด + Attach ↑ / Detach ↓ (ติดกันเฉพาะ `attach`) · หน้าเว็บ: แถบโค้ด `ชื่อ … TypeScript Copy`, carousel ปัดตามนิ้ว, สารบัญตัดที่ 240px · Preview: เปิดตรงที่เขียน, ปิดแบบสไลด์, ท้ายมี Previous | Next (กดไม่ได้) → notes/editor.md
 - push แล้ว (4 ต.ค. 69): Link (ชื่อโพสต์อ่านจาก URL) · รวม commit 30 นาที · ตาราง (หน้าตาแบบ v4, + Column ←, คอลัมน์ไม่เกิน 3 บรรทัด, แถบเลื่อนใต้ตาราง) · Carousel ปัดวน · รูป Fit / Full (เอา Fit H ออก) · ปุ่มในบล็อกไม่ดึงคีย์บอร์ด (iPhone) · สารบัญมือถือ 155px / 5 วิ → notes/editor.md, notes/04-post.md
-- **ถัดไป: เจ้าของไล่ทดสอบ Editor ต่อ: Clip · YouTube** (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image) แล้วแก้ตามที่บอก
+- push แล้ว (4 ต.ค. 69 ค่ำ): **Cover เป็นคลิปได้** (Type: Image | Clip · หัวบทความ, การ์ด Grid, Project, แผง List เล่นเมื่อเห็น · Blob ล็อก = เฟรมแรก) · ลบโพสต์ = ลบคลิปของมันด้วย · กด Image / Clip = กล่องเปล่าขึ้นตรง caret ทันที · ลากรูปมาบนกล่อง = ไฮไลต์ Drop to add / replace · iPhone: `WRITE | RAW ↶ ↷ ··· Preview` → notes/media.md, notes/editor.md
+- **ถัดไป: 5.4c หน้า Media** · YouTube พักไว้ก่อน (เจ้าของ, 4 ต.ค. 69) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
 - รอเจ้าของลองบน iPhone: กด FIT / FULL แล้วคีย์บอร์ดไม่เด้ง · เลือกรูปแล้วแตะช่อง Alt เห็นเคอร์เซอร์ · scrollbar ของหน้ากลับมา (ถ้าหายที่เว็บจริง ถามว่าหน้าไหน / หลังทำอะไร)
-- แล้วค่อย 5.4c หน้า Media · 5.5 Settings
+- แล้วค่อย 5.5 Settings
 - Unpublish คง popup ยืนยัน (เจ้าของ, 3 ต.ค. 69)
 
 - URL = รหัสสุ่ม 8 ตัว (frontmatter `code:`) · no = เลขโชว์ (ลบ = ขยับลงอุด, unpublish = ค้าง) · slug ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · หน้าเว็บไม่ส่ง id ให้ browser
@@ -21,6 +22,8 @@
 - ทดสอบ: copy โปรเจกต์ใน scratchpad รันที่ port 3001 (fixtures, `111111`) — ไม่ชน dev ของเจ้าของที่ 3000 · Safari ทดสอบผ่าน safaridriver · วิดีโอ iPad (HEVC) เปิดผ่าน safaridriver ดึงเฟรมได้
 
 ## ทำต่อ
+
+- [ ] เจ้าของลอง Cover คลิป (คลิปจาก Coverr / Pexels ขนาด SD-720p ≤5 MB) บนคอม + iPhone: หัวบทความเล่นเอง, การ์ดเป็นภาพนิ่ง
 
 - [ ] **เจ้าของ: เปิด Debouncing (#3) และ Test website system (#4) ใน Editor → กด Attach ↑ ที่กรอบ Output → Save** (กรอบติดกันเฉพาะที่มี `attach` แล้ว ไม่งั้น Output แยกห่างจากโค้ด)
 - [ ] เจ้าของลองบน iPhone: ปัด carousel ตามนิ้ว · Preview เปิดตรงที่เขียน / ปิดแบบสไลด์

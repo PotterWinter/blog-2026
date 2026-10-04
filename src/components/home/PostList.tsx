@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
+import { still } from "@/lib/clips";
 import type { ForReaders } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
 import { buzz } from "@/lib/buzz";
 import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
+import { ClipVideo, FILL } from "../post/Clip";
 import TransitionLink from "../TransitionLink";
 import { nextSort, type Sort } from "@/lib/sort";
 import styles from "./PostList.module.css";
@@ -509,14 +511,17 @@ export default function PostList({ posts, phase, direction, sort, onSort }: Prop
         ))}
       </div>
       <span ref={dotRef} className={styles.dot} aria-hidden="true" />
-      <div ref={panelRef} className={styles.panel} aria-hidden="true">
+      <div ref={panelRef} className={styles.panel} aria-hidden="true" data-clip-gate>
         <div className={styles.cover}>
           <div ref={stripRef} className={styles.strip}>
             {posts.map((post) => (
               <div key={post.slug} className={styles.frame}>
-                {post.cover && (
+                {post.coverClip ? (
+                  // A clip cover plays in the panel too, while it's shown (Clip's gate)
+                  <ClipVideo entry={post.coverClip} alt="" className={styles.image} style={FILL} />
+                ) : post.cover && (
                   <Image
-                    src={`/${post.cover}`}
+                    src={`/${still(post.cover)}`}
                     alt=""
                     fill
                     sizes="224px"
@@ -529,14 +534,16 @@ export default function PostList({ posts, phase, direction, sort, onSort }: Prop
         </div>
         <p ref={excerptRef} className={styles.excerpt} />
       </div>
-      <div ref={cardRef} className={styles.card} aria-hidden="true">
+      <div ref={cardRef} className={styles.card} aria-hidden="true" data-clip-gate>
         <div className={styles.cardCover}>
           <div ref={cardStripRef} className={styles.strip}>
             {posts.map((post) => (
               <div key={post.slug} className={styles.cardFrame}>
-                {post.cover && (
+                {post.coverClip ? (
+                  <ClipVideo entry={post.coverClip} alt="" className={styles.image} style={FILL} />
+                ) : post.cover && (
                   <Image
-                    src={`/${post.cover}`}
+                    src={`/${still(post.cover)}`}
                     alt=""
                     fill
                     sizes="220px"

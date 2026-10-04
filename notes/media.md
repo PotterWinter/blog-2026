@@ -45,4 +45,23 @@
 - ทดสอบใน scratch (คลิปทดสอบ + media.json ปลอม): หน้าเว็บเล่นได้ · URL เสีย → เป็นรูปเฟรมแรก · WRITE โชว์ block · อัปโหลดตอนไม่มี token → "Clip not added · Blob isn't connected" · `next build` ผ่าน
 - **ทดสอบกับ Blob จริง (scratch, fixtures):** อัปโหลด → Save → .md `../media/2026/yaolsqam-t.mp4` + media.json + poster webp · หน้าเว็บเล่นจาก Blob · เลือก block → กดค้างลบ → Save → entry + poster + ไฟล์ใน Blob หายครบ · ไฟล์ทดสอบใน Blob ลบหมดแล้ว (store ว่าง)
 - บั๊กที่เจอระหว่างทดสอบ: path ของ poster ที่ server คืนมามี key แบบ `upload:<key>` (โค้ดคลิปหาแบบไม่มี) · block Clip ไม่ถูกนับเป็น block ที่เลือกได้ (แถบลบไม่ขึ้น) → แก้แล้ว
-- ยังไม่ทำ: ลบ draft ทั้งโพสต์ยังไม่ลบคลิปของมันใน media.json / Blob
+- ~~ลบ draft ทั้งโพสต์ยังไม่ลบคลิป~~ ทำแล้ว (4 ต.ค. 69): `deletePost` — คลิปที่เนื้อหา / cover ชี้ และชื่อขึ้นต้นด้วยรหัส (หรือ id) ของโพสต์นั้น → entry ใน media.json + poster ลบใน commit เดียวกับโพสต์ · ไฟล์ใน Blob ลบหลัง commit · คลิปชื่อโพสต์อื่นไม่แตะ · ทดสอบ (scratch): Unpublish → Delete draft → media.json `{}`, poster หาย, รูป fixture อื่นอยู่ครบ
+- ยังไม่ทำ: คลิปที่อัปแล้วไม่ Save (หรือ Replace ก่อน Save) ค้างใน Blob → ให้หน้า Media (5.4c) หาเจอ
+
+## Cover เป็นคลิปได้ (4 ต.ค. 69) — "ไฮไลต์" ของเจ้าของ
+- Editor: ใต้กล่อง Cover แถว **Type: Image | Clip** (บอกว่า Upload / Replace เลือกอะไร · ตาม cover ที่มีเอง) · ลากวางได้ทั้งรูปและคลิป · คลิปเล่น muted loop เต็มกล่อง 2:1 · ขนาด `43 KB · 640 × 360 · cropped to 2:1` (ไม่ 2:1 ไม่แดง — ตั้งใจครอป) · ชื่อไฟล์ของคลิปที่รอ Save แก้ไม่ได้ (ผูกกับ poster)
+  - ลองแถว Type ไว้ในแถวหัว Cover ก่อน → ขนาดไฟล์โดนบีบ 3 บรรทัด → ย้ายลงมาเป็นแถวแบบ File / Alt text
+- อัปโหลดทางเดียวกับ Clip ในเนื้อหา: ไฟล์ → Blob · เฟรมแรก → poster ชื่อ `cover-<ชื่อ>` (รอ Save แบบรูป) · ฟอร์มเก็บ `clip:cover-<ชื่อ>`
+- .md: `cover: ../media/2026/<code>-cover-<ชื่อ>.mp4` · media.json มี entry · poster = path เดียวกันแต่ `.webp` (`still()` ใน `lib/clips.ts` — ไม่ต้องอ่าน media.json)
+- Save: `clipsIn` นับบรรทัด `cover:` ใน frontmatter ด้วย → เปลี่ยน cover จากคลิปเป็นรูป = entry + poster ลบใน commit เดียวกัน + ไฟล์ใน Blob ลบหลัง commit
+- หน้าเว็บ: หัวบทความ (`PostHeader` `clip`) เล่นเต็มกรอบ 2:1 (`object-fit: cover`) ด้วย `ClipVideo` ตัวเดียวกับ Clip ในเนื้อหา — poster ก่อน, โหลดตอนใกล้เข้าจอ, ออกจอหยุด, Blob ล็อก = ค้าง poster, reduced motion = ไม่เล่น · Preview ใน Editor เล่นคลิปที่ยังไม่ Save ได้
+- การ์ด Home / List / Project / Admin / พรีวิวลิงก์ 04B = poster นิ่ง (ไม่เล่น: ประหยัดโควตา Blob, ไม่หนักมือถือ)
+- ทดสอบ (scratch, fixtures, Blob จริง): คลิป WebM 2.5 วิ → Save → frontmatter / media.json / poster ถูก · หัวบทความเล่นจาก Blob · การ์ด admin = poster · เปลี่ยนกลับเป็นรูป → Save → media.json ว่าง, poster หาย, Blob 404 · มือถือ 375px ไม่ล้น · `next build` ผ่าน
+- เว็บคลิปสั้นฟรีไว้ทดสอบ: Coverr (วนได้ เหมาะกับ cover) · Pexels Videos · Pixabay · Mixkit — เลือก SD / 720p ไม่งั้นเกิน 5 MB
+- **การ์ดเล่นคลิปด้วย** (เจ้าของ, 4 ต.ค. 69 — เดิมการ์ดเป็นภาพนิ่ง): `getPublished` แนบ `coverClip` (entry ใน media.json) ไปกับโพสต์ที่ cover เป็นคลิป → การ์ด Grid หน้า Blog และแถวหน้า Project เล่นด้วย `ClipVideo` (เข้าจอ = โหลด + เล่น, ออกจอ = หยุด) · List (01B) / Admin / พรีวิวลิงก์ยังเป็นภาพนิ่ง
+  - ทดสอบ (scratch: คลิป 6 วิ 4.35 MB เป็นไฟล์ในเครื่อง ไม่ขึ้น Blob): การ์ดเล่น, object-fit cover เต็มกรอบ 2:1
+  - Blob: แต่ละคนที่เห็นการ์ด = โหลดคลิปหนึ่งครั้ง (เบราว์เซอร์ cache ไว้) → คลิปเล็กยิ่งดี
+- **List (01B) เล่นด้วย** (เจ้าของ, 4 ต.ค. 69): แผงพรีวิวที่ตามจุด (คอม) และการ์ดล่าง (มือถือ) มี `data-clip-gate` → `ClipVideo` เล่นเฉพาะตอนแผงโชว์ (`data-on`) และเฟรมนั้นอยู่ในกรอบ · ไม่ชี้แถว = ไม่โหลดเลย · ทดสอบ: ชี้แถว = เล่น, เอาเมาส์ออก = หยุด
+- **ทุกที่เล่นเมื่อใกล้จะเห็นเท่านั้น** (หัวบทความ · เนื้อหา · การ์ด · List): ห่างจอเกิน 200px = ยังไม่โหลด · ออกจอ = หยุด
+- **Blob ชนเพดาน / ล็อก = ภาพเฟรมแรกแทน** (เจ้าของ, 4 ต.ค. 69 — มีอยู่แล้วตั้งแต่ 5.4d) · ทดสอบ: url คลิปเสีย → การ์ดเป็นภาพ poster
+- cache: ไฟล์ใน Blob ตั้ง `cache-control` 1 เดือน (ค่าเริ่มต้น, ชื่อไฟล์สุ่มไม่ซ้ำเลยไม่ต้องกลัวค้างของเก่า) · เบราว์เซอร์ที่โหลดแล้วใช้จากเครื่องไม่นับ Blob — แต่วิดีโอขอเป็นช่วง (Range) Safari / iPhone มักโหลดใหม่ ไม่การันตี

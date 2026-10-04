@@ -2,7 +2,9 @@ import Image from "next/image";
 import type { ForReaders, Post } from "@/lib/content";
 import { longDate, readingMinutes } from "@/lib/format";
 import { categories } from "@/lib/site";
+import { still, type ClipEntry } from "@/lib/clips";
 import TransitionLink from "../TransitionLink";
+import { ClipVideo, FILL } from "./Clip";
 import styles from "./Post.module.css";
 import ProjectLead from "./ProjectLead";
 
@@ -11,25 +13,36 @@ import ProjectLead from "./ProjectLead";
 // A project (04B) goes back to Projects and its strip is Role · Year · Stack (its tags,
 // EDITOR-SPEC). With links, the title block is 04B's: the links beside a preview.
 // coverUrl: the editor's Preview (07P) showing a cover not saved yet, from memory —
-// next/image can't take a blob: address
-export default function PostHeader({ post, coverUrl }: { post: ForReaders<Post>; coverUrl?: string }) {
+// next/image can't take a blob: address. clip: a cover that's a clip (owner, 4 Oct 69),
+// from media.json — filling the 2:1 box as an image does, playing on its own, muted
+export default function PostHeader({
+  post,
+  coverUrl,
+  clip,
+}: {
+  post: ForReaders<Post>;
+  coverUrl?: string;
+  clip?: ClipEntry;
+}) {
   const category = categories.find((c) => c.slug === post.category)?.label ?? post.category;
   const updated = post.updatedAt !== post.publishedAt;
   const project = post.section === "project";
   return (
     <>
       <div className={styles.cover} data-reveal>
-        {coverUrl ? (
+        {clip ? (
+          <ClipVideo entry={clip} alt={post.coverAlt} className={styles.coverImage} style={FILL} />
+        ) : coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- a blob: from the editor
           <img
             src={coverUrl}
             alt={post.coverAlt}
             className={styles.coverImage}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+            style={FILL}
           />
         ) : post.cover && (
           <Image
-            src={`/${post.cover}`}
+            src={`/${still(post.cover)}`}
             alt={post.coverAlt}
             fill
             priority
@@ -62,7 +75,7 @@ export default function PostHeader({ post, coverUrl }: { post: ForReaders<Post>;
             title={post.title}
             excerpt={post.excerpt}
             // A link without a screenshot of its own previews as the cover
-            links={post.links.map((l) => ({ ...l, preview: l.preview ?? post.cover }))}
+            links={post.links.map((l) => ({ ...l, preview: l.preview ?? (post.cover && still(post.cover)) }))}
           />
         ) : (
           <>

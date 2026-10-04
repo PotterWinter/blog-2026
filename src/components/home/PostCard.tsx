@@ -1,9 +1,11 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import { still } from "@/lib/clips";
 import type { ForReaders } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
 import { postNo, shortDate } from "@/lib/format";
 import { categories } from "@/lib/site";
+import { ClipVideo, FILL } from "../post/Clip";
 import TransitionLink from "../TransitionLink";
 import styles from "./PostCard.module.css";
 
@@ -28,9 +30,12 @@ export default function PostCard({ post, delay, reveal = true, order }: Props) {
       style={{ "--i": order } as CSSProperties}
     >
       <div className={styles.cover}>
-        {post.cover && (
+        {post.coverClip ? (
+          // A clip cover plays here too, once the card is on screen (owner, 4 Oct 69)
+          <ClipVideo entry={post.coverClip} alt={post.coverAlt} className={styles.image} style={FILL} />
+        ) : post.cover && (
           <Image
-            src={`/${post.cover}`}
+            src={`/${still(post.cover)}`}
             alt={post.coverAlt}
             fill
             sizes="(min-width: 1024px) min(33vw, 560px), (min-width: 768px) 50vw, 100vw"

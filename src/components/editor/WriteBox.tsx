@@ -561,6 +561,41 @@ function Toolbar({ editor, pill = false }: { editor: TiptapEditor; pill?: boolea
   );
 }
 
+// The phone's WRITE / RAW row: Undo / Redo beside them (owner, 4 Oct 69). The
+// keyboard stays down: the text isn't focused for them, as it is from the format bar.
+function History({ editor }: { editor: TiptapEditor }) {
+  const zone = useRef<HTMLDivElement>(null);
+  useTapKeepsFocus(zone);
+  const can = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({ undo: e.can().undo(), redo: e.can().redo() }),
+  });
+  return (
+    <div ref={zone} className={styles.history}>
+      <button
+        type="button"
+        className={styles.writeTool}
+        aria-label="Undo"
+        disabled={!can.undo}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.commands.undo()}
+      >
+        <TurnIcon />
+      </button>
+      <button
+        type="button"
+        className={styles.writeTool}
+        aria-label="Redo"
+        disabled={!can.redo}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.commands.redo()}
+      >
+        <TurnIcon redo />
+      </button>
+    </div>
+  );
+}
+
 // The phone: no format row up the page. While the keyboard is up for the text, the
 // format bar sits at the top of what's on screen, glass, following it as the page
 // scrolls; the WRITE / RAW row steps aside meanwhile, so the two don't fight over the
@@ -868,17 +903,25 @@ export default function WriteBox({
       return false;
     };
   });
-  const fileRef = useRef<HTMLInputElement>(null);
-  const clipRef = useRef<HTMLInputElement>(null);
-  const layoutRef = useRef<"single" | "two" | "carousel">("single");
   useEffect(() => {
     if (!editor) return;
     linkOpeners.set(editor, () => setLink(linkAt(editor)));
+    // The block goes in at the caret straight away, empty; its images are picked in it
+    // (owner, 4 Oct 69 — it used to wait for a file before showing)
     imageOpeners.set(editor, (layout) => {
-      layoutRef.current = layout;
-      fileRef.current?.click();
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "figure",
+          attrs: { layout, ratio: layout === "two" ? "4:5" : "", images: [] },
+        })
+        .run();
     });
-    clipOpeners.set(editor, () => clipRef.current?.click());
+    // The same for a clip: the block first, empty (owner, 4 Oct 69)
+    clipOpeners.set(editor, () => {
+      editor.chain().focus().insertContent({ type: "clip", attrs: { src: "" } }).run();
+    });
     return () => {
       linkOpeners.delete(editor);
       imageOpeners.delete(editor);
@@ -947,6 +990,7 @@ export default function WriteBox({
       <div className={styles.tools}>
         {modeSwitch}
         {editor && !phone && <Toolbar editor={editor} />}
+        {editor && phone && <History editor={editor} />}
       </div>
       {editor && phone && <KeyboardTop editor={editor} />}
       {editor && !touch && !link && (
@@ -967,27 +1011,6 @@ export default function WriteBox({
           <ImagesContext.Provider value={images}>
             <EditorContent editor={editor} />
           </ImagesContext.Provider>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(e) => {
-              void insertImages([...(e.target.files ?? [])], undefined, layoutRef.current);
-              e.target.value = "";
-            }}
-          />
-          <input
-            ref={clipRef}
-            type="file"
-            accept="video/mp4,video/webm"
-            hidden
-            onChange={(e) => {
-              void insertImages([...(e.target.files ?? [])]);
-              e.target.value = "";
-            }}
-          />
         </div>
         {editor && <ContentsRail live ends={false} onJump={(id) => toHeading(editor, id)} />}
       </div>

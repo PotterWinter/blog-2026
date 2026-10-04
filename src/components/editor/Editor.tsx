@@ -175,7 +175,7 @@ export default function Editor({
   const doSave = async () => {
     // The images still waiting (5.4) that the post points at go with it
     // — and the clips (5.4d), in Blob already, with their first frames
-    const usedClips = waitingClips(form.body);
+    const usedClips = waitingClips(`${form.cover ?? ""}\n${form.body}`);
     const used = new Set([...waitingKeys(`${form.cover ?? ""}\n${form.body}`), ...usedClips]);
     const sent = Object.values(pending).filter(({ key }) => used.has(key));
     const clipsSent = Object.values(waitingClipsRef.current).filter(({ key }) => usedClips.has(key));
@@ -207,7 +207,7 @@ export default function Editor({
     const next = {
       ...form,
       slug: result.slug,
-      cover: form.cover && placeWaiting(form.cover, paths),
+      cover: form.cover && placeClips(placeWaiting(form.cover, paths), clipPaths, ""),
       body: placeClips(placeWaiting(form.body, paths, "../"), clipPaths),
     };
     setForm(next);
@@ -321,6 +321,15 @@ export default function Editor({
   const sized = (image: Waiting) => `${image.width} × ${image.height}, ${Math.round(image.bytes / 1024)} KB`;
 
   const uploadCover = async (file: File) => {
+    // A clip (owner, 4 Oct 69): up to Blob as a clip in the text goes, its first frame
+    // waiting as "cover-<name>" — the cover's poster, and its still on the cards
+    if (file.type.startsWith("video/")) {
+      setUploading(true);
+      const src = await images.addClip(file, "cover");
+      setUploading(false);
+      if (src) set({ cover: src });
+      return;
+    }
     setUploading(true);
     const result = await prepare(file, "cover");
     setUploading(false);
@@ -385,7 +394,7 @@ export default function Editor({
       const waiting = waitingClipsRef.current[key];
       return waiting && { ...waiting, poster: pending[key]?.url ?? "" };
     },
-    addClip: async (file) => {
+    addClip: async (file, role = "image") => {
       if (!CLIP_TYPES.includes(file.type)) {
         setNote({ text: "Clip not added · MP4 or WebM only", tone: "bad" });
         return null;
@@ -398,7 +407,7 @@ export default function Editor({
         // Its first frame goes the images' way (the key names both); the file goes
         // straight to Blob from here (/api/clip hands out the token)
         const frame = await firstFrame(file);
-        const poster = await prepare(frame.poster, "image");
+        const poster = await prepare(frame.poster, role);
         if (!poster.ok) throw new Error(poster.error);
         const key = poster.image.key;
         const ext = file.type === "video/webm" ? "webm" : "mp4";
@@ -905,6 +914,7 @@ export default function Editor({
             waiting={form.cover?.startsWith(UPLOAD) ? pending[form.cover.slice(UPLOAD.length)] : undefined}
             stem={`${stem}cover-`}
             onRename={(key, typed) => renameImage(key, typed, "cover-")}
+            clip={form.cover && isClip(form.cover) ? images.clip(form.cover) : undefined}
           />
         </div>
 

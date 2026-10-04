@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { anchorOffset, type Anchor } from "./anchor";
-import type { ClipMap } from "@/lib/clips";
+import { coverClip, type ClipMap } from "@/lib/clips";
 import type { ForReaders, Post } from "@/lib/content";
 import ContentsRail from "../post/ContentsRail";
 import postStyles from "../post/Post.module.css";
@@ -212,7 +212,7 @@ export default function Preview({
       </div>
       <main data-post>
         <div className={postStyles.railZone}>
-          <PostHeader post={post} coverUrl={coverUrl} />
+          <PostHeader post={post} coverUrl={coverUrl} clip={coverClip(post.cover, clips)} />
           <PostBody markdown={post.body} clips={clips} titles={titles} />
           {/* Placed once it's in, gone as it leaves: held over the editor, the page's
               height and scroll aren't the preview's, and the rail measures both */}
