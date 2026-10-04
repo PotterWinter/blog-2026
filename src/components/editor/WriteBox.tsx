@@ -941,7 +941,7 @@ export default function WriteBox({
     want: "single" | "two" | "carousel" = "single",
   ) => {
     if (!editor) return;
-    // Videos: each its own Clip block, up in Blob first (5.4d)
+    // Videos: each its own Clip block, held for Save (5.4d)
     for (const file of files.filter((f) => f.type.startsWith("video/"))) {
       const src = await imagesRef.current.addClip(file);
       if (!src) continue;

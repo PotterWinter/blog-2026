@@ -3,12 +3,13 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import { useContext, useRef, useState } from "react";
+import Segmented from "../Segmented";
 import styles from "./Editor.module.css";
 import { ImagesContext, ownDrops, ownTaps, selectOnPress } from "./WriteFigure";
 
 // 5.4d Clip block (v4 07 "CLIP"): the clip playing muted on loop as on the page, Replace
 // on it; under it what a clip may be, then File, Alt text, Caption. The file is in
-// Vercel Blob from the moment it's picked; the post points at it on Save (lib/clips).
+// Vercel Blob from Save on (held in the editor until then); the post points at it then (lib/clips).
 export const ClipBlock = Node.create({
   name: "clip",
   group: "block",
@@ -18,6 +19,7 @@ export const ClipBlock = Node.create({
   addAttributes() {
     return {
       src: { default: "", rendered: false }, // "clip:<key>" until Save, then its path
+      layout: { default: "single", rendered: false }, // Fit ("single") or "full", as an image
       alt: { default: "", rendered: false },
       caption: { default: "", rendered: false },
       source: { default: null, rendered: false, keepOnSplit: false }, // its markdown as read
@@ -97,7 +99,7 @@ function ClipView(props: NodeViewProps) {
             disabled={busy}
             onClick={() => fileRef.current?.click()}
           >
-            {busy ? "Uploading…" : over ? "Drop to add" : "+ Add clip"}
+            {busy ? "Reading the clip…" : over ? "Drop to add" : "+ Add clip"}
           </button>
         </div>
       ) : (
@@ -106,6 +108,7 @@ function ClipView(props: NodeViewProps) {
             <video
               key={entry.url}
               className={styles.clipVideo}
+              data-layout={node.attrs.layout === "full" ? "full" : undefined}
               src={entry.url}
               poster={/^(https?:|blob:)/.test(entry.poster) ? entry.poster : `/${entry.poster}`}
               muted
@@ -116,13 +119,13 @@ function ClipView(props: NodeViewProps) {
           ) : (
             <div className={styles.ytBox}>
               <span className={styles.ytEmpty}>
-                {busy ? "Uploading…" : "Clip not found in media.json"}
+                {busy ? "Reading the clip…" : "Clip not found in media.json"}
               </span>
             </div>
           )}
           <span className={styles.figPills}>
             <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
-              {busy ? "Uploading…" : "Replace"}
+              {busy ? "Reading the clip…" : "Replace"}
             </button>
           </span>
         </div>
@@ -137,8 +140,25 @@ function ClipView(props: NodeViewProps) {
           e.target.value = "";
         }}
       />
+      {/* Fit | Full, as a single image has (owner, 4 Oct 69) */}
+      <div className={styles.figControls}>
+        <Segmented
+          label="Fit"
+          options={[
+            { value: "single", label: "Fit" },
+            { value: "full", label: "Full" },
+          ]}
+          value={node.attrs.layout === "full" ? "full" : "single"}
+          onChange={(layout) => updateAttributes({ layout })}
+        />
+        <span className={styles.figHint}>
+          {node.attrs.layout === "full"
+            ? "Full · fills the column at the tallest height, cropped to it"
+            : "Fit · touches the column's width or the tallest height, whole"}
+        </span>
+      </div>
       <span className={styles.clipHint}>
-        MP4 / WebM · plays muted on loop · max 5 MB · stored in Vercel Blob, its first frame in git
+        MP4 / WebM · plays muted on loop · max 5 MB · goes up to Vercel Blob on Save, its first frame in git
       </span>
       <div className={styles.figImage}>
         {src && (

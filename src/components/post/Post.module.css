@@ -1075,11 +1075,12 @@
 /* Fit (the default): grown or shrunk to touch the frame — the column's width or
    --img-max tall, whichever it meets first — its own ratio, no white beside it
    (owner, 4 Oct 69: small ones too). --r is its ratio, set once it loads (FitImage). */
-.figure:not(.full):has(> img) {
+.figure:not(.full):has(> img, > video) {
   width: min(100%, calc(var(--img-max) * var(--r, 99)));
 }
 
-.figure:not(.full) > img {
+.figure:not(.full) > img,
+.figure:not(.full) > video {
   width: 100%;
   max-height: none;
   aspect-ratio: var(--r, auto);
@@ -1087,7 +1088,8 @@
 
 /* <!-- full -->: fills the frame — the column's width and --img-max tall — cropping
    what runs over, either way (cover; owner, 4 Oct 69: no gap on any side) */
-.full img {
+.full img,
+.full video {
   width: 100%;
   height: var(--img-max);
   max-height: none;

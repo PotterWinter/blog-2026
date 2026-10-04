@@ -10,18 +10,26 @@ import styles from "./Post.module.css";
 // frame simply stays (owner, 2 Oct 69). The poster is a WebP in git, beside the images.
 const posterSrc = (poster: string) => (/^(https?:|blob:|\/)/.test(poster) ? poster : `/${poster}`);
 
+// full: <!-- full --> over it — the column's width at --img-max, cropped (cover). Fit
+// (none): whole, touching the column's width or --img-max, as a Fit image does.
 export default function Clip({
   entry,
   alt,
   caption,
+  full = false,
 }: {
   entry?: ClipEntry;
   alt: string;
   caption?: string;
+  full?: boolean;
 }) {
   if (!entry) return null;
+  const ratio = entry.width && entry.height ? entry.width / entry.height : undefined;
   return (
-    <figure className={styles.figure}>
+    <figure
+      className={full ? `${styles.figure} ${styles.full}` : styles.figure}
+      style={ratio ? ({ "--r": ratio } as React.CSSProperties) : undefined}
+    >
       <ClipVideo entry={entry} alt={alt} />
       {caption && <figcaption>{caption}</figcaption>}
     </figure>

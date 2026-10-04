@@ -1825,19 +1825,22 @@
   outline: none;
 }
 
-.figRow:has(.figMeta) input,
-.figRow:has(.figMeta) .figName {
-  grid-column: 2;
-}
-
 .figRow input:focus {
   border-bottom-color: var(--ink);
 }
 
+/* Size, length, pixels: under the name's line, not beside it — beside, a clip's
+   squeezed its name into three lines on the phone (owner, 4 Oct 69) */
 .figMeta {
+  grid-column: 2 / -1;
+  margin-top: -4px;
   font-family: var(--ff-mono);
   font-size: 11px;
   color: var(--muted);
+}
+
+.figMeta:empty {
+  display: none;
 }
 
 /* The caption is set as it reads on the page: serif */
@@ -2097,6 +2100,12 @@
   max-height: 560px;
   background: var(--surface);
   object-fit: contain;
+}
+
+/* Full: as on the page, the column's width at the tallest height, cropped */
+.clipVideo[data-layout="full"] {
+  height: 560px;
+  object-fit: cover;
 }
 
 .clipHint {

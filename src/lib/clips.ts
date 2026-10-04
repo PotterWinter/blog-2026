@@ -20,7 +20,7 @@ export const MEDIA_JSON = "media.json";
 export const CLIP_MAX = 5 * 1024 * 1024;
 export const CLIP_TYPES = ["video/mp4", "video/webm"];
 
-// A clip picked in the editor and up in Blob already, its post not saved yet: the body
+// A clip picked in the editor, its post not saved yet (it goes up to Blob on Save): the body
 // says "clip:<key>" (its poster waits as the image "upload:<key>")
 export const CLIP = "clip:";
 export type WaitingClip = Omit<ClipEntry, "poster"> & { key: string };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
+import { discardClips, publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
 import { postFile, postUrl, type IndexEntry, type Post } from "@/lib/schema";
@@ -64,6 +64,37 @@ const blank: Form = {
 const RETRY_MS = 10_000;
 
 type Note = { text: string; tone: "ok" | "bad" | "muted" };
+
+// A clip picked, not saved: the file itself, and `url` a blob: address for playing it
+type HeldClip = WaitingClip & { file: File };
+
+// On Save, the held clips go up to Blob — from here, straight (/api/clip hands out the
+// token; through a function, 5 MB would hit Vercel's 4.5 MB limit). One failing takes
+// back those already up, and the save doesn't go ahead.
+async function toBlob(held: HeldClip[]): Promise<{ ok: true; clips: WaitingClip[] } | { ok: false; error: string }> {
+  if (!held.length) return { ok: true, clips: [] };
+  const { upload: put } = await import("@vercel/blob/client");
+  const clips: WaitingClip[] = [];
+  try {
+    for (const { file, ...clip } of held) {
+      const ext = file.type === "video/webm" ? "webm" : "mp4";
+      const blob = await put(`clips/${clip.key}.${ext}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/clip",
+        contentType: file.type,
+      });
+      clips.push({ ...clip, url: blob.url });
+    }
+    return { ok: true, clips };
+  } catch (error) {
+    if (clips.length) await discardClips(clips.map((c) => c.url));
+    const why = error instanceof Error ? error.message : "upload failed";
+    // /api/clip refused the token: Blob not connected here (no BLOB_READ_WRITE_TOKEN), or
+    // signed out
+    const said = /client token/i.test(why) ? "Blob isn't connected (BLOB_READ_WRITE_TOKEN) — or sign in again" : why;
+    return { ok: false, error: `Clip not sent · ${said}` };
+  }
+}
 // The last message under Publish, per post. Kept outside the editor: when a new post's
 // address changes (/admin/posts/new → its slug), Next builds the page afresh and the
 // editor's own state goes with it — the note shouldn't.
@@ -174,14 +205,21 @@ export default function Editor({
 
   const doSave = async () => {
     // The images still waiting (5.4) that the post points at go with it
-    // — and the clips (5.4d), in Blob already, with their first frames
+    // — and the clips (5.4d) with their first frames, up to Blob only now
     const usedClips = waitingClips(`${form.cover ?? ""}\n${form.body}`);
     const used = new Set([...waitingKeys(`${form.cover ?? ""}\n${form.body}`), ...usedClips]);
     const sent = Object.values(pending).filter(({ key }) => used.has(key));
-    const clipsSent = Object.values(waitingClipsRef.current).filter(({ key }) => usedClips.has(key));
-    const result = await call("Saving", () =>
-      save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 })), clipsSent),
-    );
+    const held = Object.values(waitingClipsRef.current).filter(({ key }) => usedClips.has(key));
+    let clipsSent: WaitingClip[] = [];
+    const result = await call("Saving", async () => {
+      const up = await toBlob(held);
+      if (!up.ok) return up;
+      clipsSent = up.clips;
+      const saved = await save({ id, ...form }, sent.map(({ key, base64 }) => ({ key, base64 })), clipsSent);
+      // Not saved: the clips just sent up mustn't stay there, named by nothing
+      if (!saved.ok && clipsSent.length) await discardClips(clipsSent.map((c) => c.url));
+      return saved;
+    });
     if (!result) return null;
     // Where they went: the post now says their paths, and nothing waits any more
     const paths = result.uploads ?? {};
@@ -195,7 +233,10 @@ export default function Editor({
           clipsSent.flatMap(({ key, ...c }) => (clipPaths[key] ? [[clipPaths[key], { ...c, poster: paths[`upload:${key}`] }]] : [])),
         ),
       }));
-      for (const c of clipsSent) delete waitingClipsRef.current[c.key];
+      for (const c of clipsSent) {
+        URL.revokeObjectURL(waitingClipsRef.current[c.key]?.url ?? "");
+        delete waitingClipsRef.current[c.key];
+      }
     }
     // The images just committed are in media/ now (Checks › Files)
     if (sent.length) {
@@ -290,8 +331,10 @@ export default function Editor({
   const [pending, setPending] = useState<Record<string, Waiting>>({});
   // The same, for uploads one after another (state is a render behind); set together
   const pendingRef = useRef(pending);
-  // Clips picked since the last save (5.4d): up in Blob, waiting to be named in the post
-  const waitingClipsRef = useRef<Record<string, WaitingClip>>({});
+  // Clips picked since the last save (5.4d): held here — played from memory — and sent
+  // up to Blob on Save, as images wait for it (owner, 4 Oct 69: one not saved left a
+  // file in Blob nothing named)
+  const waitingClipsRef = useRef<Record<string, HeldClip>>({});
   // Where saved clips are (media.json), plus those this page has saved since it opened
   const [clipMap, setClipMap] = useState<ClipMap>(savedClips);
   const [uploading, setUploading] = useState(false);
@@ -404,22 +447,17 @@ export default function Editor({
         return null;
       }
       try {
-        // Its first frame goes the images' way (the key names both); the file goes
-        // straight to Blob from here (/api/clip hands out the token)
+        // Its first frame goes the images' way (the key names both); the file waits here
+        // for Save (toBlob)
         const frame = await firstFrame(file);
         const poster = await prepare(frame.poster, role);
         if (!poster.ok) throw new Error(poster.error);
         const key = poster.image.key;
-        const ext = file.type === "video/webm" ? "webm" : "mp4";
-        const { upload: toBlob } = await import("@vercel/blob/client");
-        const blob = await toBlob(`clips/${key}.${ext}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/clip",
-          contentType: file.type,
-        });
+        URL.revokeObjectURL(waitingClipsRef.current[key]?.url ?? "");
         waitingClipsRef.current[key] = {
           key,
-          url: blob.url,
+          file,
+          url: URL.createObjectURL(file),
           bytes: file.size,
           seconds: frame.seconds,
           width: frame.width,
@@ -428,11 +466,7 @@ export default function Editor({
         setNote({ text: `Clip ready · ${(file.size / 1024 / 1024).toFixed(1)} MB · goes in with ${saveWord}`, tone: "muted" });
         return `${CLIP}${key}`;
       } catch (error) {
-        const why = error instanceof Error ? error.message : "upload failed";
-        // /api/clip refused the token: Blob not connected here (no BLOB_READ_WRITE_TOKEN),
-        // or signed out
-        const said = /client token/i.test(why) ? "Blob isn't connected (BLOB_READ_WRITE_TOKEN) — or sign in again" : why;
-        setNote({ text: `Clip not added · ${said}`, tone: "bad" });
+        setNote({ text: `Clip not added · ${error instanceof Error ? error.message : "can't read it"}`, tone: "bad" });
         return null;
       }
     },

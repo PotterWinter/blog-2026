@@ -375,7 +375,7 @@ export function CoverField({
         )}
         {uploading && (
           <span className={styles.coverBusy}>
-            {kind === "clip" ? "Uploading the clip · taking its first frame…" : "Uploading · making a WebP…"}
+            {kind === "clip" ? "Taking the clip's first frame…" : "Uploading · making a WebP…"}
           </span>
         )}
       </span>
@@ -396,7 +396,7 @@ export function CoverField({
       <label className={styles.inline}>
         <span className="label">File</span>
         {clipName != null ? (
-          // Up in Blob already, under this name: it stays (renaming would part it from
+          // Held for Save under this name: it stays (renaming would part it from
           // its first frame)
           <span className={`${styles.input} ${styles.coverName}`}>
             <span className={styles.mono}>

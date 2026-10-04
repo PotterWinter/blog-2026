@@ -291,8 +291,15 @@ export default function PostBody({
             );
           }
           // full: one image, filling the frame. "fit height" (no longer offered, 4 Oct 69)
-          // reads as Fit.
+          // reads as Fit. A clip may be Full too (owner, 4 Oct 69).
           const [img] = images;
+          const first = (node?.children ?? []).find((c) => c.type === "element" && c.tagName === "img");
+          const raw = first?.type === "element" ? String(first.properties.src ?? "") : "";
+          if (layout === "full" && images.length === 1 && isClip(raw)) {
+            // its caption is its title only (an image's falls back to its alt)
+            const title = first?.type === "element" ? first.properties.title : undefined;
+            return <Clip entry={clips[clipKey(raw)] ?? clips[raw]} alt={img.alt} caption={title ? String(title) : undefined} full />;
+          }
           if (layout !== "full") {
             return (
               <figure className={styles.figure}>

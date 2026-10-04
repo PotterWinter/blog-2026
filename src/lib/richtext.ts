@@ -258,8 +258,14 @@ export function mdToDoc(md: string, titles: Record<string, string> = {}): JSONCo
     if (n.type === "html" && /^<!--/.test(n.value) && next?.type === "paragraph") {
       const layout = LAYOUT.exec(n.value.trim());
       const found = imagesOf(next);
-      const images = found?.some((i) => isClip(i.src)) ? null : found; // clips aren't laid out
+      const images = found?.some((i) => isClip(i.src)) ? null : found; // clips aren't laid out…
       const src = slice(n, next);
+      // …but one may be Full (owner, 4 Oct 69): <!-- full --> over it, as over an image
+      if (layout?.[1] === "full" && found?.length === 1 && isClip(found[0].src)) {
+        content.push({ type: "clip", attrs: { ...found[0], layout: "full", source: src } });
+        i += 1;
+        continue;
+      }
       content.push(
         layout && images
           ? { ...figure(layout[1] as Layout, layout[2] ?? "", images), attrs: { layout: layout[1], ratio: layout[2] ?? "", images, src } }
@@ -427,7 +433,8 @@ function blockMd(n: JSONContent, keep = true): string {
   if (n.type === "raw") return String(n.attrs?.src ?? "");
   let md: string;
   if (n.type === "clip") {
-    md = figureMd("single", "", [{ src: n.attrs?.src ?? "", alt: n.attrs?.alt ?? "", caption: n.attrs?.caption ?? "" }]);
+    const layout = n.attrs?.layout === "full" ? "full" : "single";
+    md = figureMd(layout, "", [{ src: n.attrs?.src ?? "", alt: n.attrs?.alt ?? "", caption: n.attrs?.caption ?? "" }]);
     const src = keep ? n.attrs?.source : null;
     return src && canonical(src) === md ? src : md;
   }

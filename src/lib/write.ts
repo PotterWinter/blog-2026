@@ -226,7 +226,7 @@ const done = async ({ plan, sha }: { plan: Plan; sha: string | null }, id: numbe
 
 // With the images picked since the last save (5.4): they're committed with the post,
 // and where the post says "upload:<key>" it now says their path.
-// Clips (5.4d) are in Blob already: their posters are among the images (same key), and
+// Clips (5.4d) were sent up to Blob just before (the editor does it): their posters are among the images (same key), and
 // "clip:<key>" becomes the clip's own path — the poster's, ending .mp4 — with its
 // media.json entry in the same commit. A clip of this post's its text no longer points
 // at loses its entry and its poster here, and its file in Blob once the commit is in.
@@ -278,7 +278,7 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
 
 // Out of Blob, after the commit that stopped pointing at them. A failure leaves a file
 // nobody links to — it costs space, not a broken page — so the save still stands.
-async function dropClips(urls: string[]) {
+export async function dropClips(urls: string[]) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return;
   try {
     const { del } = await import("@vercel/blob");

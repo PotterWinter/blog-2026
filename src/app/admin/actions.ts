@@ -4,7 +4,7 @@ import type { WaitingClip } from "@/lib/clips";
 import type { PostInput } from "@/lib/edit";
 import { currentSession } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
-import { deletePost, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
+import { deletePost, dropClips, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
 
 // What the editor (07) calls. Each checks this device is still signed in — a server
 // action is a public endpoint, the /admin guard doesn't cover it — and hands back
@@ -22,9 +22,17 @@ async function run(action: () => Promise<Saved>): Promise<Result> {
 }
 
 // pending: the images picked since the last save, committed with it (5.4)
-// clips: the ones picked since the last save, up in Blob already (5.4d)
+// clips: the ones picked since the last save, sent up to Blob just before (5.4d)
 export async function save(input: PostInput, pending: Pending[] = [], clips: WaitingClip[] = []) {
   return run(() => savePost(input, pending, clips));
+}
+
+// Clips the editor sent up to Blob for a save that then didn't happen: out again, so
+// nothing stays there that no post names. Only files of this store's clips/ folder.
+export async function discardClips(urls: string[]) {
+  if (!(await currentSession())) return;
+  const ours = urls.filter((u) => /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/clips\/[a-z0-9-]+\.(mp4|webm)$/i.test(u));
+  if (ours.length) await dropClips(ours);
 }
 
 export async function publish(id: number) {
