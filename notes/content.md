@@ -104,3 +104,10 @@ npm run rebuild-index -- ../blog-content
 - หน้าเว็บสาธารณะส่งให้ browser แบบตัด id, file, lastCommit, revisions, createdAt ออก (`forReaders`)
 - slug: ตามชื่อเรื่องเสมอ แก้เองไม่ได้ · ใช้ตั้งชื่อไฟล์ + URL ของ Editor · ไทยล้วน = `post-<id>` · ซ้ำ = ต่อ `-<id>`
 - **no = เลขลำดับโชว์อย่างเดียว:** ออกตอน publish ครั้งแรก (สูงสุดใน section + 1) · unpublish เก็บเลขไว้ · **ลบ = โพสต์หลังจากนั้นใน section เดียวกันเลขลด 1** (แก้ .md ของพวกนั้นใน commit เดียวกัน) ไม่มีเลขว่าง · unpublish = เลขค้างไว้ ไม่ขยับ (เจ้าของยืนยัน 2 ต.ค. 69)
+
+## โฟลเดอร์ blog-content ในเครื่อง (5 ต.ค. 69)
+- ใช้ดูอย่างเดียว ไม่แก้ในนี้ — Admin เขียนลง GitHub ตรง
+- เคย "นำหน้า 1 · ตามหลัง 16": Admin รวม Save ใน 30 นาทีเป็น commit เดียว (fold) โดยเขียนทับ commit ล่าสุดบน GitHub → เครื่องที่ pull commit นั้นไว้ก่อนจะแยกทาง `git pull` ไม่ได้
+- แก้ (5 ต.ค.): ของเดิมเก็บไว้ที่ branch `backup/local-before-sync-2026-10-05` + `git stash` (แก้ #3 ที่ลบไปแล้ว) แล้ว `reset --hard origin/main`
+- ถ้าแยกทางอีก: `git fetch` แล้ว `git reset --hard origin/main` (ไม่มีอะไรของเครื่องที่ต้องเก็บ ถ้าไม่ได้แก้ไฟล์ในนี้)
+
