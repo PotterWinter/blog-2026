@@ -11,7 +11,12 @@
 - push แล้ว (4 ต.ค. 69): Link (ชื่อโพสต์อ่านจาก URL) · รวม commit 30 นาที · ตาราง (หน้าตาแบบ v4, + Column ←, คอลัมน์ไม่เกิน 3 บรรทัด, แถบเลื่อนใต้ตาราง) · Carousel ปัดวน · รูป Fit / Full (เอา Fit H ออก) · ปุ่มในบล็อกไม่ดึงคีย์บอร์ด (iPhone) · สารบัญมือถือ 155px / 5 วิ → notes/editor.md, notes/04-post.md
 - push แล้ว (4 ต.ค. 69 ค่ำ): **Cover เป็นคลิปได้** (Type: Image | Clip · หัวบทความ, การ์ด Grid, Project, แผง List เล่นเมื่อเห็น · Blob ล็อก = เฟรมแรก) · ลบโพสต์ = ลบคลิปของมันด้วย · กด Image / Clip = กล่องเปล่าขึ้นตรง caret ทันที · ลากรูปมาบนกล่อง = ไฮไลต์ Drop to add / replace · iPhone: `WRITE | RAW ↶ ↷ ··· Preview` → notes/media.md, notes/editor.md
 - push แล้ว (4 ต.ค. 69 ดึก): คลิปขึ้น Blob ตอน Save เท่านั้น (ไม่มีไฟล์ค้าง) · คลิปในเนื้อหามี Fit | Full · ข้อมูลไฟล์ในกล่องอยู่ใต้ชื่อ → notes/media.md
-- **ถัดไป: 5.4c หน้า Media** · YouTube พักไว้ก่อน (เจ้าของ, 4 ต.ค. 69) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
+- push แล้ว (5 ต.ค. 69): **5.4c หน้า Media รอบแรก** `/admin/media` (ดูอย่างเดียว · กรอบแผงใช้ร่วมกับหน้า Posts `PaneShell`) → notes/media.md
+- push แล้ว (5 ต.ค. 69): รูป / วิดีโอในบทความ — **เพดาน 1000 × 500** (สูงไม่เกิน 500, กรอบคงสัดส่วน ไม่ตัดขอบ) · Full / Carousel กว้าง = 2:1 · Fit กว้างไม่เกิน Full · YouTube 16:9 ใต้เพดานเดียวกัน, ภาพปกชัด, ไม่มี Duration · ตัวเลข frame / best file / File ใน Editor + Cover · ลูกศร Previous / Next กลับสีแบบ difference ทั้งเว็บ + ครึ่งรูป carousel ถึงขอบจอ · quote ห่างน้อยลง · เส้นบนตารางอ่อน → notes/editor.md
+- **ถัดไป:** เจ้าของดูหน้า Media แล้วแก้ตามที่บอก · ตอบเรื่อง Settings 2 ข้อ (ด้านล่าง) · ยังไม่ได้ทดสอบ: Clip · YouTube Shorts (กรอบ 9:16 อัตโนมัติ — ถามไว้ ยังไม่ตอบ)
+- **รอเจ้าของตัดสินใจ — 5.5 Settings (v4 09):** (1) แบ่ง 2 รอบไหม — 5.5a: โครงหน้า + Security (sessions, Sign out ทีละเครื่อง / ทุกเครื่องอื่น, ประวัติ login) + Repository (ดูอย่างเดียว) + Clear cache · Site / Categories / Checks อ่านอย่างเดียว · 5.5b: ให้แก้ได้ · (2) ค่าตั้งเก็บที่ `site.json` ใน content repo (แนะนำ, commit เดียวแบบโพสต์) หรือ `site.config.ts` ในโค้ด (ต้องรอ build) · ไม่ทำ: Reset authenticator / recovery codes (พลาด = เข้า admin ไม่ได้), Rebuild site (push rebuild ให้อยู่แล้ว)
+- Dashboard ไม่ใส่ใน Settings — แยกหน้าเมื่อเลือกแหล่งยอดคนอ่าน (Vercel Analytics / นับเองใน Redis) ได้แล้ว · ประวัติ login ใส่ใน Settings › Security
+- พักไว้: ใช้ไฟล์ซ้ำ (hash เนื้อไฟล์ SHA-256, เฉพาะในโพสต์เดียวกัน, ซ้ำ = ใช้ไฟล์เดิม + บอก "reused") — ทำเมื่อเห็นไฟล์ซ้ำในหน้า Media จริง · ข้ามโพสต์ไม่แชร์ไฟล์ (ลบโพสต์หนึ่งแล้วอีกโพสต์พัง) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
 - รอเจ้าของลองบน iPhone: กด FIT / FULL แล้วคีย์บอร์ดไม่เด้ง · เลือกรูปแล้วแตะช่อง Alt เห็นเคอร์เซอร์ · scrollbar ของหน้ากลับมา (ถ้าหายที่เว็บจริง ถามว่าหน้าไหน / หลังทำอะไร)
 - แล้วค่อย 5.5 Settings
 - Unpublish คง popup ยืนยัน (เจ้าของ, 3 ต.ค. 69)
@@ -115,7 +120,7 @@
 - [ ] 5.4 Media (08) → [notes/media.md](notes/media.md)
   - [x] 5.4a อัปโหลดภาพปก (ย่อ + webp ≤500 KB อัตโนมัติ)
   - [x] 5.4b รูปในเนื้อหา: ปุ่ม Image / ลากวาง / paste · ตั้งชื่อเองก่อน Save
-  - [ ] 5.4c หน้า Media
+  - [x] 5.4c หน้า Media (รอบแรก 4 ต.ค. 69, รอเจ้าของดู)
   - [x] 5.4d คลิป (Vercel Blob + media.json, 2 ต.ค. 69)
 - [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`

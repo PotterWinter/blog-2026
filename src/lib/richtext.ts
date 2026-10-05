@@ -147,12 +147,12 @@ function block(n: RootContent): JSONContent | null {
       if (images?.length === 1 && isClip(images[0].src)) return { type: "clip", attrs: { ...images[0] } };
       if (images) return images.length === 1 && !images.some((i) => isClip(i.src)) ? figure("single", "", images) : null;
       // A paragraph that's only a YouTube link is the video on the page:
-      // [caption](youtube link "3:32") — a block of its own (5.3e)
+      // [caption](youtube link) — a block of its own (5.3e)
       const only = n.children.length === 1 ? n.children[0] : null;
       if (only?.type === "link" && youTube.test(only.url)) {
         if (!only.children.every((c) => c.type === "text")) return null; // styled words: raw
         const caption = only.children.map((c) => (c.type === "text" ? c.value : "")).join("");
-        return { type: "youtube", attrs: { url: only.url, caption, duration: only.title ?? "" } };
+        return { type: "youtube", attrs: { url: only.url, caption } };
       }
       const content = inline(n.children);
       return content && { type: "paragraph", content };
@@ -422,11 +422,10 @@ function canonical(src: string): string {
   return c;
 }
 
-export function youtubeMd(url: string, caption: string, duration: string): string {
+export function youtubeMd(url: string, caption: string): string {
   if (!url.trim()) return "";
   const text = caption.replace(/([\\[\]])/g, "\\$1");
-  const title = duration ? ` "${duration.replace(/(["\\])/g, "\\$1")}"` : "";
-  return `[${text}](${url.trim()}${title})`;
+  return `[${text}](${url.trim()})`;
 }
 
 function blockMd(n: JSONContent, keep = true): string {
@@ -439,7 +438,7 @@ function blockMd(n: JSONContent, keep = true): string {
     return src && canonical(src) === md ? src : md;
   }
   if (n.type === "youtube") {
-    md = youtubeMd(n.attrs?.url ?? "", n.attrs?.caption ?? "", n.attrs?.duration ?? "");
+    md = youtubeMd(n.attrs?.url ?? "", n.attrs?.caption ?? "");
     const src = keep ? n.attrs?.src : null;
     return src && canonical(src) === md ? src : md;
   }

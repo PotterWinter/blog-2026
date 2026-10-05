@@ -208,3 +208,11 @@ select {
     transform: none;
   }
 }
+
+/* Over Previous / Next (data-arrow) the pointer is ArrowCursor's own long arrow, which
+   inverts over dark (difference, as the dots) — the system's gives way to it */
+@media (hover: hover) and (pointer: fine) {
+  [data-arrow] {
+    cursor: none;
+  }
+}

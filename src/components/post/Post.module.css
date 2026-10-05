@@ -554,8 +554,12 @@
 .prose {
   /* The column's width, measured on .body (the container), so images can size to it */
   --col: min(clamp(960px, calc(960px + (100vw - 1280px) * 0.4), 1120px), 100cqw - 2 * var(--inset));
-  /* The tallest any image gets: a 16:10 carousel's height (owner, 30 Sep 69) */
-  --img-max: calc(var(--col) * 0.625);
+  /* The tallest any image gets: a 16:10 carousel's height (owner, 30 Sep 69) — and never
+     over 500px, so one doesn't hide the text around it (owner, 5 Oct 69: on a laptop it
+     took 636 of 900; 60% and 50% of the screen were tried, a fixed 500 chosen). Every
+     layout goes by it: Fit, Full, Carousel, Two. (The editor works the same out:
+     WriteFigure screenNow.) */
+  --img-max: min(calc(var(--col) * 0.625), 500px);
   width: var(--col);
   margin: 0 auto;
 }
@@ -799,8 +803,12 @@
 }
 
 /* ---------- YouTube facade ---------- */
+/* 16:9, under the same ceiling as the images: the column's width until it'd be taller
+   than --img-max, then narrower and centred, the caption with it (owner, 5 Oct 69 — it
+   was 573 tall on a 1440 screen) */
 .video {
-  margin: 36px 0 28px;
+  width: min(100%, calc(var(--img-max) * 16 / 9));
+  margin: 36px auto 28px;
 }
 
 .videoBox {
@@ -821,8 +829,15 @@
 
 .videoPoster {
   padding: 0;
-  background: var(--ink) center / cover no-repeat;
+  background: var(--ink);
   cursor: pointer;
+}
+
+.videoStill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .play {
@@ -846,11 +861,6 @@
   margin-top: 12px;
   font-size: 12px;
   color: var(--muted);
-}
-
-.videoTime {
-  font-family: var(--ff-mono);
-  color: var(--ink);
 }
 
 /* An ink hairline under the text; the background greys on hover. External links
@@ -928,9 +938,10 @@
   margin: 0;
 }
 
-/* Pull quote (a markdown > quote) */
+/* Pull quote (a markdown > quote). Below it half what it was (64), never less than an
+   H2's gaps: the same 44 above, 32 below (owner, 5 Oct 69) */
 .prose blockquote {
-  margin: 44px 0 64px;
+  margin: 44px 0 32px;
   font-family: var(--ff-serif);
   font-size: var(--fs-h2);
   line-height: 1.3;
@@ -994,8 +1005,9 @@
   line-height: 1.5;
 }
 
+/* Its top line as light as the rest (owner, 5 Oct 69 — it was ink) */
 .tableWrap thead tr {
-  border-top: var(--rule-section);
+  border-top: var(--rule-row);
 }
 
 .tableWrap th,
@@ -1072,11 +1084,12 @@
   background: var(--line);
 }
 
-/* Fit (the default): grown or shrunk to touch the frame — the column's width or
-   --img-max tall, whichever it meets first — its own ratio, no white beside it
-   (owner, 4 Oct 69: small ones too). --r is its ratio, set once it loads (FitImage). */
+/* Fit (the default): grown or shrunk to touch the frame — as wide as Full's (2 ×
+   --img-max, at most the column) or --img-max tall, whichever it meets first — its own
+   ratio, no white beside it (owner, 4 Oct 69: small ones too; 5 Oct 69: no wider than
+   Full). --r is its ratio, set once it loads (FitImage). */
 .figure:not(.full):has(> img, > video) {
-  width: min(100%, calc(var(--img-max) * var(--r, 99)));
+  width: min(100%, calc(var(--img-max) * var(--r, 99)), calc(var(--img-max) * 2));
 }
 
 .figure:not(.full) > img,
@@ -1086,22 +1099,39 @@
   aspect-ratio: var(--r, auto);
 }
 
-/* <!-- full -->: fills the frame — the column's width and --img-max tall — cropping
-   what runs over, either way (cover; owner, 4 Oct 69: no gap on any side) */
+/* <!-- full -->: a 2:1 frame, as a cover is, the file filling it (cover). The frame keeps
+   its shape on every screen: the column's width until it'd be taller than --img-max,
+   then narrower, centred — so a 2:1 file is never cut (owner, 5 Oct 69: with the height
+   held and the width not, the frame's shape changed with the screen and cut the sides;
+   16:10 came out 800 wide beside the column's 1018, 2:1 is 1000). The figure is the
+   frame's width, so the caption starts at its left edge. */
+.figure.full {
+  width: min(100%, calc(var(--img-max) * 2));
+  margin-inline: auto;
+}
+
 .full img,
 .full video {
   width: 100%;
-  height: var(--img-max);
+  height: auto;
   max-height: none;
+  aspect-ratio: 2 / 1;
   object-fit: cover;
 }
 
-/* <!-- two 4:5 --> / <!-- two 16:10 -->: side by side, cropped to the ratio */
+/* <!-- two 4:5 --> / <!-- two 16:10 -->: side by side, each cropped to the ratio. Each
+   keeps its shape: half the column, but never taller than --img-max — narrower then,
+   the pair centred (owner, 5 Oct 69) */
 .two {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, calc(var(--img-max) * 0.8)));
+  justify-content: center;
   gap: 16px;
   margin: 36px 0;
+}
+
+.two[data-ratio="16:10"] {
+  grid-template-columns: repeat(2, minmax(0, calc(var(--img-max) * 1.6)));
 }
 
 .two img {
@@ -1121,25 +1151,28 @@
   color: var(--muted);
 }
 
-/* <!-- carousel --> (16:10, the column's width) / <!-- carousel 4:5 --> (560 tall,
-   centred): one image in view, sliding 0.7s (v4) */
+/* <!-- carousel --> (2:1) / <!-- carousel 4:5 -->: one image in view, sliding 0.7s (v4).
+   2:1, as a cover (owner, 5 Oct 69 — it was 16:10; the .md still says no ratio): the
+   column's width until that'd be taller than --img-max, then narrower and centred,
+   caption and Previous / Next with it — never cut. 4:5 keeps the column's width, its
+   image narrower (.stageWrap) */
 .carousel {
-  margin: 36px 0;
+  width: min(100%, calc(var(--img-max) * 2));
+  margin: 36px auto;
   outline-offset: 4px;
 }
 
+.carousel[data-ratio="4:5"] {
+  width: auto;
+}
+
+/* Its shape always (2:1, or 4:5 below): never taller than --img-max, narrower then */
 .stage {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   background: var(--line);
   touch-action: pan-y;
-}
-
-.carousel[data-ratio="4:5"] .stage {
-  width: min(100%, 448px);
-  margin: 0 auto;
-  aspect-ratio: 4 / 5;
 }
 
 .track {
@@ -1178,26 +1211,64 @@
   border-top: var(--rule-row);
 }
 
-/* The pointer becomes v4's long arrow (at 2×) over Previous / Next */
+/* The pointer becomes v4's long arrow over Previous / Next (ArrowCursor, data-arrow) */
 .slideNav button {
   padding: 12px 24px 20px 0;
   border: 0;
   background: none;
   text-align: left;
-  cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M26 7H2M7 1.5 1 7l6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
-      26 14,
-    w-resize;
   transition: color 0.25s ease;
 }
 
 .slideNav button + button {
   padding: 12px 0 20px 24px;
   text-align: right;
-  cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M0 7h24M19 1.5 25 7l-6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
-      26 14,
-    e-resize;
+}
+
+/* The image's halves, with a mouse only (touch swipes), out to the page's edges
+   (--out-l / --out-r, Carousel), the pointer ArrowCursor's (data-arrow). Off while the
+   contents rail is open. */
+.stageWrap {
+  position: relative;
+}
+
+/* 4:5: as tall as every other image (--img-max), so --img-max × 0.8 wide (owner, 5 Oct
+   69 — it was 448 wide, 560 tall, shorter than a single image) */
+.carousel[data-ratio="4:5"] .stageWrap {
+  width: min(100%, calc(var(--img-max) * 0.8));
+  margin: 0 auto;
+}
+
+.carousel[data-ratio="4:5"] .stage {
+  aspect-ratio: 4 / 5;
+}
+
+.half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--out-l, 0px));
+  display: none;
+  width: calc(50% + var(--out-l, 0px));
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.halfNext {
+  right: calc(-1 * var(--out-r, 0px));
+  left: auto;
+  width: calc(50% + var(--out-r, 0px));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .half {
+    display: block;
+  }
+}
+
+:global(body):has(.toc[data-open]) .half {
+  display: none;
 }
 
 .slideNav svg {
@@ -1336,21 +1407,6 @@
   line-height: 1.3;
   letter-spacing: var(--track-display);
   text-wrap: pretty;
-}
-
-/* The pointer becomes v4's long arrow (at 2×) */
-.prev {
-  cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M26 7H2M7 1.5 1 7l6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
-      26 14,
-    w-resize;
-}
-
-.next {
-  cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='28' viewBox='0 0 26 14'%3E%3Cpath d='M0 7h24M19 1.5 25 7l-6 5.5' fill='none' stroke='%23111110' stroke-width='1.3'/%3E%3C/svg%3E")
-      26 14,
-    e-resize;
 }
 
 @media (min-width: 768px) {

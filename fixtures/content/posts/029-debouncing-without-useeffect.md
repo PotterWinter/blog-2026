@@ -38,7 +38,7 @@ listening for keystrokes…
 # 1 request for 8 keystrokes
 ```
 
-[YouTube · IFrame API demo](https://www.youtube.com/watch?v=M7lc1UVf-VE "3:32")
+[YouTube · IFrame API demo](https://www.youtube.com/watch?v=M7lc1UVf-VE)
 
 > The state is not the trigger. The event is.
 

@@ -24,13 +24,14 @@ const Arrow = ({ back }: { back?: boolean }) => (
 );
 
 // 04 foot (v4): Previous | Next, in the home list's order — Previous is the newer post
-// (the one above this in the list), Next the older. The pointer becomes a long arrow.
+// (the one above this in the list), Next the older. The pointer becomes the long arrow
+// (ArrowCursor), inverting over dark.
 export default function PostNav({ previous, next }: Props) {
   if (!previous && !next) return null;
   return (
     <nav id="post-end" className={styles.postNav} aria-label="More posts">
       {previous ? (
-        <TransitionLink href={postUrl(previous)} className={styles.prev}>
+        <TransitionLink href={postUrl(previous)} className={styles.prev} data-arrow="prev">
           <span className="label">
             <Arrow back /> Previous
           </span>
@@ -40,7 +41,7 @@ export default function PostNav({ previous, next }: Props) {
         <span />
       )}
       {next ? (
-        <TransitionLink href={postUrl(next)} className={styles.next}>
+        <TransitionLink href={postUrl(next)} className={styles.next} data-arrow="next">
           <span className="label">
             Next <Arrow />
           </span>

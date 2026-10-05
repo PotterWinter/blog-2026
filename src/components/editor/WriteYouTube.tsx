@@ -3,12 +3,14 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import { youTubeId } from "../post/PostBody";
+import { YouTubePoster } from "../post/YouTube";
 import styles from "./Editor.module.css";
 import { ownControls, ownTaps, selectOnPress } from "./WriteFigure";
 
 // 5.3e YouTube block: the video's poster as the post shows it (the player itself loads
-// only on the page), and its Link, Caption and Duration. In the .md it's a paragraph
-// that's only the link: [caption](https://youtu.be/… "3:32") (lib/richtext youtubeMd).
+// only on the page), and its Link and Caption. In the .md it's a paragraph that's only
+// the link: [caption](https://youtu.be/…) (lib/richtext youtubeMd). Duration is gone
+// (owner, 5 Oct 69): typed by hand, it said nothing YouTube's player doesn't.
 export const YouTubeBlock = Node.create({
   name: "youtube",
   group: "block",
@@ -19,7 +21,6 @@ export const YouTubeBlock = Node.create({
     return {
       url: { default: "", rendered: false },
       caption: { default: "", rendered: false },
-      duration: { default: "", rendered: false },
       src: { default: null, rendered: false, keepOnSplit: false },
     };
   },
@@ -39,7 +40,7 @@ function YouTubeView(props: NodeViewProps) {
   const url = String(node.attrs.url ?? "");
   const id = youTubeId(url);
   const field = (
-    key: "url" | "caption" | "duration",
+    key: "url" | "caption",
     label: string,
     hint: string,
     auto = false,
@@ -67,8 +68,7 @@ function YouTubeView(props: NodeViewProps) {
       <span className={styles.figLegend}>YouTube</span>
       <div className={styles.ytBox}>
         {id ? (
-          // eslint-disable-next-line @next/next/no-img-element -- YouTube's own poster
-          <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" />
+          <YouTubePoster id={id} />
         ) : (
           <span className={styles.ytEmpty}>
             {url ? "Not a YouTube link" : "Paste a YouTube link below"}
@@ -81,7 +81,6 @@ function YouTubeView(props: NodeViewProps) {
       <div className={styles.figImage}>
         {field("url", "Link", "https://www.youtube.com/watch?v=…", !url)}
         {field("caption", "Caption", "Shown under the video")}
-        {field("duration", "Duration", "3:32 · optional")}
       </div>
     </NodeViewWrapper>
   );

@@ -5,7 +5,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tip
 import { useContext, useRef, useState } from "react";
 import Segmented from "../Segmented";
 import styles from "./Editor.module.css";
-import { ImagesContext, ownDrops, ownTaps, selectOnPress } from "./WriteFigure";
+import { hint, ImagesContext, onPage, ownDrops, ownTaps, selectOnPress, useScreen } from "./WriteFigure";
 
 // 5.4d Clip block (v4 07 "CLIP"): the clip playing muted on loop as on the page, Replace
 // on it; under it what a clip may be, then File, Alt text, Caption. The file is in
@@ -45,6 +45,7 @@ function ClipView(props: NodeViewProps) {
   const entry = ctx?.clip(src);
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const screen = useScreen();
   const name = src
     .replace(/^clip:/, "")
     .replace(/^.*\//, "")
@@ -152,9 +153,7 @@ function ClipView(props: NodeViewProps) {
           onChange={(layout) => updateAttributes({ layout })}
         />
         <span className={styles.figHint}>
-          {node.attrs.layout === "full"
-            ? "Full · fills the column at the tallest height, cropped to it"
-            : "Fit · touches the column's width or the tallest height, whole"}
+          {hint(node.attrs.layout === "full" ? "full" : "single", "", screen).replace(/ · best file.*$/, "")}
         </span>
       </div>
       <span className={styles.clipHint}>
@@ -167,7 +166,12 @@ function ClipView(props: NodeViewProps) {
             <span className={styles.figName}>{name}</span>
             <span className={styles.figMeta}>
               {entry
-                ? `${mb(entry.bytes)} · ${entry.seconds.toFixed(1)}s · ${entry.width} × ${entry.height}`
+                ? `${mb(entry.bytes)} · ${entry.seconds.toFixed(1)}s · File ${entry.width} × ${entry.height}` +
+                  (entry.width && entry.height
+                    ? (({ w, h }) => ` → ${w} × ${h} here`)(
+                        onPage(node.attrs.layout === "full" ? "full" : "single", "", { w: entry.width, h: entry.height }, screen),
+                      )
+                    : "")
                 : ""}
             </span>
           </label>

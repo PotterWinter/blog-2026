@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CLIP, isClip, still, type ClipEntry } from "@/lib/clips";
 import type { PostLink } from "@/lib/schema";
 import Segmented from "../Segmented";
@@ -224,8 +224,6 @@ export function LinksField({ links, onChange }: { links: PostLink[]; onChange: (
 // for. Covers are 2:1 (07N: the card, the list's peek and the post's top share one
 // crop), 2400 wide covers a 1200px box on a 2× screen.
 
-const RECOMMENDED = "2400 × 1200 recommended · 2:1";
-const RECOMMENDED_CLIP = "MP4 / WebM up to 5 MB · cropped to 2:1";
 const posterSrc = (poster: string) => (/^(https?:|blob:|\/)/.test(poster) ? poster : `/${poster}`);
 
 type Measured = { src: string; width: number; height: number; bytes: number };
@@ -250,6 +248,22 @@ function useMeasure(src: string | null) {
     };
   }, [src]);
   return measured?.src === src ? measured : null;
+}
+
+// The post's cover on this screen: across the page, up to 1680 (--frame), 2:1
+const coverNow = () => String(Math.min(document.documentElement.clientWidth, 1680));
+function useCoverFrame() {
+  const w = Number(
+    useSyncExternalStore(
+      (on) => {
+        window.addEventListener("resize", on);
+        return () => window.removeEventListener("resize", on);
+      },
+      coverNow,
+      () => "1680",
+    ),
+  );
+  return { w, h: Math.round(w / 2) };
 }
 
 const kb = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
@@ -291,6 +305,7 @@ export function CoverField({
   const off = size && Math.abs(size.width / size.height - 2) > 0.06;
   const pickRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const frame = useCoverFrame();
   // A clip waiting for Save keeps the name its first frame was given (the two go together)
   const clipName = cover?.startsWith(CLIP) ? cover.slice(CLIP.length).replace(/^cover-?/, "") : null;
   return (
@@ -298,17 +313,6 @@ export function CoverField({
       <span className={styles.labelRow}>
         <span className="label" title="Top image or clip of the post · its still is used when a link is shared">
           Cover
-        </span>
-        <span
-          className={styles.coverSize}
-          data-off={(off && !clipCover) || undefined}
-          title={off ? "Covers are 2:1 — this one will be cropped" : undefined}
-        >
-          {!cover
-            ? kind === "clip" ? RECOMMENDED_CLIP : RECOMMENDED
-            : size
-              ? `${size.bytes ? `${kb(size.bytes)} · ` : ""}${size.width} × ${size.height}${clip?.seconds ? ` · ${clip.seconds.toFixed(1)} s` : ""}${off ? (clipCover ? " · cropped to 2:1" : " · not 2:1") : ""}`
-              : "…"}
         </span>
         <span className={styles.coverActs}>
           <button type="button" className={styles.replace} disabled={uploading} onClick={() => pickRef.current?.click()}>
@@ -368,7 +372,7 @@ export function CoverField({
           <Image src={`/${still(cover)}`} alt="" fill sizes="(min-width: 1024px) 50vw, 100vw" className={styles.coverImg} />
         ) : (
           <span className={styles.coverEmpty}>
-            No cover · {kind === "clip" ? RECOMMENDED_CLIP : RECOMMENDED}
+            No cover
             <br />
             drop {kind === "clip" ? "a clip" : "an image"} here, or Upload
           </span>
@@ -376,6 +380,22 @@ export function CoverField({
         {uploading && (
           <span className={styles.coverBusy}>
             {kind === "clip" ? "Taking the clip's first frame…" : "Uploading · making a WebP…"}
+          </span>
+        )}
+      </span>
+      {/* The frame and the file in numbers, worded as an image block's are (owner, 5 Oct
+          69): the cover is always 2:1 — on the post across the page up to 1680 wide, on
+          the cards — so a 2:1 file shows whole, any other is cropped to it */}
+      <span className={styles.coverNote}>
+        <span>
+          Frame 2:1 · {frame.w} × {frame.h} here · best file 2400 × 1200
+          {kind === "clip" ? " · MP4 / WebM up to 5 MB" : ""}
+        </span>
+        {cover && (
+          <span data-off={(off && !clipCover) || undefined}>
+            {size
+              ? `File ${size.width} × ${size.height}${size.bytes ? ` · ${kb(size.bytes)}` : ""}${clip?.seconds ? ` · ${clip.seconds.toFixed(1)} s` : ""} → ${off ? "cropped to 2:1" : "whole"}`
+              : "File …"}
           </span>
         )}
       </span>

@@ -700,14 +700,24 @@
   outline: none;
 }
 
-.coverSize {
+/* Under the cover: its frame and the best file, then the file (red if an image is cropped) */
+.coverNote {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   font-family: var(--ff-mono);
   font-size: 11px;
+  line-height: 1.4;
   color: var(--muted);
 }
 
-.coverSize[data-off] {
+.coverNote [data-off] {
   color: var(--error);
+}
+
+/* COVER sits on the line Replace / Remove sit on (owner, 5 Oct 69 — it rode high) */
+.cover .labelRow :global(.label) {
+  align-self: baseline;
 }
 
 /* 2:1, as covers are (2400 × 1200) and as the site crops them — v4 drew 16:9 here,
@@ -1729,9 +1739,13 @@
   object-fit: cover;
 }
 
-.figShow[data-layout="two"][data-ratio="16:10"] .figTile img,
-.figShow[data-layout="carousel"]:not([data-ratio]) .figTile img {
+.figShow[data-layout="two"][data-ratio="16:10"] .figTile img {
   aspect-ratio: 16 / 10;
+}
+
+/* A wide carousel is 2:1, as a cover (owner, 5 Oct 69) */
+.figShow[data-layout="carousel"]:not([data-ratio]) .figTile img {
+  aspect-ratio: 2 / 1;
 }
 
 .figPills {

@@ -2,7 +2,7 @@
 
 import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
-import { createContext, useContext, useRef, useState } from "react";
+import { createContext, useContext, useRef, useState, useSyncExternalStore } from "react";
 import type { ClipEntry } from "@/lib/clips";
 import type { FigureImage, Layout } from "@/lib/richtext";
 import Segmented from "../Segmented";
@@ -87,24 +87,90 @@ const LAYOUTS: Record<"single" | "two" | "carousel", { value: string; label: str
     { value: "4:5", label: "4:5" },
     { value: "16:10", label: "16:10" },
   ],
-  // 4:5 first, as for Two (owner, 4 Oct 69); 16:10 is still the default
+  // 4:5 first, as for Two (owner, 4 Oct 69); the wide one, the default, is 2:1 as a
+  // cover is (owner, 5 Oct 69 — it was 16:10; written as before, no ratio)
   carousel: [
     { value: "4:5", label: "4:5" },
-    { value: "", label: "16:10" },
+    { value: "", label: "2:1" },
   ],
 };
 
-// What each layout is, and the size to upload for it (EDITOR-SPEC)
-const hint = (layout: Layout, ratio: string) =>
-  layout === "single"
-    ? "Fit · touches the column's width or the tallest height, whole · upload ≥ 1760 px wide"
-    : layout === "fit height"
-      ? "Fit · touches the column's width or the tallest height, whole"
-      : layout === "full"
-        ? "Full · fills the column at the tallest height, cropped to it · upload ≥ 1760 px wide"
-        : layout === "two"
-          ? `Two up · upload ${ratio === "16:10" ? "864 × 540" : "864 × 1080"} (${ratio || "4:5"})`
-          : `Carousel · one slide at a time · upload ${ratio === "4:5" ? "896 × 1120" : "1760 × 1100"}`;
+// Sizes in numbers, to measure by rather than by eye (owner, 5 Oct 69), worked out as
+// Post.module.css does: the column (960–1120 with the screen's width, less the page's
+// edges) and the tallest an image gets — 16:10 of the column, but never over 500
+// (--img-max), the same for every layout — and Two's gap 16. "On this screen" is this
+// window's page; uploads are for the largest page there is (1120 × 500), at twice that
+// for 2× screens.
+const MAX = 500;
+const BIG = { col: 1120, max: MAX };
+const GAP = 16;
+type Size = { w: number; h: number };
+type Screen = { col: number; max: number };
+const x = ({ w, h }: Size) => `${w} × ${h}`;
+
+const screenNow = (): string => {
+  const vw = document.documentElement.clientWidth;
+  const inset = window.innerWidth >= 1024 ? 44 : window.innerWidth >= 768 ? 32 : 20;
+  const col = Math.min(Math.max(960, Math.min(1120, 960 + (vw - 1280) * 0.4)), vw - 2 * inset);
+  return `${Math.round(col)} ${Math.round(Math.min(col * 0.625, MAX))}`;
+};
+// This screen's page, kept up as the window changes
+export function useScreen(): Screen {
+  const key = useSyncExternalStore(
+    (on) => {
+      window.addEventListener("resize", on);
+      return () => window.removeEventListener("resize", on);
+    },
+    screenNow,
+    () => `${BIG.col} ${BIG.max}`,
+  );
+  const [col, max] = key.split(" ").map(Number);
+  return { col, max };
+}
+
+// The frame a layout puts each image in; Fit has none (the image's own shape). A frame
+// keeps its shape on every screen: as wide as it may be, but never taller than the
+// tallest — narrower then (owner, 5 Oct 69) — so a file of that shape is never cut.
+function frame(layout: Layout, ratio: string, { col, max }: Screen): Size | null {
+  if (layout === "single" || layout === "fit height") return null;
+  const shaped = (room: number, r: number) => {
+    const w = Math.min(room, max * r);
+    return { w: Math.round(w), h: Math.round(w / r) };
+  };
+  if (layout === "two") return shaped((col - GAP) / 2, ratio === "16:10" ? 1.6 : 0.8);
+  if (layout === "carousel" && ratio === "4:5") return shaped(col, 0.8);
+  return shaped(col, 2); // full, carousel: 2:1, as a cover
+}
+
+// How big a w × h file shows on the page. Fit: grown or shrunk whole until it meets the
+// column's width or the tallest height, whichever comes first.
+// Fit's widest is Full's (2:1 at the tallest), so the two read the same (owner, 5 Oct 69)
+const fitWide = ({ col, max }: Screen) => Math.round(Math.min(col, max * 2));
+
+export function onPage(layout: Layout, ratio: string, size: Size, screen: Screen): Size {
+  const box = frame(layout, ratio, screen);
+  if (box) return box;
+  const s = Math.min(fitWide(screen) / size.w, screen.max / size.h);
+  return { w: Math.round(size.w * s), h: Math.round(size.h * s) };
+}
+
+// What each layout is, its frame on this screen, and the best file for it — worded so
+// the frame and the file can't be taken for each other (owner, 5 Oct 69)
+export const hint = (layout: Layout, ratio: string, screen: Screen) => {
+  const fit = layout === "single" || layout === "fit height";
+  const box = frame(layout, ratio, screen);
+  const big = frame(layout, ratio, BIG);
+  const best = big ? `best file ≥ ${x({ w: big.w * 2, h: big.h * 2 })}` : `best file ≥ ${fitWide(BIG) * 2} wide or ${BIG.max * 2} tall`;
+  // Fit has no frame: its own shape, as big as it gets before it meets the column's
+  // width or the tallest height — two limits, not a box (owner, 5 Oct 69: read as one)
+  return fit
+    ? `Fit · whole, its own shape · up to ${fitWide(screen)} wide or ${screen.max} tall here · ${best}`
+    : layout === "full"
+      ? `Full · cropped to 2:1 · frame ${x(box!)} here · ${best}`
+      : layout === "two"
+        ? `Two up · each frame ${x(box!)} here · ${best}`
+        : `Carousel · frame ${x(box!)} here · ${best}`;
+};
 
 export const Figure = Node.create({
   name: "figure",
@@ -141,6 +207,9 @@ function FigureView(props: NodeViewProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   // Which slot a picked file goes to: an index to replace, or -1 to add
   const [slot, setSlot] = useState(-1);
+  // Each image's own pixels, read as it loads (a waiting one's are known already)
+  const [sizes, setSizes] = useState<Record<string, Size>>({});
+  const screen = useScreen();
   const [busy, setBusy] = useState(false);
 
   const setImages = (next: FigureImage[]) => {
@@ -214,7 +283,14 @@ function FigureView(props: NodeViewProps) {
   const tile = (im: FigureImage, i: number) => (
     <div key={i} className={styles.figTile} data-slot={i} data-over={over === i || undefined}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a preview, its own size */}
-      <img src={ctx?.url(im.src) ?? im.src} alt={im.alt} />
+      <img
+        src={ctx?.url(im.src) ?? im.src}
+        alt={im.alt}
+        onLoad={(e) => {
+          const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+          setSizes((s) => (s[im.src]?.w === w && s[im.src]?.h === h ? s : { ...s, [im.src]: { w, h } }));
+        }}
+      />
       <span className={styles.figPills}>
         <button type="button" onClick={() => pick(i)}>
           Replace
@@ -283,7 +359,7 @@ function FigureView(props: NodeViewProps) {
           onChange={setKind}
         />
         <Segmented label="Fit" options={LAYOUTS[kind]} value={option} onChange={setOption} />
-        <span className={styles.figHint}>{hint(layout, ratio)}</span>
+        <span className={styles.figHint}>{hint(layout, ratio, screen)}</span>
       </div>
       <div className={styles.figFields} data-cols={kind === "two" ? 2 : 1}>
         {images.map((im, i) => (
@@ -291,6 +367,8 @@ function FigureView(props: NodeViewProps) {
             key={i}
             image={im}
             n={kind === "carousel" ? i + 1 : null}
+            size={sizes[im.src]}
+            shown={(s) => onPage(layout, ratio, s, screen)}
             onChange={(p) => edit(i, p)}
           />
         ))}
@@ -302,10 +380,14 @@ function FigureView(props: NodeViewProps) {
 function ImageFields({
   image,
   n,
+  size,
+  shown,
   onChange,
 }: {
   image: FigureImage;
   n: number | null; // a carousel's slide number
+  size?: Size; // its pixels, once read
+  shown: (size: Size) => Size; // how big it shows on the page
   onChange: (patch: Partial<FigureImage>) => void;
 }) {
   const ctx = useContext(ImagesContext);
@@ -331,7 +413,10 @@ function ImageFields({
           <span className={styles.figName}>{name}</span>
         )}
         <span className={styles.figMeta}>
-          .webp{waiting ? ` ${waiting.width} × ${waiting.height}` : ""}
+          {(() => {
+            const own = waiting ? { w: waiting.width, h: waiting.height } : size;
+            return own ? `File ${x(own)} → ${x(shown(own))} here` : "";
+          })()}
         </span>
       </label>
       <label className={styles.figRow}>

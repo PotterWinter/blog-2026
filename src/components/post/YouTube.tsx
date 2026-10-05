@@ -3,11 +3,31 @@
 import { useState } from "react";
 import styles from "./Post.module.css";
 
-type Props = { id: string; caption: string; duration?: string };
+type Props = { id: string; caption: string };
+
+// The video's poster at the sharpest YouTube keeps: 1280 × 720 (maxresdefault) when the
+// video has one, else 480 × 360 (hqdefault) — stretched over the column, that one came
+// out soft (owner, 5 Oct 69). A missing maxres comes back as a 120 × 90 grey stand-in.
+export function YouTubePoster({ id, className }: { id: string; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- YouTube's own image
+    <img
+      src={`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`}
+      alt=""
+      className={className}
+      onLoad={(e) => {
+        if (e.currentTarget.naturalWidth <= 120) e.currentTarget.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }}
+      onError={(e) => {
+        if (!e.currentTarget.src.endsWith("/hqdefault.jpg")) e.currentTarget.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      }}
+    />
+  );
+}
 
 // 04 YouTube facade (v4 _yt): the thumbnail and a PLAY mark; the real player (from
 // youtube-nocookie) only loads when pressed, so a post with videos stays light
-export default function YouTube({ id, caption, duration }: Props) {
+export default function YouTube({ id, caption }: Props) {
   const [playing, setPlaying] = useState(false);
   return (
     <figure className={styles.video}>
@@ -23,10 +43,10 @@ export default function YouTube({ id, caption, duration }: Props) {
           <button
             type="button"
             className={styles.videoPoster}
-            style={{ backgroundImage: `url(https://i.ytimg.com/vi/${id}/hqdefault.jpg)` }}
             onClick={() => setPlaying(true)}
             aria-label={`Play on YouTube: ${caption}`}
           >
+            <YouTubePoster id={id} className={styles.videoStill} />
             <svg
               viewBox="0 0 68 48"
               width="68"
@@ -43,12 +63,7 @@ export default function YouTube({ id, caption, duration }: Props) {
           </button>
         )}
       </div>
-      {(caption || duration) && (
-        <figcaption className={styles.videoCaption}>
-          {caption && <span>{caption}</span>}
-          {duration && <span className={styles.videoTime}>{duration}</span>}
-        </figcaption>
-      )}
+      {caption && <figcaption className={styles.videoCaption}>{caption}</figcaption>}
     </figure>
   );
 }

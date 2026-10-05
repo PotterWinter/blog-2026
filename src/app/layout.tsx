@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans_Thai, Newsreader } from "next/font/google";
+import ArrowCursor from "@/components/ArrowCursor";
 import PageTransition from "@/components/PageTransition";
 import "./globals.css";
 
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           plays in the admin and between the admin and the site too (owner, 1 Oct 69) */}
       <body>
         <PageTransition>{children}</PageTransition>
+        <ArrowCursor />
       </body>
     </html>
   );

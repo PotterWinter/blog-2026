@@ -204,7 +204,7 @@ export default function PostBody({
         // An image on its own line is a figure, not a paragraph (a figure inside a
         // <p> isn't valid HTML)
         // A paragraph that is only an image is a figure; one that is only a YouTube
-        // link is the video ([caption](youtube link "3:32")). Neither may sit in a <p>.
+        // link is the video ([caption](youtube link)). Neither may sit in a <p>.
         p: ({ node, children }) => {
           const only = node?.children.length === 1 ? node.children[0] : null;
           const onlyImages = node?.children.every(
@@ -215,15 +215,7 @@ export default function PostBody({
           if (onlyImages) return <>{children}</>;
           if (only?.type === "element" && only.tagName === "a") {
             const id = youTubeId(String(only.properties.href ?? ""));
-            if (id) {
-              return (
-                <YouTube
-                  id={id}
-                  caption={textOf(children)}
-                  duration={only.properties.title ? String(only.properties.title) : undefined}
-                />
-              );
-            }
+            if (id) return <YouTube id={id} caption={textOf(children)} />;
           }
           return <p>{children}</p>;
         },

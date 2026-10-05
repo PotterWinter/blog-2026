@@ -1,0 +1,20 @@
+/* ArrowCursor: the long arrow, white minus ink and blended by difference, so it's ink
+   on paper and light over anything dark (as the dots: --ink-inverse) */
+.arrow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  display: none;
+  color: var(--ink-inverse);
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+.arrow[data-on] {
+  display: block;
+}
+
+.arrow svg {
+  display: block;
+}
