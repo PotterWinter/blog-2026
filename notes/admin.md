@@ -131,3 +131,23 @@
 ## ขีดขาวใต้ footer หน้า admin (2 ต.ค. 69)
 - เดิม hub สูงอย่างน้อย `100svh − 40px` (ความสูงหัวที่วัดใน Chrome) — Safari วาดหัวเตี้ยกว่า หน้าเลยขาดไม่กี่ px เห็นขาวใต้แถบดำ
 - แก้: `(main)/layout` ห่อหัว + หน้าใน `.frame` (flex column, min-height 100svh) · hub `flex: 1` · ไม่ต้องรู้ความสูงหัว
+
+## 5.5a Settings `/admin/settings` (5 ต.ค. 69) — ยังไม่ commit
+- ตัดสินใจ (เจ้าของ): แบ่ง 2 รอบ · ค่าตั้ง (5.5b) เก็บ `site.json` ใน content repo ("ไม่งั้นมันก็ไม่แสดงผล") · ไม่ทำ Reset authenticator / Recovery codes · ไม่ทำ Rebuild site · Dashboard ไม่อยู่ใน Settings
+- หน้าตาตาม v4 09: หัวข้อ + เส้นใต้ · แถบซ้าย 200 (01 Site … 06 Danger zone, Danger zone แยกห่าง) จุดทำแบบสารบัญหน้าบทความ: หัวส่วนผ่านเส้น 35% ของจอแล้วจุดค่อยไหลไป (0.36s `--ease-draw`) · ท้ายหน้า = Maintenance · ไม่ตาม hover (เจ้าของ 5 ต.ค. 69 · ลองแบบไหลต่อเนื่องตาม scroll แล้วไม่เอา) · คลิก = เลื่อนไปส่วนนั้น · ต่ำกว่า 1024 = แถบ tab แนวนอนติดใต้ header (วัดความสูง header เอง `--head`) · แต่ละส่วน: เลข + หัวข้อ 30 + คำอธิบายขวา · แถว 220 / ที่เหลือ (มือถือเรียงบน-ล่าง)
+- 01 Site / 02 Categories / 03 Checks: แสดงค่าปัจจุบัน "Read only" (แก้ได้ใน 5.5b)
+  - Categories: Name · Slug (เทา — ค่าใน frontmatter `category:` และ `?category=` · 5.5b ห้ามแก้ slug ของหมวดที่มีโพสต์) · Posts · ตารางเดียว ไม่แยก Blog / Project (เจ้าของ, 5 ต.ค. 69)
+  - Checks: คงไว้แบบนี้ (On ทุกข้อ) · คำใต้ Links = "other sites: asked once you stop typing" (เดิมเขียนผิดว่าตอนเปิด / save) (เจ้าของ, 5 ต.ค. 69)
+  - ชื่อย่อ Cat. ในหน้า Posts (List) คิดเองจากรายการหมวด: 2 ตัวแรก · ชนกัน = ตัวแรก + พยัญชนะถัดไปที่ยังว่าง (DV / DS · เพิ่ม Research = RD / RS) · ไม่โชว์ใน Settings
+  - Description = `HomeIntro` ตัวเดียวกับข้าง hero หน้าแรก (ไม่ก๊อปข้อความ) · Posts per page = ตัวเลือก 6 / 12 / 18 / 24 (หาร 2 และ 3 ลงตัว · `perPageChoices` / `postsPerPage` ใน `lib/site.ts`) ขีดเส้นใต้ตัวที่ใช้ · ไม่โชว์ของ admin (24 คงที่) (เจ้าของ, 5 ต.ค. 69) · Categories นับโพสต์จริงต่อหมวด (blog + project) · Checks บอกเพดาน 500 KB / 5 MB จากโค้ดจริง
+- 04 Repository: Code = repo / branch / sha ที่ Vercel build (dev = "this folder · next dev") · Content = getRepoHead (fixtures = local folder) · Connected / Not connected · Deploy on push: On
+- 05 Security (ปรับ 5 ต.ค. 69 ตามเจ้าของ — เดิมรก 24 แถว + Sign-ins 20 แถว): Authenticator Enabled · **Sessions** หัวบอก "n devices signed in" · แถว = อุปกรณ์ · IP · เมือง · signed in … ago · This device / **Sign out** · **Sign out all other devices (n)** · บรรทัดแดง "n wrong codes in the last 7 days · last … from <IP>" (ไม่มี = เทา) · ตาราง Sign-ins เอาออก (ประวัติยังเก็บใน Redis ไว้ทำ dashboard)
+  - แต่ละที่แยกกันอยู่แล้ว (Redis prefix `dev:` / `preview:` / `prod:`) · หัว Sessions บอกว่าที่ไหน: "on localhost" / "on previews" / "on the live site" · localhost ไม่มีเมือง → ขึ้น "dev" แทน
+  - **Rate limit** (Read only): "5 tries in 10 min, then locked out" · localhost = "Off on localhost" · Firewall บล็อกก่อนถึงแอป แอปเลยไม่เห็นตัวที่โดนบล็อก → นับเอง: IP ไหนรหัสผิดครบ 5 ใน 10 นาที = ต่อท้ายบรรทัดแดง "locked out: <IP>" (ไม่คิดบน localhost)
+  - **1 เครื่อง = 1 session**: login ใหม่จาก อุปกรณ์ + IP เดิม ลบ session เก่าของเครื่องนั้นก่อน (`signIn`)
+  - IP: `x-real-ip` (Vercel) / `x-forwarded-for` (next dev = `::1` → "this machine") · session / ประวัติก่อน 5 ต.ค. ไม่มี IP = "" · `Where = { device, city, ip }`
+  - dev: กด Sign out all other devices ล้าง 24 session ทดสอบแล้ว (localhost:3000 ของเจ้าของอาจต้อง login ใหม่ด้วย 111111 / แอป)
+  - หน้าเว็บไม่เห็น session id (เป็นส่วนหนึ่งของ cookie) — ได้ fingerprint (`handleOf` sha256 16 ตัว) แทน · server action หาเครื่องจาก fingerprint
+- 06 **Maintenance** (เดิม Danger zone — ชื่อดูน่ากลัวเกิน เปลี่ยนชื่อ แต่คงกรอบแดง + ปุ่มแดงแบบ v4 ไว้ "สะดุดตาดี", เจ้าของ 5 ต.ค. 69 · "When the site shows something old") · **Clear cache** = `revalidateTag("content")` + ถ้าเป็น dev บน repo จริง สั่งเว็บจริงล้างด้วย (`/api/revalidate` รับ `{ all: true }` แล้ว)
+- ทดสอบ (scratch, 1440 + 375): ทุกส่วนขึ้น · จุดตามส่วนที่ดู · Clear cache ตอบ "Cleared · …" · มือถือ: แถบ tab ติดใต้ header (87), กด tab แล้วหัวข้อมาอยู่ใต้แถบ (151) · แถบ tab เลื่อนแนวนอนเองเท่านั้น (scrollIntoView เคยดึงหน้าทั้งหน้า ขัดการเลื่อนไปส่วนที่กด)
+  - ไม่ได้กด Sign out ในการทดสอบ: เว็บทดสอบใช้ Redis ชุดเดียวกับ dev ของเจ้าของ (prefix `dev:`)

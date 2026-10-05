@@ -1,4 +1,5 @@
-import Hero, { Keep } from "@/components/home/Hero";
+import Hero from "@/components/home/Hero";
+import HomeIntro from "@/components/home/HomeIntro";
 import PostBrowser from "@/components/home/PostBrowser";
 import { getPublished } from "@/lib/content";
 import { isCategory } from "@/lib/site";
@@ -19,14 +20,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <Hero
         first="Hello, I am"
         second="Korn."
-        intro={
-          <>
-            I graduated in architecture, <Keep>ended up</Keep> building software, and write here
-            about how things are <Keep>put together.</Keep> This is <Keep>a notebook,</Keep>{" "}
-            <Keep>not a publication.</Keep> Posts go up when something breaks and{" "}
-            <Keep>I finally understand why.</Keep>
-          </>
-        }
+        intro={<HomeIntro />}
       />
       <PostBrowser
         posts={posts}

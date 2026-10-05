@@ -13,8 +13,9 @@
 - push แล้ว (4 ต.ค. 69 ดึก): คลิปขึ้น Blob ตอน Save เท่านั้น (ไม่มีไฟล์ค้าง) · คลิปในเนื้อหามี Fit | Full · ข้อมูลไฟล์ในกล่องอยู่ใต้ชื่อ → notes/media.md
 - push แล้ว (5 ต.ค. 69): **5.4c หน้า Media รอบแรก** `/admin/media` (ดูอย่างเดียว · กรอบแผงใช้ร่วมกับหน้า Posts `PaneShell`) → notes/media.md
 - push แล้ว (5 ต.ค. 69): รูป / วิดีโอในบทความ — **เพดาน 1000 × 500** (สูงไม่เกิน 500, กรอบคงสัดส่วน ไม่ตัดขอบ) · Full / Carousel กว้าง = 2:1 · Fit กว้างไม่เกิน Full · YouTube 16:9 ใต้เพดานเดียวกัน, ภาพปกชัด, ไม่มี Duration · ตัวเลข frame / best file / File ใน Editor + Cover · ลูกศร Previous / Next กลับสีแบบ difference ทั้งเว็บ + ครึ่งรูป carousel ถึงขอบจอ · quote ห่างน้อยลง · เส้นบนตารางอ่อน → notes/editor.md
-- **ถัดไป:** เจ้าของดูหน้า Media แล้วแก้ตามที่บอก · ตอบเรื่อง Settings 2 ข้อ (ด้านล่าง) · ยังไม่ได้ทดสอบ: Clip · YouTube Shorts (กรอบ 9:16 อัตโนมัติ — ถามไว้ ยังไม่ตอบ)
-- **รอเจ้าของตัดสินใจ — 5.5 Settings (v4 09):** (1) แบ่ง 2 รอบไหม — 5.5a: โครงหน้า + Security (sessions, Sign out ทีละเครื่อง / ทุกเครื่องอื่น, ประวัติ login) + Repository (ดูอย่างเดียว) + Clear cache · Site / Categories / Checks อ่านอย่างเดียว · 5.5b: ให้แก้ได้ · (2) ค่าตั้งเก็บที่ `site.json` ใน content repo (แนะนำ, commit เดียวแบบโพสต์) หรือ `site.config.ts` ในโค้ด (ต้องรอ build) · ไม่ทำ: Reset authenticator / recovery codes (พลาด = เข้า admin ไม่ได้), Rebuild site (push rebuild ให้อยู่แล้ว)
+- push แล้ว (5 ต.ค. 69): **5.5a Settings** `/admin/settings` ตรวจกับเจ้าของครบทุกส่วน — Site (Description = `HomeIntro` ตัวเดียวกับหน้าแรก · Posts per page 6 / 12 / 18 / 24) · Categories (slug เทา) · Checks · Repository · Security (1 เครื่อง = 1 แถว, IP, "on localhost / live site", Rate limit, รหัสผิด 7 วัน + locked out) · **Maintenance** (เดิม Danger zone, คงกรอบแดงมุมโค้ง) · จุดในเมนูซ้ายแบบสารบัญ · ชื่อย่อ Cat. คิดเอง (DV / DS) → notes/admin.md
+- **ถัดไป (แชทใหม่):** 5.5b (Site / Categories / Checks แก้ได้, เก็บ `site.json` ใน content repo — เจ้าของเลือก) · ค้าง: YouTube Shorts 9:16 อัตโนมัติ (ถามไว้) · ทดสอบ Clip
+- ~~รอเจ้าของตัดสินใจ — 5.5 Settings~~ ตัดสินแล้ว 5 ต.ค. 69 (แบ่ง 2 รอบ · site.json ใน content repo): (1) แบ่ง 2 รอบไหม — 5.5a: โครงหน้า + Security (sessions, Sign out ทีละเครื่อง / ทุกเครื่องอื่น, ประวัติ login) + Repository (ดูอย่างเดียว) + Clear cache · Site / Categories / Checks อ่านอย่างเดียว · 5.5b: ให้แก้ได้ · (2) ค่าตั้งเก็บที่ `site.json` ใน content repo (แนะนำ, commit เดียวแบบโพสต์) หรือ `site.config.ts` ในโค้ด (ต้องรอ build) · ไม่ทำ: Reset authenticator / recovery codes (พลาด = เข้า admin ไม่ได้), Rebuild site (push rebuild ให้อยู่แล้ว)
 - Dashboard ไม่ใส่ใน Settings — แยกหน้าเมื่อเลือกแหล่งยอดคนอ่าน (Vercel Analytics / นับเองใน Redis) ได้แล้ว · ประวัติ login ใส่ใน Settings › Security
 - พักไว้: ใช้ไฟล์ซ้ำ (hash เนื้อไฟล์ SHA-256, เฉพาะในโพสต์เดียวกัน, ซ้ำ = ใช้ไฟล์เดิม + บอก "reused") — ทำเมื่อเห็นไฟล์ซ้ำในหน้า Media จริง · ข้ามโพสต์ไม่แชร์ไฟล์ (ลบโพสต์หนึ่งแล้วอีกโพสต์พัง) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
 - รอเจ้าของลองบน iPhone: กด FIT / FULL แล้วคีย์บอร์ดไม่เด้ง · เลือกรูปแล้วแตะช่อง Alt เห็นเคอร์เซอร์ · scrollbar ของหน้ากลับมา (ถ้าหายที่เว็บจริง ถามว่าหน้าไหน / หลังทำอะไร)
@@ -122,7 +123,9 @@
   - [x] 5.4b รูปในเนื้อหา: ปุ่ม Image / ลากวาง / paste · ตั้งชื่อเองก่อน Save
   - [x] 5.4c หน้า Media (รอบแรก 4 ต.ค. 69, รอเจ้าของดู)
   - [x] 5.4d คลิป (Vercel Blob + media.json, 2 ต.ค. 69)
-- [ ] 5.5 Settings (09) — รายการ session + Sign out ทีละเครื่อง
+- [ ] 5.5 Settings (09) → [notes/admin.md](notes/admin.md)
+  - [x] 5.5a โครงหน้า + Security + Repository + Maintenance (5 ต.ค. 69)
+  - [ ] 5.5b Site / Categories / Checks แก้ได้ (`site.json` ใน content repo · Posts per page 6 / 12 / 18 / 24 · ห้ามแก้ slug ของหมวดที่มีโพสต์)
 - [ ] ย้ายเลขหมวดจาก `src/lib/site.ts` ไป `site.json`
 
 ## ขั้น 5.5 · เลิกพอร์ตเก่า

@@ -1,6 +1,11 @@
 // Site-wide settings. Step 5 moves these into site.json in the content repo so the
 // admin Settings page (09) can edit them; until then they live here.
 
+// Posts per page on the home grid / list. Every choice divides into both 2 and 3
+// columns, so a full page never ends on a short row.
+export const perPageChoices = [6, 12, 18, 24] as const;
+export const postsPerPage: (typeof perPageChoices)[number] = 12;
+
 export const categories = [
   { slug: "engineering", label: "Engineering" },
   { slug: "math", label: "Math" },

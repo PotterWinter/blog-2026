@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { ForReaders } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
-import { categories, type CategorySlug } from "@/lib/site";
+import { categories, postsPerPage, type CategorySlug } from "@/lib/site";
 import { sortPosts, type Sort } from "@/lib/sort";
 import CardDot from "./CardDot";
 import CategoryFilter from "./CategoryFilter";
@@ -16,7 +16,7 @@ import PostCard from "./PostCard";
 import PostList from "./PostList";
 import gridStyles from "./PostGrid.module.css";
 
-const PER_PAGE = 12;
+const PER_PAGE = postsPerPage;
 // Page change (v4): the cards leave (180ms), the next set arrives from 220ms, and once
 // the pager dot has landed the window glides back up to the filter row (640ms).
 const SWAP_MS = 220;

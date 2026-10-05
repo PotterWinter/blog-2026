@@ -3,9 +3,9 @@
 import type { WaitingClip } from "@/lib/clips";
 import type { PostInput } from "@/lib/edit";
 import { getMediaHistory } from "@/lib/content";
-import { currentSession } from "@/lib/session";
+import { allSessions, currentSession, handleOf, signOut, signOutHandle } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
-import { deletePost, dropClips, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
+import { clearCache, deletePost, dropClips, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
 
 // What the editor (07) calls. Each checks this device is still signed in — a server
 // action is a public endpoint, the /admin guard doesn't cover it — and hands back
@@ -71,4 +71,31 @@ export async function upload(form: FormData): Promise<UploadResult> {
 export async function mediaHistory(file: string) {
   if (!(await currentSession())) return null;
   return getMediaHistory(file);
+}
+
+// ---------- 09 Settings (5.5) ----------
+// What a Settings button did, for the line beside it
+export type Done = { ok: true; note?: string } | { ok: false; error: string };
+
+// Sign another device out (by its handle): its session goes, and its next press sends
+// it to the login page. This device signs out with the header's Sign out.
+export async function signOutDevice(handle: string): Promise<Done> {
+  const me = await currentSession();
+  if (!me) return { ok: false, error: "Signed out: sign in again" };
+  if (handle === handleOf(me.id)) return { ok: false, error: "This device signs out from the header" };
+  return (await signOutHandle(handle)) ? { ok: true } : { ok: false, error: "Already signed out" };
+}
+
+export async function signOutOthers(): Promise<Done> {
+  const me = await currentSession();
+  if (!me) return { ok: false, error: "Signed out: sign in again" };
+  const others = (await allSessions()).filter((s) => s.id !== me.id);
+  for (const s of others) await signOut(s.id);
+  return { ok: true, note: `${others.length} signed out` };
+}
+
+export async function clearAllCache(): Promise<Done> {
+  if (!(await currentSession())) return { ok: false, error: "Signed out: sign in again" };
+  const live = await clearCache();
+  return { ok: true, note: live ?? "Cleared · the next visits read the repo again" };
 }

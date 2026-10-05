@@ -21,9 +21,28 @@ type Props = {
 const categoryLabel = (slug: string) =>
   [...categories, ...projectCategories].find((c) => c.slug === slug)?.label ?? slug;
 
-// v4's Cat. column: two letters, "Engineering" → "EN". The project pair would both be
-// "DE", so they get their own; the full name shows on hover
-const SHORT: Record<string, string> = { development: "DV", design: "DS" };
+// v4's Cat. column: two letters, "Engineering" → "EN"; the full name shows on hover.
+// Names that would share two letters each take their first letter and the next
+// consonant that's still free: Development / Design → DV / DS, and a Research added
+// beside Reading → RS / RD. Worked out from the list, so a new category can't clash.
+const SHORT = (() => {
+  const all = [...categories, ...projectCategories];
+  const first = (label: string) => label.slice(0, 2).toUpperCase();
+  const clash = new Set(all.map((c) => first(c.label)).filter((code, i, codes) => codes.indexOf(code) !== i));
+  const taken = new Set(all.map((c) => first(c.label)).filter((code) => !clash.has(code)));
+  const short: Record<string, string> = {};
+  for (const { slug, label } of all) {
+    let code = first(label);
+    if (clash.has(code)) {
+      const word = label.toUpperCase();
+      const next = [...word.slice(1).replace(/[^B-DF-HJ-NP-TV-Z]/g, ""), ...word.slice(1).replace(/[^A-Z]/g, "")];
+      code = next.map((c) => word[0] + c).find((c) => !taken.has(c)) ?? slug.slice(0, 2).toUpperCase();
+    }
+    taken.add(code);
+    short[slug] = code;
+  }
+  return short;
+})();
 const categoryShort = (slug: string) => SHORT[slug] ?? categoryLabel(slug).slice(0, 2).toUpperCase();
 
 // v4 springs, per 60fps frame: the grey bar and the dot .16 / .64, the dot's size .22 / .68

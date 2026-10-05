@@ -189,7 +189,18 @@ export function refresh(slugs: string[]) {
 // live site catches up within the hour, and the editor says so.
 const LIVE_URL = process.env.LIVE_URL || "https://blog-2026-vercel.vercel.app";
 
-async function refreshLive(slugs: string[]): Promise<string | undefined> {
+// Settings › Clear cache (5.5): everything read from the content repo, read again —
+// here, and on the live site when this is dev on the real repo
+export async function clearCache(): Promise<string | undefined> {
+  refreshAll();
+  return refreshLive("all");
+}
+
+export function refreshAll() {
+  revalidateTag("content", { expire: 0 });
+}
+
+async function refreshLive(slugs: string[] | "all"): Promise<string | undefined> {
   if (process.env.NODE_ENV !== "development" || LOCAL_DIR) return;
   const secret = process.env.REVALIDATE_SECRET;
   if (!secret) return "Live site not told (no REVALIDATE_SECRET) · shows within the hour";
@@ -197,7 +208,7 @@ async function refreshLive(slugs: string[]): Promise<string | undefined> {
     const res = await fetch(`${LIVE_URL}/api/revalidate`, {
       method: "POST",
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ slugs }),
+      body: JSON.stringify(slugs === "all" ? { all: true } : { slugs }),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return `Live site said ${res.status} · shows within the hour`;

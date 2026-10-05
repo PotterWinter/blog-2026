@@ -1,5 +1,5 @@
 import { LOCAL_DIR } from "@/lib/content";
-import { deviceName, recordLogin, signIn } from "@/lib/session";
+import { clientIp, deviceName, recordLogin, signIn, type Where } from "@/lib/session";
 import { verifyTotp } from "@/lib/totp";
 
 // POST { code } → 200 signed in (cookie set) · 401 wrong or reused code.
@@ -16,14 +16,17 @@ export async function POST(request: Request) {
   // go together (anyone on the home Wi-Fi can reach the dev server)
   const devCode = process.env.NODE_ENV === "development" && LOCAL_DIR != null && code === "111111";
   const step = devCode ? "dev" : typeof code === "string" ? verifyTotp(secret, code) : null;
-  const city = decodeURIComponent(request.headers.get("x-vercel-ip-city") ?? "");
-  const device = deviceName(request.headers.get("user-agent") ?? "");
+  const where: Where = {
+    device: deviceName(request.headers.get("user-agent") ?? ""),
+    city: decodeURIComponent(request.headers.get("x-vercel-ip-city") ?? ""),
+    ip: clientIp(request.headers),
+  };
   try {
     if (step == null) {
-      await recordLogin("wrong-code", device, city); // the history keeps the misses too
+      await recordLogin("wrong-code", where); // the history keeps the misses too
       return Response.json({ error: "Wrong code" }, { status: 401 });
     }
-    const ok = await signIn(step, device, city);
+    const ok = await signIn(step, where);
     if (!ok) return Response.json({ error: "Code already used — wait for the next one" }, { status: 401 });
     return Response.json({ ok: true });
   } catch (error) {
