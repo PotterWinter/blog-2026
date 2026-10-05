@@ -14,10 +14,10 @@
 - push แล้ว (5 ต.ค. 69): **5.4c หน้า Media รอบแรก** `/admin/media` (ดูอย่างเดียว · กรอบแผงใช้ร่วมกับหน้า Posts `PaneShell`) → notes/media.md
 - push แล้ว (5 ต.ค. 69): รูป / วิดีโอในบทความ — **เพดาน 1000 × 500** (สูงไม่เกิน 500, กรอบคงสัดส่วน ไม่ตัดขอบ) · Full / Carousel กว้าง = 2:1 · Fit กว้างไม่เกิน Full · YouTube 16:9 ใต้เพดานเดียวกัน, ภาพปกชัด, ไม่มี Duration · ตัวเลข frame / best file / File ใน Editor + Cover · ลูกศร Previous / Next กลับสีแบบ difference ทั้งเว็บ + ครึ่งรูป carousel ถึงขอบจอ · quote ห่างน้อยลง · เส้นบนตารางอ่อน → notes/editor.md
 - push แล้ว (5 ต.ค. 69): **5.5a Settings** `/admin/settings` ตรวจกับเจ้าของครบทุกส่วน — Site (Description = `HomeIntro` ตัวเดียวกับหน้าแรก · Posts per page 6 / 12 / 18 / 24) · Categories (slug เทา) · Checks · Repository · Security (1 เครื่อง = 1 แถว, IP, "on localhost / live site", Rate limit, รหัสผิด 7 วัน + locked out) · **Maintenance** (เดิม Danger zone, คงกรอบแดงมุมโค้ง) · จุดในเมนูซ้ายแบบสารบัญ · ชื่อย่อ Cat. คิดเอง (DV / DS) → notes/admin.md
-- **ถัดไป (แชทใหม่):** 5.5b (Site / Categories / Checks แก้ได้, เก็บ `site.json` ใน content repo — เจ้าของเลือก) · ค้าง: YouTube Shorts 9:16 อัตโนมัติ (ถามไว้) · ทดสอบ Clip
+- **ถัดไป (แชทใหม่):** 5.5b (Site / Categories / Checks แก้ได้, เก็บ `site.json` ใน content repo — เจ้าของเลือก)
 - ~~รอเจ้าของตัดสินใจ — 5.5 Settings~~ ตัดสินแล้ว 5 ต.ค. 69 (แบ่ง 2 รอบ · site.json ใน content repo): (1) แบ่ง 2 รอบไหม — 5.5a: โครงหน้า + Security (sessions, Sign out ทีละเครื่อง / ทุกเครื่องอื่น, ประวัติ login) + Repository (ดูอย่างเดียว) + Clear cache · Site / Categories / Checks อ่านอย่างเดียว · 5.5b: ให้แก้ได้ · (2) ค่าตั้งเก็บที่ `site.json` ใน content repo (แนะนำ, commit เดียวแบบโพสต์) หรือ `site.config.ts` ในโค้ด (ต้องรอ build) · ไม่ทำ: Reset authenticator / recovery codes (พลาด = เข้า admin ไม่ได้), Rebuild site (push rebuild ให้อยู่แล้ว)
 - Dashboard ไม่ใส่ใน Settings — แยกหน้าเมื่อเลือกแหล่งยอดคนอ่าน (Vercel Analytics / นับเองใน Redis) ได้แล้ว · ประวัติ login ใส่ใน Settings › Security
-- พักไว้: ใช้ไฟล์ซ้ำ (hash เนื้อไฟล์ SHA-256, เฉพาะในโพสต์เดียวกัน, ซ้ำ = ใช้ไฟล์เดิม + บอก "reused") — ทำเมื่อเห็นไฟล์ซ้ำในหน้า Media จริง · ข้ามโพสต์ไม่แชร์ไฟล์ (ลบโพสต์หนึ่งแล้วอีกโพสต์พัง) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
+- ~~ใช้ไฟล์ซ้ำ~~ ไม่ทำ (เจ้าของ 5 ต.ค. 69: ซ้ำก็โหลดซ้ำไป) · ~~YouTube Shorts 9:16~~ ไม่ทำ · เดิม: ใช้ไฟล์ซ้ำ (hash เนื้อไฟล์ SHA-256, เฉพาะในโพสต์เดียวกัน, ซ้ำ = ใช้ไฟล์เดิม + บอก "reused") — ทำเมื่อเห็นไฟล์ซ้ำในหน้า Media จริง · ข้ามโพสต์ไม่แชร์ไฟล์ (ลบโพสต์หนึ่งแล้วอีกโพสต์พัง) · ยังไม่ได้ทดสอบ: Clip · YouTube (ทดสอบแล้ว: T → Note, กรอบโค้ด, Preview, Link, Table, Image)
 - รอเจ้าของลองบน iPhone: กด FIT / FULL แล้วคีย์บอร์ดไม่เด้ง · เลือกรูปแล้วแตะช่อง Alt เห็นเคอร์เซอร์ · scrollbar ของหน้ากลับมา (ถ้าหายที่เว็บจริง ถามว่าหน้าไหน / หลังทำอะไร)
 - แล้วค่อย 5.5 Settings
 - Unpublish คง popup ยืนยัน (เจ้าของ, 3 ต.ค. 69)
@@ -30,19 +30,19 @@
 
 ## ทำต่อ
 
-- [ ] เจ้าของลอง Cover คลิป (คลิปจาก Coverr / Pexels ขนาด SD-720p ≤5 MB) บนคอม + iPhone: หัวบทความเล่นเอง, การ์ดเป็นภาพนิ่ง
+- [x] เจ้าของลอง Cover คลิป (คลิปจาก Coverr / Pexels ขนาด SD-720p ≤5 MB) บนคอม + iPhone: หัวบทความเล่นเอง, การ์ดเป็นภาพนิ่ง
 
-- [ ] **เจ้าของ: เปิด Debouncing (#3) และ Test website system (#4) ใน Editor → กด Attach ↑ ที่กรอบ Output → Save** (กรอบติดกันเฉพาะที่มี `attach` แล้ว ไม่งั้น Output แยกห่างจากโค้ด)
+- [x] **เจ้าของ: เปิด Debouncing (#3) และ Test website system (#4) ใน Editor → กด Attach ↑ ที่กรอบ Output → Save** (กรอบติดกันเฉพาะที่มี `attach` แล้ว ไม่งั้น Output แยกห่างจากโค้ด)
 - [ ] เจ้าของลองบน iPhone: ปัด carousel ตามนิ้ว · Preview เปิดตรงที่เขียน / ปิดแบบสไลด์
 
 - [ ] เจ้าของลอง hover ตัวอักษรหัวข้อใน Safari (บนเว็บจริงได้)
 - [x] ลบ `sessions.json` ออกจาก content repo แล้ว · หลัง push ทุกเครื่องต้อง login ใหม่ครั้งเดียว
 - [ ] เจ้าของลองลากสารบัญ: iPhone กลับเหมือนเดิม (หน้าตามนิ้วทันที) · iPad ยังเป็นแบบนิ้วค้าง
 - [ ] เจ้าของลองบน iPhone: แถบใต้ URL สีเรียบ · sheet ลากลง / แตะหลังปิด · header admin เตี้ยลง
-- [ ] เจ้าของกด Save changes ที่ hello-world (ให้ได้รหัส URL)
+- [x] เจ้าของกด Save changes ที่ hello-world (ให้ได้รหัส URL)
 - [x] ชื่อไฟล์รูปขึ้นต้นด้วยรหัสโพสต์แล้ว (รูปเก่าที่ขึ้นด้วย id ยังใช้ได้ · Debouncing กด Replace ปกถ้าอยากได้ชื่อใหม่)
 - [ ] เจ้าของลองบน iPhone: แตะช่อง Slug / RAW แล้วหน้าไม่ซูม · กล่องยืนยันไม่ล้นจอ
-- [ ] rebuild `index.json` ใน content repo (ช่องใหม่: images, videos, codeBlocks, bytes, lastCommit) แล้ว push
+- [x] rebuild `index.json` — ไม่ต้องแล้ว: ทั้ง 3 โพสต์จริงถูก Save ผ่าน Admin จนมีช่องใหม่ครบ (เช็ก 5 ต.ค. 69)
 
 ---
 
@@ -56,7 +56,7 @@
 - [x] create-next-app (โฟลเดอร์ต้องเป็นตัวเล็ก → ชื่อ `blog`)
 - [x] รันได้ที่ localhost:3000
 - [x] repo `PotterWinter/blog-2026` (public) + `PotterWinter/blog-content-2026` (private)
-- [x] Deploy ขึ้น Vercel → https://blog-2026-vercel.vercel.app
+- [x] Deploy ขึ้น Vercel → https://korn-natthanat.vercel.app (เดิม blog-2026-vercel.vercel.app)
 
 ## ขั้น 2 · Design tokens ✅
 
@@ -131,8 +131,8 @@
 ## ขั้น 5.5 · เลิกพอร์ตเก่า
 
 - ไม่ย้ายเนื้อหาจาก korn-natthanat.vercel.app — เจ้าของเขียนใหม่เองผ่าน Admin (1 ต.ค. 69)
-- [ ] ปิดโปรเจกต์ Vercel เก่า 3 ตัว (เช็ก env vars ของ personal-blog-api ก่อน)
-- [ ] ผูก korn-natthanat.vercel.app เข้ากับ blog-2026-vercel (เลือก Redirect old domain to new)
+- [x] ปิดโปรเจกต์ Vercel เก่า 3 ตัว — pause ไม่ลบ (korn-natthanat 2025 → โดเมน korn-natthanat-2024.vercel.app · korn-personal-blog · personal-blog-api ไม่มี env) (5 ต.ค. 69)
+- [x] **เว็บจริง = https://korn-natthanat.vercel.app** (โปรเจกต์เปลี่ยนชื่อเป็น `personal-blog-2026`) · `LIVE_URL` ในโค้ดชี้ชื่อใหม่ · blog-2026-vercel.vercel.app ยังเปิดได้ (ตั้ง redirect ใน Vercel › Domains ถ้าต้องการ)
 - [ ] ใส่ลิงก์จริง: LinkedIn, Behance, CV, วิดีโอ walkthrough ในหน้า Login (ตอนนี้เป็น `#`)
 - [ ] ภาพพรีวิวลิงก์ของ project จริง (ตอนนี้ Buddy Blog ใช้รูป interior ชั่วคราว)
 - [ ] เจ้าของสร้าง project เองผ่าน Admin — ฝั่ง Design มี 3 project ที่ใส่แน่
@@ -144,9 +144,10 @@
 - [ ] แยก backend เป็น API ของตัวเองบน homelab (ตอนนี้ Next.js ทำทั้งหน้าเว็บและ backend ใน `npm run dev` ตัวเดียว) — เปลี่ยนแค่ `lib/write.ts` + `lib/content.ts` ให้เรียก API นั้น · `lib/edit.ts` และหน้า Editor ไม่ต้องแตะ (เจ้าของ, 1 ต.ค. 69)
 - [ ] Dashboard ยอดคนอ่านต่อบทความ, บทความยอดนิยม, ประวัติ login
 
-## ขั้น 6 · Dark mode
+## ขั้น 6 · Home / Welcome page แล้วค่อย Dark mode
 
-- [ ] ยังไม่เริ่ม
+- [ ] หน้า Home / Welcome (ก่อน dark mode — เจ้าของ 5 ต.ค. 69)
+- [ ] Dark mode
 
 ---
 

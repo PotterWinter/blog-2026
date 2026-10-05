@@ -187,7 +187,7 @@ export function refresh(slugs: string[]) {
 // line above doesn't reach — so it's asked to clear the same things (/api/revalidate).
 // Needs REVALIDATE_SECRET here and on Vercel. If it fails the save still stands; the
 // live site catches up within the hour, and the editor says so.
-const LIVE_URL = process.env.LIVE_URL || "https://blog-2026-vercel.vercel.app";
+const LIVE_URL = process.env.LIVE_URL || "https://korn-natthanat.vercel.app";
 
 // Settings › Clear cache (5.5): everything read from the content repo, read again —
 // here, and on the live site when this is dev on the real repo

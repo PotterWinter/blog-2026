@@ -16,7 +16,7 @@ role: "Design & development"
 year: "2026 · solo, ongoing"
 links:
   - label: Live site
-    url: https://blog-2026-vercel.vercel.app
+    url: https://korn-natthanat.vercel.app
     preview: ../media/2026/interior-20.webp
   - label: GitHub
     url: https://github.com/PotterWinter/blog-2026
