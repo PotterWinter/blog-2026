@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { discardClips, publish, remove, save, unpublish, upload, type Result } from "@/app/admin/actions";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { discardClips, publish, remove, save, unpublish, untagEverywhere, upload, type Result } from "@/app/admin/actions";
 import { postChecks } from "@/lib/checks";
 import { fromRaw, placeWaiting, slugify, toRaw, waitingKeys, type PostInput } from "@/lib/edit";
 import { postFile, postUrl, type IndexEntry, type Post } from "@/lib/schema";
@@ -9,7 +9,7 @@ import { categories, projectCategories } from "@/lib/site";
 import { usePageTransition } from "../PageTransition";
 import Segmented from "../Segmented";
 import TransitionLink from "../TransitionLink";
-import { CoverField, LinksField, TagsField } from "./Fields";
+import { CoverField, LinksField, TagsField, TagsPanel } from "./Fields";
 import MetaRow from "./MetaRow";
 import Preview from "./Preview";
 import RawBox from "./RawBox";
@@ -99,6 +99,21 @@ async function toBlob(held: HeldClip[]): Promise<{ ok: true; clips: WaitingClip[
 // address changes (/admin/posts/new → its slug), Next builds the page afresh and the
 // editor's own state goes with it — the note shouldn't.
 const notes = new Map<number | "new", Note>();
+
+// Two columns from 1024 (the cover beside the fields): Tags › Manage opens across both,
+// under them, as v4. One column: right under Tags, not past the cover.
+const WIDE = "(min-width: 1024px)";
+const onWide = (change: () => void) => {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+};
+const useWide = () =>
+  useSyncExternalStore(
+    onWide,
+    () => window.matchMedia(WIDE).matches,
+    () => true,
+  );
 const time = (d: Date) => d.toTimeString().slice(0, 8);
 
 export default function Editor({
@@ -113,7 +128,7 @@ export default function Editor({
 }: {
   post: Post | null;
   entry: IndexEntry | null;
-  allTags: string[];
+  allTags: Record<string, number>; // tag → posts carrying it, as saved
   targets: LinkTarget[]; // posts a link in the text can go to
   clips: ClipMap; // media.json: where the clips posts name really are (5.4d)
   pages: string[]; // the site's own addresses that open (Checks › Links)
@@ -125,6 +140,20 @@ export default function Editor({
   const [form, setForm] = useState<Form>(() => (post ? fromPost(post) : blank));
   const [entry, setEntry] = useState(first);
   const [saved, setSaved] = useState(() => JSON.stringify(post ? fromPost(post) : blank));
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const wide = useWide();
+  const [tagCounts, setTagCounts] = useState(allTags);
+  // Tags › Manage › × on a tag posts carry: out of all of them (one commit), and out
+  // of this form and its last save too — the file no longer has it, nothing to save
+  const untagAll = async (tag: string) => {
+    const done = await untagEverywhere(tag);
+    if (!done.ok) return done.error;
+    const drop = (f: Form): Form => ({ ...f, tags: f.tags.filter((t) => t !== tag) });
+    setForm(drop);
+    setSaved((s) => JSON.stringify(drop(JSON.parse(s) as Form)));
+    setTagCounts((counts) => Object.fromEntries(Object.entries(counts).filter(([t]) => t !== tag)));
+    return null;
+  };
   const [mode, setMode] = useState<"write" | "raw">("write");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -692,6 +721,17 @@ export default function Editor({
     updatedAt: changed ? today : (entry?.updatedAt ?? today),
   } as const;
 
+  const tagsPanel = (
+    <TagsPanel
+      open={tagsOpen}
+      tags={form.tags}
+      all={tagCounts}
+      saved={(JSON.parse(saved) as Form).tags}
+      onChange={(tags) => set({ tags })}
+      onUntag={untagAll}
+    />
+  );
+
   return (
     <>
       {previewing && (
@@ -878,9 +918,11 @@ export default function Editor({
             <TagsField
               label={form.section === "project" ? "Stack" : "Tags"}
               tags={form.tags}
-              all={allTags}
+              open={tagsOpen}
+              onToggle={() => setTagsOpen((o) => !o)}
               onChange={(tags) => set({ tags })}
             />
+            {!wide && tagsPanel}
 
             <LinksField links={form.links} onChange={(links) => set({ links })} />
 
@@ -951,6 +993,8 @@ export default function Editor({
             clip={form.cover && isClip(form.cover) ? images.clip(form.cover) : undefined}
           />
         </div>
+
+        {wide && tagsPanel}
 
         <MetaRow form={form} file={file} entry={entry} checks={checks} published={published} />
       </div>

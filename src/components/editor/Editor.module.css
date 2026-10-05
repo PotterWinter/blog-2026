@@ -448,10 +448,16 @@
   color: var(--muted);
 }
 
+/* Tags › Manage (v4): across the editor under both columns */
 .panel {
   height: 0;
   overflow: hidden;
   transition: height 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Open and still: no clip (Fields.tsx — Safari left a clipped panel's tags undrawn) */
+.panel[data-shown] {
+  overflow: visible;
 }
 
 .panelInner {
@@ -459,6 +465,14 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px 0 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* Under both columns (v4); in one column it sits right under Tags */
+@media (min-width: 1024px) {
+  .panelInner {
+    margin-top: 24px;
+  }
 }
 
 .panelHead {
@@ -472,18 +486,100 @@
   color: var(--muted);
 }
 
-.find {
-  flex: 1 1 200px;
-  border-bottom-color: var(--ink);
+/* The search box at the right, 260 wide (v4) — the whole row on a phone */
+.tagFind {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--ink);
+  color: var(--muted);
 }
 
+.tagFind input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+@media (min-width: 600px) {
+  .tagFind {
+    flex: none;
+    width: 260px;
+    margin-left: auto;
+  }
+}
+
+/* "Delete tag" asked in a red frame (v4) */
+.tagDel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--error);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.tagDel > span {
+  flex: 1 1 240px;
+}
+
+.tagDel .btnl {
+  padding: 8px 14px;
+}
+
+.tagDel .tagDelOk {
+  border-color: var(--error);
+  background: var(--error);
+  color: #fff;
+}
+
+/* v4: 5 across at 1440, 4 at 1024, 3 at 768, 2 on a phone */
 .tagGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
+@media (min-width: 768px) {
+  .tagGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tagGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .tagGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .tagOpt {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.tagOpt[data-on] {
+  color: var(--ink);
+}
+
+.tagPick {
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -494,12 +590,63 @@
   font: inherit;
   font-size: 14px;
   text-align: left;
-  color: var(--muted);
+  color: inherit;
   cursor: pointer;
 }
 
-.tagOpt[data-on] {
-  color: var(--ink);
+@media (max-width: 767px) {
+  .tagPick {
+    padding: 8px 0;
+  }
+}
+
+.tagName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How many posts carry it, raised beside the name (v4 .sup: "react 18") */
+.tagCount {
+  flex: none;
+  margin-left: -8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  vertical-align: super;
+  transform: translateY(-0.45em);
+}
+
+/* × : delete the tag — shows on hover (v4); always there without a mouse */
+.tagX {
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
+}
+
+.tagOpt:hover .tagX,
+.tagX:focus-visible {
+  opacity: 1;
+}
+
+.tagX:hover {
+  color: var(--error);
+}
+
+@media (hover: none) {
+  .tagX {
+    opacity: 1;
+  }
 }
 
 .box {

@@ -4,7 +4,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
-import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, type Change, type Plan, type PostInput } from "./edit.ts";
+import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, planUntag, type Change, type Plan, type PostInput } from "./edit.ts";
 import { clipKey, clipsIn, isClip, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
 import { placeUploads, type Pending } from "./media";
 import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
@@ -297,6 +297,26 @@ export async function dropClips(urls: string[]) {
   } catch (error) {
     console.error("Clips left in Blob:", urls, error);
   }
+}
+
+// Tags › Manage › × : the tag out of every post, one commit (planUntag)
+export async function untag(tag: string): Promise<{ posts: number; live?: string }> {
+  const result = await commit(async (read) => {
+    const index = await read.index();
+    const files = await Promise.all(
+      index.posts
+        .filter((p) => p.tags.includes(tag))
+        .map(async (entry) => {
+          const text = await read.file(entry.file);
+          if (text == null) throw new Error(`${entry.file} is missing`);
+          return { entry, text };
+        }),
+    );
+    if (!files.length) throw new Error(`No post has “${tag}”`);
+    return planUntag(index, tag, new Date(), files);
+  });
+  refresh(result.plan.slugs);
+  return { posts: result.plan.slugs.length, live: await refreshLive(result.plan.slugs) };
 }
 
 async function withFile(id: number, read: Reader) {

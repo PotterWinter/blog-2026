@@ -13,35 +13,21 @@ import styles from "./Editor.module.css";
 export function TagsField({
   label,
   tags,
-  all,
+  open,
+  onToggle,
   onChange,
 }: {
   label: string;
   tags: string[];
-  all: string[];
+  open: boolean;
+  onToggle: () => void;
   onChange: (tags: string[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState(0);
-  const [find, setFind] = useState("");
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-
-  const every = [...new Set([...all, ...tags])].sort();
-  const shown = find ? every.filter((t) => t.includes(find.toLowerCase())) : every;
-  const toggle = (tag: string) => onChange(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
-
-  // Opens by easing its height, as the hub's Filter panel
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    const inner = innerRef.current;
-    if (wrap && inner) wrap.style.height = `${open ? inner.offsetHeight : 0}px`;
-  });
-
   return (
     <div className={styles.field}>
       <span className={styles.labelRow}>
-        <span className="label" title="Keywords for filtering · pick or make one in Manage">
+        <span className="label" title="Keywords for filtering · pick or create in Manage">
           {label}
         </span>
         <button
@@ -49,7 +35,7 @@ export function TagsField({
           className={styles.manage}
           aria-expanded={open}
           onClick={() => {
-            setOpen(!open);
+            onToggle();
             setTurns((n) => n + 1);
           }}
         >
@@ -65,7 +51,7 @@ export function TagsField({
           tags.map((tag) => (
             <span key={tag} className={styles.chip}>
               {tag}
-              <button type="button" aria-label={`Remove ${tag}`} onClick={() => toggle(tag)}>
+              <button type="button" aria-label={`Remove ${tag}`} onClick={() => onChange(tags.filter((t) => t !== tag))}>
                 ×
               </button>
             </span>
@@ -74,37 +60,180 @@ export function TagsField({
           <span className={styles.empty}>None yet · Manage</span>
         )}
       </span>
-      <div ref={wrapRef} className={styles.panel}>
-        <div ref={innerRef} className={styles.panelInner}>
-          <div className={styles.panelHead}>
-            <span className="label">On this post</span>
-            <span className={styles.mono}>
-              {tags.length} {tags.length === 1 ? "tag" : "tags"}
-            </span>
+    </div>
+  );
+}
+
+// v4's Enter: lower case, anything but letters, Thai, digits and dashes → one dash
+const tagName = (typed: string) =>
+  typed
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0E00-\u0E7F-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+// Tags › Manage (v4): across the editor under both columns. Every tag in use with how
+// many posts carry it ("react 18"; one made here and nowhere yet: "new"), ticked =
+// on this post. × on a tag (shown on hover) deletes it: one nobody has yet just goes;
+// one posts carry comes out of all of them in one commit, after a red "Delete tag".
+export function TagsPanel({
+  open,
+  tags,
+  all,
+  saved,
+  onChange,
+  onUntag,
+}: {
+  open: boolean;
+  tags: string[];
+  all: Record<string, number>; // every tag in use → posts carrying it, as saved
+  saved: string[]; // this post's tags as saved (already counted in all)
+  onChange: (tags: string[]) => void;
+  onUntag: (tag: string) => Promise<string | null>; // null = done, else why not
+}) {
+  const [find, setFind] = useState("");
+  const [made, setMade] = useState<string[]>([]); // made here, newest first (v4 puts them first)
+  const [asking, setAsking] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const known = Object.keys(all).sort();
+  const every = [...made.filter((t) => !(t in all)), ...known, ...tags.filter((t) => !(t in all) && !made.includes(t))];
+  const shown = find ? every.filter((t) => t.includes(find.trim().toLowerCase())) : every;
+  const count = (tag: string) =>
+    tag in all ? (all[tag] ?? 0) - (saved.includes(tag) ? 1 : 0) + (tags.includes(tag) ? 1 : 0) : "new";
+  const toggle = (tag: string) => onChange(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
+
+  // Opens by easing its height, as the hub's Filter panel — and keeps to what's inside
+  // while open (a row more, the red question, fonts or styles landing late: Safari kept
+  // the first height and cut the tags off). The search box takes the keys once open (v4)
+  // It clips only while it moves: left clipped once open, Safari on a wide window drew
+  // the head and not the tags under it (5 Oct 69), until something made it lay out again
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const inner = innerRef.current;
+    if (!wrap || !inner) return;
+    const fit = () => (wrap.style.height = `${open ? inner.offsetHeight : 0}px`);
+    if (!open) {
+      delete wrap.dataset.shown;
+      fit();
+      return;
+    }
+    fit();
+    const shown = () => (wrap.dataset.shown = "");
+    const ended = (e: TransitionEvent) => e.target === wrap && e.propertyName === "height" && shown();
+    wrap.addEventListener("transitionend", ended);
+    const late = setTimeout(shown, 700); // no transition (reduced motion, same height)
+    const seen = new ResizeObserver(fit);
+    seen.observe(inner);
+    return () => {
+      wrap.removeEventListener("transitionend", ended);
+      clearTimeout(late);
+      seen.disconnect();
+    };
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 300);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  const posts = asking ? count(asking) : 0;
+  const question = !asking
+    ? ""
+    : posts === "new" || posts === 0 || !(asking in all)
+      ? `Delete tag “${asking}”? No posts use it yet.`
+      : `Delete “${asking}” from ${posts === 1 ? "the one post that has it" : `all ${posts} posts`}? Posts stay, only the tag is removed.`;
+
+  const confirm = async () => {
+    const tag = asking;
+    if (!tag) return;
+    setError(null);
+    if (!(tag in all)) {
+      // Nowhere but here: it just goes
+      setMade((m) => m.filter((t) => t !== tag));
+      onChange(tags.filter((t) => t !== tag));
+      setAsking(null);
+      return;
+    }
+    setWorking(true);
+    const why = await onUntag(tag);
+    setWorking(false);
+    if (why) setError(why);
+    else setAsking(null);
+  };
+
+  return (
+    <div ref={wrapRef} className={styles.panel} aria-hidden={!open}>
+      <div ref={innerRef} className={styles.panelInner}>
+        <div className={styles.panelHead}>
+          <span className="label">On this post</span>
+          <span className={styles.mono}>
+            {tags.length} {tags.length === 1 ? "tag" : "tags"}
+          </span>
+          <span className={styles.tagFind}>
+            <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+              <circle cx="5.5" cy="5.5" r="4" />
+              <path d="M8.6 8.6 12 12" />
+            </svg>
             <input
-              className={`${styles.input} ${styles.mono} ${styles.find}`}
+              ref={inputRef}
+              className={styles.mono}
               value={find}
+              tabIndex={open ? 0 : -1}
               onChange={(e) => setFind(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key !== "Enter") return;
                 e.preventDefault();
-                const tag = find.trim();
-                if (tag && !tags.includes(tag)) onChange([...tags, tag]);
+                const tag = tagName(find);
+                if (!tag) return;
+                if (!every.includes(tag)) setMade((m) => [tag, ...m]);
+                if (!tags.includes(tag)) onChange([...tags, tag]);
                 setFind("");
               }}
-              placeholder="Find or make a tag · Enter"
+              placeholder="Find or create a tag · Enter"
               spellCheck={false}
             />
+          </span>
+        </div>
+        {asking && (
+          <div className={styles.tagDel}>
+            <span>{error ?? question}</span>
+            <button type="button" className={styles.btnl} disabled={working} onClick={() => setAsking(null)}>
+              Cancel
+            </button>
+            <button type="button" className={`${styles.btnl} ${styles.tagDelOk}`} disabled={working} onClick={() => void confirm()}>
+              {working ? "Deleting…" : "Delete tag"}
+            </button>
           </div>
-          <div className={styles.tagGrid}>
-            {shown.map((tag) => (
-              <button key={tag} type="button" className={styles.tagOpt} data-on={tags.includes(tag) || undefined} onClick={() => toggle(tag)}>
+        )}
+        <div className={styles.tagGrid}>
+          {shown.map((tag) => (
+            <span key={tag} className={styles.tagOpt} data-on={tags.includes(tag) || undefined}>
+              <button type="button" className={styles.tagPick} tabIndex={open ? 0 : -1} onClick={() => toggle(tag)}>
                 <span className={styles.box} aria-hidden="true" />
-                {tag}
+                <span className={styles.tagName}>{tag}</span>
+                <span className={styles.tagCount}>{count(tag)}</span>
               </button>
-            ))}
-            {!shown.length && <span className={styles.empty}>No tag “{find}” · Enter makes it</span>}
-          </div>
+              <button
+                type="button"
+                className={styles.tagX}
+                title="Delete tag"
+                aria-label={`Delete tag ${tag}`}
+                tabIndex={open ? 0 : -1}
+                onClick={() => {
+                  setError(null);
+                  setAsking(tag);
+                }}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {!shown.length && <span className={styles.empty}>No tag “{find}” · Enter creates it</span>}
         </div>
       </div>
     </div>

@@ -11,7 +11,9 @@ import { postUrl } from "@/lib/schema";
 export default async function EditPostPage({ params }: PageProps<"/admin/posts/[slug]">) {
   const { slug } = await params;
   const posts = await getPosts({ drafts: true });
-  const allTags = [...new Set(posts.flatMap((p) => p.tags))].sort();
+  // Every tag in use and how many posts carry it (drafts too), for Tags › Manage
+  const allTags: Record<string, number> = {};
+  for (const tag of posts.flatMap((p) => p.tags)) allTags[tag] = (allTags[tag] ?? 0) + 1;
   const published = posts.filter((p) => p.status === "published");
   // What WRITE's Link can point to: the published posts, by their address
   const targets = published.map((p) => ({ title: p.title, href: postUrl(p), section: p.section }));

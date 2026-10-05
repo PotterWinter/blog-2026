@@ -219,6 +219,23 @@ export function planUnpublish(index: ContentIndex, id: number, file: string, now
 // The posts a delete moves down a number: those after it in its section (owner,
 // 2 Oct 69 — the numbers stay 1, 2, 3… with no gap; the site's addresses are codes,
 // so nothing a reader saved points elsewhere). Unpublish keeps the number. Their files are read for planDelete.
+// Tags › Manage › × (v4): a tag out of every post that has it, in one commit. Nothing
+// else in them changes, so their dates stay; each counts a revision.
+export function planUntag(index: ContentIndex, tag: string, now: Date, files: { entry: IndexEntry; text: string }[]): Plan {
+  const message = `${bangkok(now).stamp} · Untag ${tag}`;
+  const changes: Change[] = [];
+  let next = index;
+  for (const { entry, text } of files) {
+    const { data, body } = splitFrontmatter(text, entry.slug);
+    const meta = toMeta(data, entry.slug);
+    const out = toMarkdown({ ...meta, tags: meta.tags.filter((t) => t !== tag) }, body);
+    changes.push({ path: entry.file, text: out });
+    const after = indexEntry({ slug: entry.slug, text: out, file: entry.file, createdAt: entry.createdAt, revisions: entry.revisions + 1, lastCommit: message });
+    next = withEntry(next, entry.id, after);
+  }
+  return { changes, message, index: next, entry: null, slugs: files.map((f) => f.entry.slug) };
+}
+
 export function renumbered(index: ContentIndex, id: number): IndexEntry[] {
   const gone = find(index, id);
   if (gone.no == null) return [];

@@ -5,7 +5,7 @@ import type { PostInput } from "@/lib/edit";
 import { getMediaHistory } from "@/lib/content";
 import { allSessions, currentSession, handleOf, signOut, signOutHandle } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
-import { clearCache, deletePost, dropClips, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
+import { clearCache, deletePost, dropClips, publishPost, savePost, unpublishPost, untag, type Saved } from "@/lib/write";
 
 // What the editor (07) calls. Each checks this device is still signed in — a server
 // action is a public endpoint, the /admin guard doesn't cover it — and hands back
@@ -92,6 +92,17 @@ export async function signOutOthers(): Promise<Done> {
   const others = (await allSessions()).filter((s) => s.id !== me.id);
   for (const s of others) await signOut(s.id);
   return { ok: true, note: `${others.length} signed out` };
+}
+
+// Tags › Manage › × : a tag out of every post that has it (one commit)
+export async function untagEverywhere(tag: string): Promise<Done> {
+  if (!(await currentSession())) return { ok: false, error: "Signed out: sign in again" };
+  try {
+    const { posts, live } = await untag(tag);
+    return { ok: true, note: `Out of ${posts} ${posts === 1 ? "post" : "posts"}${live ? ` · ${live}` : ""}` };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Couldn't remove the tag" };
+  }
 }
 
 export async function clearAllCache(): Promise<Done> {
