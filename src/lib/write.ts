@@ -15,7 +15,7 @@ import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema
 // commit, then the branch moved to it. If the branch moved first (another save, an edit
 // on GitHub), the move is refused: read again, work the change out again, try again.
 // In dev (CONTENT_DIR) the files are written straight into the folder, whose list is
-// built from the .md files, so index.json isn't written there.
+// built from the .md files; its index.json is written only for the kept tags.
 
 const TOKEN = process.env.GITHUB_TOKEN ?? "";
 const TRIES = 3;
@@ -39,12 +39,21 @@ const fail = (what: string, status: number): never => {
   throw new Error(`GitHub ${status} ${what} (${REPO})`);
 };
 
-// A file as it is at one commit, null if it isn't there
+// A file as it is at one commit, null if it isn't there. Raw, as the site reads: the
+// default JSON wraps it in base64 and stops at 1 MB — index.json gets there at about
+// 1,500 posts, and saves would have stopped with it (found 5 Oct 69). Raw goes to 100 MB.
 async function readAt(sha: string, file: string): Promise<string | null> {
-  const { status, data } = await github<{ content: string }>(`/contents/${file}?ref=${sha}`);
-  if (status === 404) return null;
-  if (status !== 200) fail(`reading ${file}`, status);
-  return Buffer.from(data.content, "base64").toString("utf8");
+  const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=${sha}`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/vnd.github.raw+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      Authorization: `Bearer ${TOKEN}`,
+    },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) fail(`reading ${file}`, res.status);
+  return res.text();
 }
 
 type Reader = {

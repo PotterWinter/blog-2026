@@ -21,6 +21,9 @@
   - token ไม่มีสิทธิ์ / repo ผิด = GitHub ตอบ 404 → เว็บว่างเฉยๆ ไม่ error (เคยเจอตอนลืมตั้ง `CONTENT_REPO`)
 - ตัวแปรทั้งหมดอยู่ใน `.env.example`
 
+- ฝั่งเขียน (`write.ts` › `readAt`) อ่านแบบ raw เหมือนกัน (5 ต.ค. 69) — เดิมเป็น JSON base64 ซึ่ง GitHub ส่งได้ไม่เกิน 1 MB → index.json (~0.7 KB/โพสต์) เกินที่ ~1,500 โพสต์แล้ว Save จะพัง · raw ได้ถึง 100 MB
+- ขีดจำกัดถัดไป: Next.js ไม่ cache fetch ที่ใหญ่กว่า 2 MB (index.json ~3,000 โพสต์) · โฟลเดอร์ละ 1,000 ไฟล์ (contents) → ใช้ `git/trees?recursive=1` (100,000 ไฟล์ / 7 MB) · rate 5,000/ชม., 900 point/นาที, สร้าง content 80/นาที 500/ชม. · รายละเอียดในโพสต์ #5
+
 ## Cache
 
 - ทุก fetch: `next: { revalidate: 3600, tags: ["content", …] }` (`CONTENT_TTL`)
