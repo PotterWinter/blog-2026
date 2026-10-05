@@ -6,7 +6,7 @@
 
 - 5.4a อัปโหลดภาพปกใน Editor ✅
 - 5.4b แทรกรูปในเนื้อหา (RAW) ✅ (รูปคมขึ้นมาเอง: อัปโหลด = webp กว้าง 2400 ใช้ไฟล์ตรงๆ)
-- 5.4c หน้า Media (08): รูปทั้งหมด · ขนาด · pixel · ใช้ในโพสต์ไหน · ไม่ได้ใช้ · ดาวน์โหลด
+- 5.4c หน้า Media (08) ✅ รอบแรก (4 ต.ค. 69 ดึก) — ดูด้านล่าง
 - 5.4d คลิปวิดีโอ → Vercel Blob (ตัดสินใจ 29 ก.ย. 69: รูปอยู่ใน git, คลิปอยู่ Blob + media.json)
 
 ## 5.4a อัปโหลดรูป (1 ต.ค. 69)
@@ -70,3 +70,14 @@
   - กด Save ที่มีคลิปใหม่ช้าขึ้นตามเวลาอัป (ไม่เกิน 5 MB)
 - **คลิปในเนื้อหามี Fit | Full** (เจ้าของ, 4 ต.ค. 69) แบบรูปเดี่ยว: Fit = ทั้งภาพ แตะความกว้างคอลัมน์หรือ --img-max (สัดส่วนจาก width/height ใน media.json) · Full = `<!-- full -->` บนบรรทัดคลิป เต็มคอลัมน์ที่ --img-max ครอป · ไม่มีตัวเลือกสัดส่วน · Cover = 2:1 เสมอ
   - ทดสอบ: หน้าเว็บ Fit 960 × 507 (1280 × 676), Full 960 × 600 cover · Editor สลับ Fit → Full แล้ว RAW ได้ `<!-- full -->` · check-richtext 36/36
+
+## 5.4c หน้า Media `/admin/media` (4 ต.ค. 69 ดึก) — รอบแรก ยังไม่ commit
+- **หลักคิด** (เจ้าของ): media ตามการ Save ล่าสุด ไม่มีอะไรค้าง → หน้านี้**ดูอย่างเดียว** ไม่มีอัปโหลด / ลบ (v4 ก็ไม่มี) · Unused ปกติ = 0 ถ้าไม่ใช่ 0 แปลว่ามีคนแก้ไฟล์ตรงใน GitHub
+- ข้อมูล (`lib/library.ts` `getMediaLibrary`): รูปทุกไฟล์ใน media/ (git tree / โฟลเดอร์) + คลิปใน media.json · poster ของคลิปไม่โชว์แยก (เป็นส่วนของคลิป) · "ใช้ที่ไหน" อ่านจากทุกโพสต์ (drafts ด้วย): cover + `![…](media/…)` ในเนื้อหา + ภาพพรีวิวลิงก์ของ project · Over = รูป > 500 KB / คลิป > 5 MB · Missing alt = ถูกใช้ที่ไหนสักที่โดยไม่มี alt (พรีวิวลิงก์ไม่นับ)
+- History (Added · Commit): ถาม GitHub ตอนเลือกไฟล์ (`getMediaHistory` commit แรกของไฟล์ · คลิปใช้ของ poster) · fixtures = —
+- หน้าตาตาม v4 08: Media + จำนวน · ตัวเลข Files / Total size / Over size / Unused (แดงถ้า > 0) · All · Images · Videos | Over size · Unused · Missing alt · ค้นชื่อไฟล์ · grid 2 / 4 (768) / 5 (1280) ช่องสี่เหลี่ยม ชื่อ + ขนาด (ชื่อแดง = unused / ไม่มี alt, ขนาดแดง = เกิน) · คลิปมี ▶ ความยาว · ตัวที่เลือก = พื้นเทารอบ
+- แผงรายละเอียด = กรอบเดียวกับหน้า Posts (`PaneShell` แยกออกมาจาก Details: ข้างขวา ≥1024, sheet ข้างล่างบนมือถือ ลากปิด / แตะหลังปิด): รูปใหญ่ 4:3 (คลิปเล่น) · ชื่อ + All clear / ปัญหาสีแดง · File (Size · Dimensions อ่านจากรูป · Format · Alt) · Usage (Used in: ชื่อโพสต์ · cover / image / clip / preview · draft, Path) · History · Open post (ไป Editor) · Copy path · Download as JPG / PNG / WEBP (แปลงในเบราว์เซอร์, JPG ถมขาว) — คลิป = ดาวน์โหลดไฟล์เดิม
+- คีย์บอร์ด: ← → ↑ ↓ (↑↓ ข้ามตามจำนวนคอลัมน์จริง) · Enter / ดับเบิลคลิก = เต็มจอ · ในเต็มจอ ← → / ปุ่มบนจอ · Esc / × ปิด
+- ต่างจาก v4: path จริง `media/2026/<code>-ชื่อ.webp` (v4 `posts/<slug>/cover.webp`) · ข้อความใต้หัวข้อ "Comes and goes with the posts that use it, on Save" · footer: repo · files · size · "images in git · clips in Vercel Blob"
+- มือถือ (v4 390): ข้อความลงใต้หัวข้อ · ป้ายสั้น Files / Size / Over / Unused · ไม่มีเส้นคั่นกลุ่มปุ่ม
+- ทดสอบ (scratch fixtures, 1280 + 375): 29 ไฟล์ (รูป 28 คลิป 1) · Unused 1 = interior-16 (cover ของโพสต์ที่ลบตอนทดสอบ — ถูก) · → ↓ Enter → ในเต็มจอ ← → Esc ทำงาน · ดาวน์โหลด PNG ได้ชื่อ `.png` · เต็มจอรูปพอดีจอ · มือถือ sheet ขึ้น ไม่ล้น · หน้า Posts หลังแยก PaneShell ยังเลือกการ์ด / แผงปกติ

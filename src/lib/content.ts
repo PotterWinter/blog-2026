@@ -247,4 +247,26 @@ export async function getRepoHead(): Promise<{ repo: string; branch: string; sha
   return { repo: REPO, branch: BRANCH, sha: c.sha.slice(0, 7), date: c.commit.committer.date };
 }
 
+// A media file's history (08 Media, History): the commit that added it and when. A file
+// is added once and never changed (a new upload is a new name), so its oldest commit.
+// null in dev on fixtures (no git) or if GitHub doesn't answer.
+export async function getMediaHistory(file: string): Promise<{ added: string; sha: string } | null> {
+  if (LOCAL_DIR || !/^media\/[\w./-]+$/.test(file)) return null;
+  const res = await fetch(
+    `https://api.github.com/repos/${REPO}/commits?sha=${BRANCH}&path=${encodeURIComponent(file)}&per_page=100`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(TOKEN && { Authorization: `Bearer ${TOKEN}` }),
+      },
+      next: { revalidate: CONTENT_TTL, tags: ["content", "media"] },
+    },
+  );
+  if (!res.ok) return null;
+  const list = (await res.json()) as { sha: string; commit: { committer: { date: string } } }[];
+  const first = list.at(-1);
+  return first ? { added: first.commit.committer.date, sha: first.sha.slice(0, 7) } : null;
+}
+
 // Writing (the admin) is lib/write.ts: one commit per save through the Git Data API.

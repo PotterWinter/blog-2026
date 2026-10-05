@@ -2,6 +2,7 @@
 
 import type { WaitingClip } from "@/lib/clips";
 import type { PostInput } from "@/lib/edit";
+import { getMediaHistory } from "@/lib/content";
 import { currentSession } from "@/lib/session";
 import { prepareUpload, type Pending, type Prepped } from "@/lib/media";
 import { deletePost, dropClips, publishPost, savePost, unpublishPost, type Saved } from "@/lib/write";
@@ -64,4 +65,10 @@ export async function upload(form: FormData): Promise<UploadResult> {
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Couldn't read the image" };
   }
+}
+
+// 08 Media: when a file came in, and in which commit (asked when it's selected)
+export async function mediaHistory(file: string) {
+  if (!(await currentSession())) return null;
+  return getMediaHistory(file);
 }
