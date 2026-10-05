@@ -75,6 +75,11 @@ export async function getClips(): Promise<ClipMap> {
   return parseClips(await readText(MEDIA_JSON, ["media"]));
 }
 
+// The tags kept in index.json, for Tags › Manage (ContentIndex.tags)
+export async function getTagList(): Promise<string[]> {
+  return (await getIndex()).tags;
+}
+
 // ---------- posts ----------
 
 export async function localIndex(): Promise<ContentIndex> {
@@ -82,7 +87,7 @@ export async function localIndex(): Promise<ContentIndex> {
   try {
     names = await readdir(path.join(LOCAL_DIR!, "posts"));
   } catch {
-    return { nextId: 1, posts: [] };
+    return { nextId: 1, tags: [], posts: [] };
   }
   const files = await Promise.all(
     names
@@ -92,7 +97,11 @@ export async function localIndex(): Promise<ContentIndex> {
         return { slug: sourceSlug(name, text), text, file: `posts/${name}` };
       }),
   );
-  return buildIndex(files);
+  // Built from the files each time; what they can't give back — the kept tags, a nextId
+  // already ahead — comes from the folder's index.json, when it has one (commit() writes
+  // it once there are tags)
+  const kept = readIndex(await readText("index.json", []));
+  return buildIndex(files, kept.nextId, kept.tags);
 }
 
 async function getIndex(): Promise<ContentIndex> {

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Editor from "@/components/editor/Editor";
-import { getClips, getMediaFiles, getPost, getPosts } from "@/lib/content";
+import { getClips, getMediaFiles, getPost, getPosts, getTagList } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
 
 // 07 Admin post editor. /admin/posts/new is a post not made yet: it gets its id (and
@@ -11,8 +11,9 @@ import { postUrl } from "@/lib/schema";
 export default async function EditPostPage({ params }: PageProps<"/admin/posts/[slug]">) {
   const { slug } = await params;
   const posts = await getPosts({ drafts: true });
-  // Every tag in use and how many posts carry it (drafts too), for Tags › Manage
-  const allTags: Record<string, number> = {};
+  // Every tag — kept in index.json, or on a post — and how many posts carry it (drafts too),
+  // for Tags › Manage: one kept with no post yet counts 0
+  const allTags: Record<string, number> = Object.fromEntries((await getTagList()).map((t) => [t, 0]));
   for (const tag of posts.flatMap((p) => p.tags)) allTags[tag] = (allTags[tag] ?? 0) + 1;
   const published = posts.filter((p) => p.status === "published");
   // What WRITE's Link can point to: the published posts, by their address

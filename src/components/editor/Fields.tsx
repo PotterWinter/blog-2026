@@ -73,9 +73,10 @@ const tagName = (typed: string) =>
     .replace(/^-+|-+$/g, "");
 
 // Tags › Manage (v4): across the editor under both columns. Every tag in use with how
-// many posts carry it ("react 18"; one made here and nowhere yet: "new"), ticked =
-// on this post. × on a tag (shown on hover) deletes it: one nobody has yet just goes;
-// one posts carry comes out of all of them in one commit, after a red "Delete tag".
+// many posts carry it ("react 18"; kept in index.json with none yet: 0; made here and
+// not saved: "new"), ticked = on this post. × on a tag (shown on hover) deletes it,
+// after a red "Delete tag": one not saved yet just goes; any other comes out of
+// the kept list and every post that has it, in one commit.
 export function TagsPanel({
   open,
   tags,

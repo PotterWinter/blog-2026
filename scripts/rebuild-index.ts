@@ -36,12 +36,11 @@ const files: SourceFile[] = readdirSync(postsDir)
     return file;
   });
 
-// Keep a nextId that's already ahead (posts deleted since): ids are never reused
+// Keep what the .md files can't give back: a nextId that's already ahead (posts deleted
+// since — ids are never reused) and the kept tags
 const indexFile = path.join(dir, "index.json");
-const previous = existsSync(indexFile)
-  ? (JSON.parse(readFileSync(indexFile, "utf8")) as ContentIndex).nextId
-  : 1;
+const previous = existsSync(indexFile) ? (JSON.parse(readFileSync(indexFile, "utf8")) as Partial<ContentIndex>) : {};
 
-const index = buildIndex(files, previous);
+const index = buildIndex(files, previous.nextId ?? 1, previous.tags ?? []);
 writeFileSync(indexFile, JSON.stringify(index, null, 2) + "\n");
 console.log(`index.json: ${index.posts.length} posts, nextId ${index.nextId}${isRepo ? "" : " (not a git repo: dates from publishedAt)"}`);

@@ -150,18 +150,26 @@ export function contentCounts(body: string) {
 }
 
 // nextId: the id a new post gets; never lowered, so an id is never used twice
-export type ContentIndex = { nextId: number; posts: IndexEntry[] };
+// tags: the tags Tags › Manage offers even when no post carries them yet (owner, 5 Oct
+// 69 — before, a tag lived only as long as a post had it). Like nextId it can't be read
+// back from the .md files, so a rebuild keeps it. Every tag a save brings in joins it;
+// × in Manage takes one out of it and out of every post.
+export type ContentIndex = { nextId: number; tags: string[]; posts: IndexEntry[] };
+
+export const sortedTags = (tags: string[]) => [...new Set(tags)].sort();
 
 // index.json as read from the repo. One written before "no" existed has none: a
 // published post's number was its id (as toMeta reads such a .md)
 export function readIndex(text: string | null): ContentIndex {
-  if (!text) return { nextId: 1, posts: [] };
-  const index = JSON.parse(text) as ContentIndex;
+  if (!text) return { nextId: 1, tags: [], posts: [] };
+  const index = JSON.parse(text) as Partial<ContentIndex> & Pick<ContentIndex, "nextId" | "posts">;
   for (const p of index.posts) {
     p.no ??= p.status === "published" ? p.id : null;
     p.file ??= `posts/${p.slug}.md`; // before files were numbered
   }
-  return index;
+  // In this order, so the file reads the same way each save: the kept tags (none, before
+  // they were kept) above the long list of posts
+  return { nextId: index.nextId, tags: index.tags ?? [], posts: index.posts };
 }
 
 // Its address on the site: /posts/<code>, eight random letters and digits given on its
@@ -230,7 +238,7 @@ export function indexEntry({ slug, text, file, createdAt, revisions, lastCommit 
 
 // Every .md checked and summarised, newest id first. Throws on a bad file or two posts
 // sharing an id (or a section's number), naming the file.
-export function buildIndex(files: SourceFile[], previousNextId = 1): ContentIndex {
+export function buildIndex(files: SourceFile[], previousNextId = 1, previousTags: string[] = []): ContentIndex {
   const seen = new Map<number, string>();
   const seenNo = new Map<string, string>();
   const posts = files.map((file): IndexEntry => {
@@ -249,7 +257,7 @@ export function buildIndex(files: SourceFile[], previousNextId = 1): ContentInde
   });
   posts.sort((a, b) => b.id - a.id);
   const top = posts.length ? posts[0].id : 0;
-  return { nextId: Math.max(previousNextId, top + 1), posts };
+  return { nextId: Math.max(previousNextId, top + 1), tags: sortedTags(previousTags), posts };
 }
 
 // ---------- writing a post back ----------

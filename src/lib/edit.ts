@@ -9,6 +9,7 @@ import {
   type IndexEntry,
   type PostLink,
   type PostMeta,
+  sortedTags,
 } from "./schema.ts";
 
 // What each admin action changes, worked out without touching GitHub or the disk: given
@@ -75,7 +76,7 @@ function withEntry(index: ContentIndex, id: number, entry: IndexEntry | null, ne
   const posts = index.posts.filter((p) => p.id !== id);
   if (entry) posts.push(entry);
   posts.sort((a, b) => b.id - a.id);
-  return { nextId, posts };
+  return { ...index, nextId, posts };
 }
 
 export const takenCodes = (index: ContentIndex) => new Set(index.posts.flatMap((p) => (p.code ? [p.code] : [])));
@@ -170,7 +171,9 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date, previ
   const message = commitMessage(now, before?.status === "published" ? "Edit" : "Draft", id);
   const { entry, changes, slugs } = written(meta, body, before, now, message);
   changes.push(...dropped(meta, previous, `${meta.cover ?? ""}\n${body}`));
-  return { changes, message, index: withEntry(index, id, entry, before ? index.nextId : id + 1), entry, slugs };
+  // The tags it brings in join the kept list (ContentIndex.tags)
+  const next = withEntry(index, id, entry, before ? index.nextId : id + 1);
+  return { changes, message, index: { ...next, tags: sortedTags([...index.tags, ...meta.tags]) }, entry, slugs };
 }
 
 // Publish: the first time, the section's next number and today's date; again after an
@@ -233,6 +236,7 @@ export function planUntag(index: ContentIndex, tag: string, now: Date, files: { 
     const after = indexEntry({ slug: entry.slug, text: out, file: entry.file, createdAt: entry.createdAt, revisions: entry.revisions + 1, lastCommit: message });
     next = withEntry(next, entry.id, after);
   }
+  next = { ...next, tags: next.tags.filter((t) => t !== tag) };
   return { changes, message, index: next, entry: null, slugs: files.map((f) => f.entry.slug) };
 }
 

@@ -99,6 +99,12 @@ async function commit<P extends Plan>(
         await writeFile(target, change.text);
       }
     }
+    // The folder is read from its files, but the kept tags (ContentIndex.tags) can't be:
+    // its index.json holds them — written once there are any, kept up to date after
+    const indexFile = path.join(dir, "index.json");
+    const { access } = await import("node:fs/promises");
+    const there = await access(indexFile).then(() => true, () => false);
+    if (there || plan.index.tags.length) await writeFile(indexFile, JSON.stringify(plan.index, null, 2) + "\n");
     return { plan, sha: null };
   }
 
@@ -299,7 +305,7 @@ export async function dropClips(urls: string[]) {
   }
 }
 
-// Tags › Manage › × : the tag out of every post, one commit (planUntag)
+// Tags › Manage › × : the tag out of every post and out of the kept list, one commit (planUntag)
 export async function untag(tag: string): Promise<{ posts: number; live?: string }> {
   const result = await commit(async (read) => {
     const index = await read.index();
@@ -312,7 +318,7 @@ export async function untag(tag: string): Promise<{ posts: number; live?: string
           return { entry, text };
         }),
     );
-    if (!files.length) throw new Error(`No post has “${tag}”`);
+    if (!files.length && !index.tags.includes(tag)) throw new Error(`No tag “${tag}”`);
     return planUntag(index, tag, new Date(), files);
   });
   refresh(result.plan.slugs);
