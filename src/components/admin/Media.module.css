@@ -65,6 +65,7 @@
 
 .tile {
   display: flex;
+  width: 100%;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
@@ -92,8 +93,16 @@
   outline-offset: 6px;
 }
 
+/* Widths said outright: Safari doesn't stretch a <button>'s children as Chrome does —
+   the thumbnail came out 0 wide and the names ran over each other (owner, 5 Oct 69) */
+.thumb,
+.caption {
+  width: 100%;
+}
+
 .thumb {
   position: relative;
+  display: block;
   aspect-ratio: 1;
   overflow: hidden;
   background: var(--surface);
@@ -220,11 +229,16 @@
   border-top: 1px solid var(--line);
 }
 
+/* Its own blending group with paper in it: the JPG / PNG / WEBP switch draws its labels
+   in difference over what's behind, and they vanished over nothing (owner, 5 Oct 69 —
+   as the editor's blocks, Editor.module.css .fig) */
 .downloadRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  isolation: isolate;
+  background: var(--paper);
 }
 
 /* ---------- Full view ---------- */
@@ -270,22 +284,23 @@
   cursor: pointer;
 }
 
-/* The file whole, as large as what's left of the screen allows */
+/* The file whole, as large as what's left of the screen allows — and no larger than
+   itself, so the dark round it is the backdrop, a press on which closes (owner, 5 Oct
+   69: filling the stage, the image took those presses and only × closed it) */
 .fullStage {
-  display: flex;
+  position: relative;
   flex: 1;
   min-height: 0;
-  padding: 0 var(--page-x) 32px;
+  margin: 0 var(--page-x) 32px;
 }
 
 .fullStage img,
 .fullStage video {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-  min-height: 0;
-  object-fit: contain;
+  position: absolute;
+  inset: 0;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
 }
 
 .fullPrev,

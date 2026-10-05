@@ -380,6 +380,11 @@ function Facts({ item, onFull }: { item: MediaItem; onFull: () => void }) {
           <img
             src={src(item.path)}
             alt=""
+            // Read once it's in — or now, if it came in before the page woke up (the
+            // first file, drawn on the server: its load came and went unheard, 5 Oct 69)
+            ref={(img) => {
+              if (img?.complete && img.naturalWidth && !size) setSize({ w: img.naturalWidth, h: img.naturalHeight });
+            }}
             onLoad={(e) => setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
           />
         )}
