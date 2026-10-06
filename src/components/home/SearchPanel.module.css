@@ -51,15 +51,14 @@
 
 .list {
   position: relative;
-  scrollbar-width: none; /* ours is drawn beside it (.track) */
+  /* Ours is drawn beside it (.track). scrollbar-width only: ::-webkit-scrollbar
+     { display: none } here hid the page's own bar on iPhone too, for good, until a
+     reload (globals.css, data-rail; owner saw it again 6 Oct 69) */
+  scrollbar-width: none;
   /* About six and a half rows, so the cut-off one says there's more to scroll */
   max-height: min(266px, 45svh, var(--room, 100vh));
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-.list::-webkit-scrollbar {
-  display: none;
 }
 
 /* Scroll bar: 2px, a grey line with the ink thumb, just inside the panel's right edge */

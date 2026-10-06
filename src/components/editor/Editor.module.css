@@ -1294,10 +1294,6 @@
   scrollbar-width: none;
 }
 
-.writeTools::-webkit-scrollbar {
-  display: none;
-}
-
 .writeTools > * {
   flex: none;
 }
@@ -2097,10 +2093,6 @@
   box-shadow:
     0 6px 20px rgba(17, 17, 16, 0.12),
     inset 0 0.5px 0 rgba(255, 255, 255, 0.7);
-}
-
-.pillTools::-webkit-scrollbar {
-  display: none;
 }
 
 .pillTools .writeSep {
