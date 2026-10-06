@@ -82,6 +82,7 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
     <figure
       ref={figRef}
       className={styles.carousel}
+      data-slides={JSON.stringify(slides)} // its set, for the Lightbox to step through
       data-ratio={ratio || undefined}
       aria-roledescription="carousel"
       tabIndex={0}

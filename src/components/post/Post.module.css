@@ -1134,6 +1134,14 @@
   grid-template-columns: repeat(2, minmax(0, calc(var(--img-max) * 1.6)));
 }
 
+/* On a narrow screen the pair sits as the home grid's covers do: 2px apart (owner,
+   6 Oct 69 — 16 split two small images on a phone) */
+@media (max-width: 767px) {
+  .two {
+    column-gap: 2px;
+  }
+}
+
 .two img {
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -1355,6 +1363,12 @@
   .zoom:hover path {
     animation: none;
   }
+}
+
+/* A finger opens an image with a double tap (Lightbox): the page's own double-tap zoom
+   would take it first */
+.prose img[data-zoom] {
+  touch-action: manipulation;
 }
 
 /* Its image's box: the button sits on the image's top right */

@@ -71,3 +71,62 @@
   stroke: currentColor;
   stroke-width: 1.4;
 }
+
+/* A carousel's set: its count after the caption, and ← → at the sides */
+.count {
+  margin-left: 12px;
+  font-family: var(--ff-mono);
+  color: #eeeeef;
+}
+
+.prev,
+.next {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eeeeef;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+}
+
+.prev {
+  left: 8px;
+}
+
+.next {
+  right: 8px;
+}
+
+.prev path,
+.next path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: square;
+}
+
+@media (hover: hover) {
+  .prev:hover {
+    transform: translateX(-3px);
+  }
+
+  .next:hover {
+    transform: translateX(3px);
+  }
+}
+
+/* A phone swipes instead: the arrows would sit on the image */
+@media (max-width: 767px) {
+  .prev,
+  .next {
+    display: none;
+  }
+}
