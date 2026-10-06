@@ -18,7 +18,7 @@ const groups = [
     links: [
       { text: "LinkedIn", href: "#" },
       { text: "GitHub", href: "https://github.com/PotterWinter" },
-      { text: "Behance", href: "#" },
+      { text: "Behance", href: "https://www.behance.net/korn-natthanat" },
     ],
   },
   {

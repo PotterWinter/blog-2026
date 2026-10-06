@@ -42,7 +42,7 @@ const now = [
 
 const elsewhere = [
   { text: "GitHub", href: "https://github.com/PotterWinter" },
-  { text: "Behance", href: "#" },
+  { text: "Behance", href: "https://www.behance.net/korn-natthanat" },
   { text: "LinkedIn", href: "#" },
 ];
 
