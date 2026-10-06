@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FitImage from "./FitImage";
+import Lightbox from "./Lightbox";
 import TableScroll from "./TableScroll";
 import TransitionLink from "../TransitionLink";
 import { clipKey, isClip, type ClipMap } from "@/lib/clips";
@@ -275,7 +276,7 @@ export default function PostBody({
                 {images.slice(0, 2).map((img) => (
                   <figure key={img.src}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-                    <img src={img.src} alt={img.alt} loading="lazy" />
+                    <img src={img.src} alt={img.alt} loading="lazy" data-zoom="" />
                     {img.caption && <figcaption>{img.caption}</figcaption>}
                   </figure>
                 ))}
@@ -303,7 +304,7 @@ export default function PostBody({
           return (
             <figure className={`${styles.figure} ${styles.full}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
-              <img src={img.src} alt={img.alt} loading="lazy" />
+              <img src={img.src} alt={img.alt} loading="lazy" data-zoom="" />
               {img.caption && <figcaption>{img.caption}</figcaption>}
             </figure>
           );
@@ -331,6 +332,7 @@ export default function PostBody({
   return (
     <div className={styles.body}>
       <article className={styles.prose}>{content}</article>
+      <Lightbox />
     </div>
   );
 }

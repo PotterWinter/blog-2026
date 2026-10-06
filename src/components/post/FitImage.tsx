@@ -12,6 +12,7 @@ export default function FitImage({ src, alt }: { src: string; alt: string }) {
       src={src}
       alt={alt}
       loading="lazy"
+      data-zoom="" // opens on its own (Lightbox)
       ref={(img) => {
         if (img?.complete && img.naturalWidth) img.parentElement?.style.setProperty("--r", String(img.naturalWidth / img.naturalHeight));
       }}

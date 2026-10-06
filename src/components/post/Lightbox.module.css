@@ -1,0 +1,79 @@
+/* An image opened over the page (Lightbox.tsx) */
+.box {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 20px;
+  overflow: hidden;
+  background: rgba(17, 17, 16, 0.96);
+  animation: in 0.2s ease;
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+  }
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+}
+
+.img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100svh - 150px);
+  object-fit: contain;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .img {
+    cursor: zoom-in;
+  }
+
+  .img[data-big] {
+    cursor: zoom-out;
+    transition: transform 0.12s linear;
+  }
+}
+
+.caption {
+  max-width: 60ch;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: rgba(238, 238, 239, 0.7);
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #eeeeef;
+  cursor: pointer;
+}
+
+.close path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}

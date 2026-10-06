@@ -46,6 +46,7 @@ export default function PostHeader({
             alt={post.coverAlt}
             fill
             priority
+            quality={90}
             sizes="(min-width: 1680px) 1680px, 100vw"
             className={styles.coverImage}
           />

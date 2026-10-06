@@ -1225,6 +1225,14 @@
   text-align: right;
 }
 
+/* Where a finger can swipe it: the image, and beside it out to the screen's edges
+   (--edge-l / --edge-r, Carousel) — a 4:5 image is narrower than the column */
+.swipe {
+  margin-inline: calc(-1 * var(--edge-l, 0px)) calc(-1 * var(--edge-r, 0px));
+  padding-inline: var(--edge-l, 0px) var(--edge-r, 0px);
+  touch-action: pan-y;
+}
+
 /* The image's halves, with a mouse only (touch swipes), out to the page's edges
    (--out-l / --out-r, Carousel), the pointer ArrowCursor's (data-arrow). Off while the
    contents rail is open. */
@@ -1269,6 +1277,52 @@
 
 :global(body):has(.toc[data-open]) .half {
   display: none;
+}
+
+/* ⤢ : opens the image (Lightbox) — a mouse's halves step it, so the corner does. Shown
+   while the mouse is over the image; a finger taps the image itself */
+.zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  cursor: zoom-in;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.zoom path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .zoom {
+    display: grid;
+  }
+
+  .stageWrap:hover .zoom,
+  .zoom:focus-visible {
+    opacity: 1;
+  }
+
+  /* An image that opens on its own */
+  .prose img[data-zoom] {
+    cursor: zoom-in;
+  }
+
+  .carousel .track img[data-zoom] {
+    cursor: auto;
+  }
 }
 
 .slideNav svg {

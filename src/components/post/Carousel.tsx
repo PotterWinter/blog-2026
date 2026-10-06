@@ -28,15 +28,24 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
   const [at, setAt] = useState(loops ? 1 : 0); // on the track, copies counted
   const k = loops ? (at - 1 + n) % n : 0; // the slide shown
   const trackRef = useRef<HTMLDivElement>(null);
-  // The halves reach from the image out to the page's edges (how far, measured here)
+  // The halves reach from the image out to the page's edges, and so does a finger's
+  // swipe — beside a narrow 4:5 image too, not on the image alone (owner, 5 Oct 69).
+  // How far, measured here: from the image (--out-*), from the column (--edge-*)
   const wrapRef = useRef<HTMLDivElement>(null);
+  const figRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const wrap = wrapRef.current;
-    if (!wrap || !loops) return;
+    const fig = figRef.current;
+    if (!wrap || !fig || !loops) return;
     const measure = () => {
+      const page = document.documentElement.clientWidth;
       const r = wrap.getBoundingClientRect();
       wrap.style.setProperty("--out-l", `${Math.max(0, r.left)}px`);
-      wrap.style.setProperty("--out-r", `${Math.max(0, document.documentElement.clientWidth - r.right)}px`);
+      wrap.style.setProperty("--out-r", `${Math.max(0, page - r.right)}px`);
+      const f = fig.getBoundingClientRect();
+      fig.style.setProperty("--edge-l", `${Math.max(0, f.left)}px`);
+      fig.style.setProperty("--edge-r", `${Math.max(0, page - f.right)}px`);
     };
     measure();
     const seen = new ResizeObserver(measure);
@@ -70,6 +79,7 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
 
   return (
     <figure
+      ref={figRef}
       className={styles.carousel}
       data-ratio={ratio || undefined}
       aria-roledescription="carousel"
@@ -79,84 +89,102 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
         if (e.key === "ArrowRight") go(1);
       }}
     >
-      <div ref={wrapRef} className={styles.stageWrap}>
-        <div
-          className={styles.stage}
-          data-swipe-own // its own sideways swipe: the editor's Preview leaves it alone
-          onPointerDown={(e) => {
-            if (e.pointerType === "mouse") return;
-            drag.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, sideways: null };
-          }}
-          onPointerMove={(e) => {
-            const d = drag.current;
-            if (!d) return;
-            const dx = e.clientX - d.x;
-            // The first few px decide: sideways is ours, up and down is the page's
-            if (d.sideways == null && Math.hypot(dx, e.clientY - d.y) > 6) {
-              d.sideways = Math.abs(dx) > Math.abs(e.clientY - d.y);
-              if (d.sideways) e.currentTarget.setPointerCapture(e.pointerId);
-            }
-            if (!d.sideways || onCopy) return;
-            // One slide alone: nowhere to go, so it drags heavy
-            d.dx = loops ? dx : dx / 3;
-            place(d.dx, null);
-          }}
-          onPointerUp={(e) => {
-            const d = drag.current;
-            drag.current = null;
-            if (!d?.sideways) return;
-            const width = e.currentTarget.clientWidth;
-            const speed = d.dx / Math.max(1, e.timeStamp - d.t);
-            const step = Math.abs(d.dx) > width / 5 || (Math.abs(speed) > 0.5 && Math.abs(d.dx) > 20) ? (d.dx < 0 ? 1 : -1) : 0;
-            const ease = "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)";
-            if (step && loops && !onCopy) {
-              const el = trackRef.current;
-              if (el) el.style.transition = ease;
-              setAt(at + step);
-            } else place(0, ease);
-          }}
-          onPointerCancel={() => {
-            drag.current = null;
-            place(0, "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)");
-          }}
-        >
-          <div
-            ref={trackRef}
-            className={styles.track}
-            style={{ transform: `translateX(${-at * 100}%)` }}
-            // A step by button or key: the CSS slide (0.7s) again, after a finger's own
-            onTransitionEnd={(e) => {
-              if (e.target === e.currentTarget) settle();
-            }}
-          >
-            {track.map((s, i) => (
-              // eslint-disable-next-line @next/next/no-img-element -- sizes come from the file
-              <img
-                key={s.src + i}
-                src={s.src}
-                alt={s.alt}
-                loading="lazy"
-                aria-hidden={i !== at || undefined}
-                draggable={false}
-              />
-            ))}
+      <div
+        className={styles.swipe}
+        data-swipe-own // its own sideways swipe: the editor's Preview leaves it alone
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse") return;
+          drag.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, dx: 0, sideways: null };
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.clientX - d.x;
+          // The first few px decide: sideways is ours, up and down is the page's
+          if (d.sideways == null && Math.hypot(dx, e.clientY - d.y) > 6) {
+            d.sideways = Math.abs(dx) > Math.abs(e.clientY - d.y);
+            if (d.sideways) e.currentTarget.setPointerCapture(e.pointerId);
+          }
+          if (!d.sideways || onCopy) return;
+          // One slide alone: nowhere to go, so it drags heavy
+          d.dx = loops ? dx : dx / 3;
+          place(d.dx, null);
+        }}
+        onPointerUp={(e) => {
+          const d = drag.current;
+          drag.current = null;
+          if (!d?.sideways) return;
+          const width = stageRef.current?.clientWidth ?? e.currentTarget.clientWidth;
+          const speed = d.dx / Math.max(1, e.timeStamp - d.t);
+          const step = Math.abs(d.dx) > width / 5 || (Math.abs(speed) > 0.5 && Math.abs(d.dx) > 20) ? (d.dx < 0 ? 1 : -1) : 0;
+          const ease = "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)";
+          if (step && loops && !onCopy) {
+            const el = trackRef.current;
+            if (el) el.style.transition = ease;
+            setAt(at + step);
+          } else place(0, ease);
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+          place(0, "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)");
+        }}
+      >
+        <div ref={wrapRef} className={styles.stageWrap}>
+          <div ref={stageRef} className={styles.stage}>
+            <div
+              ref={trackRef}
+              className={styles.track}
+              style={{ transform: `translateX(${-at * 100}%)` }}
+              // A step by button or key: the CSS slide (0.7s) again, after a finger's own
+              onTransitionEnd={(e) => {
+                if (e.target === e.currentTarget) settle();
+              }}
+            >
+              {track.map((s, i) => (
+                // eslint-disable-next-line @next/next/no-img-element -- sizes come from the file
+                <img
+                  key={s.src + i}
+                  src={s.src}
+                  alt={s.alt}
+                  loading="lazy"
+                  aria-hidden={i !== at || undefined}
+                  draggable={false}
+                  data-zoom="" // a tap opens it (Lightbox); a swipe doesn't click
+                  data-caption={s.caption} // its own, not the figure's (that holds "01 / 04")
+                />
+              ))}
+            </div>
           </div>
+          {loops && (
+            <>
+              {([-1, 1] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  className={d < 0 ? styles.half : `${styles.half} ${styles.halfNext}`}
+                  data-arrow={d < 0 ? "prev" : "next"}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onClick={() => go(d)}
+                />
+              ))}
+            </>
+          )}
+          {/* With a mouse the image's halves step it, so it opens from here (owner, 5 Oct
+              69: a corner button, shown while the mouse is over it) */}
+          <button
+            type="button"
+            className={styles.zoom}
+            data-zoom={slides[k].src}
+            data-alt={slides[k].alt}
+            data-caption={slides[k].caption}
+            aria-label="Open image"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <path d="M8.5 1.5h4v4M12.5 1.5 8 6M5.5 12.5h-4v-4M1.5 12.5 6 8" />
+            </svg>
+          </button>
         </div>
-      {loops && (
-        <>
-          {([-1, 1] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              className={d < 0 ? styles.half : `${styles.half} ${styles.halfNext}`}
-              data-arrow={d < 0 ? "prev" : "next"}
-              tabIndex={-1}
-              aria-hidden="true"
-              onClick={() => go(d)}
-            />
-          ))}
-        </>
-      )}
       </div>
       <figcaption className={styles.slideCaption} aria-live="polite">
         <span>{slides[k].caption}</span>
