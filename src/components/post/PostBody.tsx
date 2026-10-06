@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FitImage from "./FitImage";
-import Lightbox from "./Lightbox";
+import Lightbox, { ZoomButton } from "./Lightbox";
 import TableScroll from "./TableScroll";
 import TransitionLink from "../TransitionLink";
 import { clipKey, isClip, type ClipMap } from "@/lib/clips";
@@ -277,6 +277,7 @@ export default function PostBody({
                   <figure key={img.src}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
                     <img src={img.src} alt={img.alt} loading="lazy" data-zoom="" />
+                    <ZoomButton {...img} />
                     {img.caption && <figcaption>{img.caption}</figcaption>}
                   </figure>
                 ))}
@@ -297,6 +298,7 @@ export default function PostBody({
             return (
               <figure className={styles.figure}>
                 <FitImage src={img.src} alt={img.alt} />
+                <ZoomButton {...img} />
                 {img.caption && <figcaption>{img.caption}</figcaption>}
               </figure>
             );
@@ -305,6 +307,7 @@ export default function PostBody({
             <figure className={`${styles.figure} ${styles.full}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
               <img src={img.src} alt={img.alt} loading="lazy" data-zoom="" />
+              <ZoomButton {...img} />
               {img.caption && <figcaption>{img.caption}</figcaption>}
             </figure>
           );
@@ -320,6 +323,7 @@ export default function PostBody({
           ) : (
             <figure className={styles.figure}>
               <FitImage src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} />
+              <ZoomButton src={mediaSrc(String(src ?? ""))} alt={alt ?? ""} caption={title ?? alt ?? ""} />
               {title && <figcaption>{title}</figcaption>}
             </figure>
           ),

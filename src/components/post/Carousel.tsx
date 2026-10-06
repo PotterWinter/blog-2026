@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ZoomButton } from "./Lightbox";
 import styles from "./Post.module.css";
 
 export type Slide = { src: string; alt: string; caption: string };
@@ -129,7 +130,18 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
           place(0, "transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)");
         }}
       >
-        <div ref={wrapRef} className={styles.stageWrap}>
+        <div
+          ref={wrapRef}
+          className={styles.stageWrap}
+          // ⤢ only while the mouse is on the image itself: the halves reach out to the
+          // screen's edges, so hovering them isn't hovering the image (owner, 6 Oct 69)
+          onMouseMove={(e) => {
+            const r = stageRef.current?.getBoundingClientRect();
+            const on = !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+            if (on !== (e.currentTarget.dataset.over != null)) e.currentTarget.toggleAttribute("data-over", on);
+          }}
+          onMouseLeave={(e) => e.currentTarget.removeAttribute("data-over")}
+        >
           <div ref={stageRef} className={styles.stage}>
             <div
               ref={trackRef}
@@ -170,20 +182,8 @@ export default function Carousel({ slides, ratio }: { slides: Slide[]; ratio: st
               ))}
             </>
           )}
-          {/* With a mouse the image's halves step it, so it opens from here (owner, 5 Oct
-              69: a corner button, shown while the mouse is over it) */}
-          <button
-            type="button"
-            className={styles.zoom}
-            data-zoom={slides[k].src}
-            data-alt={slides[k].alt}
-            data-caption={slides[k].caption}
-            aria-label="Open image"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <path d="M8.5 1.5h4v4M12.5 1.5 8 6M5.5 12.5h-4v-4M1.5 12.5 6 8" />
-            </svg>
-          </button>
+          {/* With a mouse the image's halves step it; it opens from its corner (ZoomButton) */}
+          <ZoomButton {...slides[k]} />
         </div>
       </div>
       <figcaption className={styles.slideCaption} aria-live="polite">

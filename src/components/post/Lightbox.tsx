@@ -3,17 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Lightbox.module.css";
+import postStyles from "./Post.module.css";
 
 type Shot = { src: string; alt: string; caption: string };
 
-// An image in a post, opened on its own over the page (owner, 5 Oct 69): pressed, or
-// a carousel's ⤢. Black around it, its caption under it; × / Esc / a press beside it
+// An image in a post, opened on its own over the page (owner, 5 Oct 69): with a mouse
+// from the ⤢ in its corner only (shown while the mouse is over the image — the image
+// itself keeps the plain pointer, and a carousel's halves step it); a finger taps the
+// image. Black around it, its caption under it; × / Esc / a press beside it
 // closes it. On a phone the fingers zoom it (the page's own pinch) and a pull down
 // closes it; with a mouse a press on it shows it larger — the file's own pixels, or
 // twice the fit — and the image follows the mouse to show the rest.
 // It listens on the post it sits in, for anything marked data-zoom: an <img> (its own
 // src, alt and figure's caption) or a button naming them (data-zoom, data-alt,
 // data-caption). The editor's WRITE box has none of this.
+// ⤢ : the corner of an image, for a mouse (Post.module.css .zoom)
+export function ZoomButton({ src, alt, caption }: Shot) {
+  return (
+    <button type="button" className={postStyles.zoom} data-zoom={src} data-alt={alt} data-caption={caption} aria-label="Open image">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+        <path className={postStyles.zoomOut} d="M8.5 1.5h4v4M12.5 1.5 8 6" />
+        <path className={postStyles.zoomIn} d="M5.5 12.5h-4v-4M1.5 12.5 6 8" />
+      </svg>
+    </button>
+  );
+}
+
 export default function Lightbox() {
   const hereRef = useRef<HTMLSpanElement>(null);
   const [shot, setShot] = useState<Shot | null>(null);
@@ -28,6 +43,7 @@ export default function Lightbox() {
       const el = (e.target as Element).closest<HTMLElement>("[data-zoom]");
       if (!el || !post.contains(el) || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
       const img = el instanceof HTMLImageElement ? el : null;
+      if (img && matchMedia("(hover: hover) and (pointer: fine)").matches) return; // a mouse: the ⤢
       const src = el.dataset.zoom || img?.currentSrc || img?.src;
       if (!src) return;
       e.preventDefault();

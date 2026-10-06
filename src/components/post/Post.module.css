@@ -1279,8 +1279,24 @@
   display: none;
 }
 
-/* ⤢ : opens the image (Lightbox) — a mouse's halves step it, so the corner does. Shown
-   while the mouse is over the image; a finger taps the image itself */
+/* With a mouse the image's halves are Previous / Next already — the row under it said
+   the same twice (owner, 6 Oct 69). Kept in its place, unseen, so nothing moves when
+   it's needed: while the contents rail is open the halves are off, and it's back */
+@media (hover: hover) and (pointer: fine) {
+  .slideNav {
+    visibility: hidden;
+  }
+
+  :global(body):has(.toc[data-open]) .slideNav {
+    visibility: visible;
+  }
+}
+
+/* ⤢ : opens the image (Lightbox), for a mouse — the image keeps the plain pointer and
+   only the corner opens it. Shown while the mouse is over the image: the arrows and a
+   rounded line round them in #e8e8e7, nothing else (owner, 6 Oct 69 — after
+   difference, which went muddy over a photo, a colour picked from the image's corner,
+   and a shadow) */
 .zoom {
   position: absolute;
   top: 12px;
@@ -1288,13 +1304,14 @@
   z-index: 2;
   display: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 0;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--ink);
-  cursor: zoom-in;
+  border: 1px solid #e8e8e7;
+  border-radius: 10px;
+  background: none;
+  color: #e8e8e7;
+  cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -1302,7 +1319,48 @@
 .zoom path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.3;
+  stroke-width: 1.2;
+}
+
+/* On the button itself: the two arrows spring out from the middle and back, a small
+   bounce, ending where they started (owner, 6 Oct 69) — once each time the mouse
+   comes onto it */
+.zoom:hover .zoomOut {
+  animation: zoomOut 0.5s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.zoom:hover .zoomIn {
+  animation: zoomIn 0.5s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+@keyframes zoomOut {
+  40% {
+    transform: translate(2px, -2px);
+  }
+  70% {
+    transform: translate(-0.5px, 0.5px);
+  }
+}
+
+@keyframes zoomIn {
+  40% {
+    transform: translate(-2px, 2px);
+  }
+  70% {
+    transform: translate(0.5px, -0.5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom:hover path {
+    animation: none;
+  }
+}
+
+/* Its image's box: the button sits on the image's top right */
+.figure,
+.two figure {
+  position: relative;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1310,18 +1368,11 @@
     display: grid;
   }
 
-  .stageWrap:hover .zoom,
+  .stageWrap[data-over] > .zoom,
+  .figure:hover > .zoom,
+  .two figure:hover > .zoom,
   .zoom:focus-visible {
     opacity: 1;
-  }
-
-  /* An image that opens on its own */
-  .prose img[data-zoom] {
-    cursor: zoom-in;
-  }
-
-  .carousel .track img[data-zoom] {
-    cursor: auto;
   }
 }
 

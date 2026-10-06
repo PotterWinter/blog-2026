@@ -37,15 +37,9 @@
   user-select: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .img {
-    cursor: zoom-in;
-  }
-
-  .img[data-big] {
-    cursor: zoom-out;
-    transition: transform 0.12s linear;
-  }
+/* Larger with a mouse press (no magnifier pointer — owner, 6 Oct 69) */
+.img[data-big] {
+  transition: transform 0.12s linear;
 }
 
 .caption {
