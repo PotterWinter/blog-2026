@@ -35,6 +35,7 @@ export type BrowseState = {
 
 type Props = {
   posts: ForReaders[];
+  showPrivate?: boolean; // signed in: the Private category, even with no post in it yet
   initial: BrowseState;
 };
 
@@ -95,7 +96,7 @@ function glideTo(top: number) {
 // Everything under the hero on 01: the filters, the grid (or the 01B list) and the pager.
 // Filtering happens in the browser — the whole index is small, so search covers every
 // post, not just the 12 on screen.
-export default function PostBrowser({ posts, initial }: Props) {
+export default function PostBrowser({ posts, showPrivate = false, initial }: Props) {
   const [state, setState] = useState(initial);
   // Presses of the Tags toggle (odd = open); starts open if the URL picked tags
   const [tagTurns, setTagTurns] = useState(initial.tags.length > 0 ? 1 : 0);
@@ -232,9 +233,10 @@ export default function PostBrowser({ posts, initial }: Props) {
         <CategoryFilter
           options={[
             { value: null, label: "All", count: categoryCounts.all },
-            // Private only when this device was handed its posts (signed in, seesPrivate)
+            // Private only on a signed-in device (seesPrivate) — there even at 0 (owner,
+            // 10 Oct 69)
             ...categories
-              .filter((c) => c.slug !== PRIVATE || categoryCounts[c.slug])
+              .filter((c) => c.slug !== PRIVATE || showPrivate)
               .map((c) => ({
                 value: c.slug,
                 label: c.label,

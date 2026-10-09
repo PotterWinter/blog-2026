@@ -2,6 +2,7 @@ import Hero from "@/components/home/Hero";
 import HomeIntro from "@/components/home/HomeIntro";
 import PostBrowser from "@/components/home/PostBrowser";
 import { getPublished } from "@/lib/content";
+import { seesPrivate } from "@/lib/session";
 import { isCategory, isPrivate } from "@/lib/site";
 import { isSort } from "@/lib/sort";
 
@@ -14,7 +15,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   const category = one(params.category);
   const tags = one(params.tags);
   const sort = one(params.sort);
-  const posts = await getPublished("blog");
+  const [posts, signedIn] = await Promise.all([getPublished("blog"), seesPrivate()]);
   return (
     <main>
       <Hero
@@ -24,10 +25,11 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       />
       <PostBrowser
         posts={posts}
+        showPrivate={signedIn}
         initial={{
           // ?category=private on a device that isn't signed in: All, as if it weren't there
           category:
-            isCategory(category) && (!isPrivate({ category }) || posts.some(isPrivate)) ? category : null,
+            isCategory(category) && (!isPrivate({ category }) || signedIn) ? category : null,
           tags: tags ? tags.split(",").filter(Boolean) : [],
           query: one(params.q) ?? "",
           page: Math.max(1, Number.parseInt(one(params.page) ?? "1", 10) || 1),

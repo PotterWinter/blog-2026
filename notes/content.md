@@ -125,4 +125,5 @@ npm run rebuild-index -- ../blog-content
   - หน้า Project ไม่ถาม session เลย (project ไม่มี private)
 - ไม่ล็อก: รูปใน `/media` (เจ้าของ — ชื่อไฟล์ขึ้นด้วยรหัสสุ่ม) · คลิปใน Blob (URL สาธารณะ)
 - เลข No. ใช้ชุดเดียวกับ blog → มุม List ของคนทั่วไปเห็นเลขเว้น
+- ปุ่ม Private ขึ้นทุกครั้งที่ login แม้ยังไม่มีโพสต์ (`Private⁰`, เจ้าของ 10 ต.ค. 69)
 - มือถือ: Private ไม่พอในแถวแรก → ขึ้นบรรทัด 2 ซ้ายสุด, Tags ต่อท้ายบรรทัดเดียวกัน (`[data-value="private"] + .toggleRow`)
