@@ -103,6 +103,7 @@ Header · footer · nav · page transition · travel dot · จุดกลั�
 - ทดสอบ: Chrome headless ครบทุกท่า · Safari แกว่งตอนอยู่นิ่งได้ (hover ทดสอบอัตโนมัติไม่ได้ ให้เจ้าของลอง)
 
 ## scrollbar บนมือถือ (2 ต.ค. 69)
+- **6 ต.ค. 69 (ทดสอบ iPhone จริง iOS 18.7 + Web Inspector): เลิกซ่อน scrollbar ของหน้าแล้ว** — ตั้ง `scrollbar-width: none` ที่ html ครั้งเดียว Safari ไม่วาด scrollbar คืนอีกเลยจนปิดแอป (ลบค่า, auto, scrollbar-color, overflow scroll/hidden, display none, scroll 1px — ไม่กลับสักวิธี) · เจ้าของเลือกให้ขึ้นตลอด (ทางเลือก: หน้าบทความเลื่อนในกล่องเอง = แถบ URL ไม่ย่อ, แตะแถบเวลาไม่เด้งขึ้น — ไม่เอา) · **ห้ามซ่อน scrollbar ของ html ด้วยวิธีใดอีก**
 - 6 ต.ค. 69: เจ้าของเจอ scrollbar หายบ่อยบนเว็บจริง (iPhone) — ยังเหลือ `.list::-webkit-scrollbar { display: none }` ในแผงค้นหาหน้าแรก (SearchPanel) ตัวเดียวกับที่เคยทำหาย → เอาออก เหลือ `scrollbar-width` · หน้าบทความยังซ่อนตั้งใจตอนสารบัญอยู่บนจอ · เอา `::-webkit-scrollbar` ออกจาก Editor (`.writeTools`, `.pillTools`) ด้วย — admin → หน้าเว็บโดยไม่ reload ก็ติดไปได้ · **ตอนนี้ทั้งโปรเจกต์ไม่มี `::-webkit-scrollbar` แล้ว** · ที่ซ่อน scrollbar ของหน้ามีที่เดียว: `globals.css` `html[data-rail]` บนจอสัมผัส (ContentsRail ตั้ง/ลบตามสารบัญอยู่บนจอ, ลบตอนออกจากหน้า)
 - ซ่อนเฉพาะตอนสารบัญอยู่บนจอ (`html[data-rail]`) · ใช้แค่ `scrollbar-width: none`
 - เลิกใช้ `::-webkit-scrollbar { display: none }` — iOS Safari ซ่อนแล้วไม่คืน จนกว่าจะ reload (หน้า Edit หลังปิด Preview / หน้าที่มาจากหน้าบทความ scrollbar หาย)

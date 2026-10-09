@@ -616,16 +616,9 @@ export default function ContentsRail({
     };
 
     let queued = 0;
-    // Phones: no scroll bar of the page's own while the rail is on screen — it stands in
-    // for it; scrolled on past the article, the rail leaves and the scroll bar comes back
-    // (owner, 30 Sep 69; globals.css hides it while data-rail is set)
-    const scrollBar = () => {
-      const r = nav.getBoundingClientRect();
-      document.documentElement.toggleAttribute("data-rail", r.bottom > 0 && r.top < window.innerHeight);
-    };
-    scrollBar();
+    // (It once hid the page's scroll bar on phones while on screen, html[data-rail] —
+    // iOS Safari never brought the bar back; globals.css, 6 Oct 69)
     const onScroll = () => {
-      scrollBar();
       if (open && byTouch && !gliding && !touch?.dragging) fold();
       // Near either end of its range the rail may be pushed: the ticks keep to it
       // (not mid-drag: the finger is steering by where the ticks were when it started)
@@ -683,7 +676,6 @@ export default function ContentsRail({
       clearTimeout(dwell);
       cancelAnimationFrame(queued);
       sizes.disconnect();
-      document.documentElement.removeAttribute("data-rail");
       phone.removeEventListener("change", centre);
     };
   }, [items]);
