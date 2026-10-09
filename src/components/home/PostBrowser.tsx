@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { ForReaders } from "@/lib/content";
 import { postUrl } from "@/lib/schema";
-import { categories, postsPerPage, PRIVATE, type CategorySlug } from "@/lib/site";
+import { categories, isPrivate, postsPerPage, PRIVATE, type CategorySlug } from "@/lib/site";
 import { sortPosts, type Sort } from "@/lib/sort";
 import CardDot from "./CardDot";
 import CategoryFilter from "./CategoryFilter";
@@ -40,7 +40,10 @@ type Props = {
 };
 
 // Does a post pass every filter? Category AND (any selected tag) AND the search words.
+// A Private post (signed in only) shows under Private and nowhere else: not in All, and
+// never found by a search (owner, 10 Oct 69)
 function matches(post: ForReaders, { category, tags, query }: BrowseState) {
+  if (isPrivate(post) && (category !== PRIVATE || query)) return false;
   if (category && post.category !== category) return false;
   if (tags.length && !post.tags.some((t) => tags.includes(t))) return false;
   if (query) {
@@ -112,12 +115,19 @@ export default function PostBrowser({ posts, showPrivate = false, initial }: Pro
   const [direction, setDirection] = useState(1); // 1 = forward (NEXT), -1 = back
   const timers = useRef<number[]>([]);
 
+  // Everything but Private: what All, its count, search and the tag list go by
+  const open = posts.filter((p) => !isPrivate(p));
+  // The posts a category shows (null = All)
+  const postsIn = (category: CategorySlug | null) =>
+    category ? posts.filter((p) => p.category === category) : open;
+
   // Category counts are totals over every post; tag counts are within the chosen
-  // category (0 = that tag isn't used there)
-  const categoryCounts: Record<string, number> = { all: posts.length };
+  // category (0 = that tag isn't used there). Private's own tags list only under Private.
+  const categoryCounts: Record<string, number> = { all: open.length };
   const tagCounts: Record<string, number> = {};
   for (const post of posts) {
     categoryCounts[post.category] = (categoryCounts[post.category] ?? 0) + 1;
+    if (isPrivate(post) && state.category !== PRIVATE) continue;
     for (const tag of post.tags) tagCounts[tag] ??= 0;
     if (state.category && post.category !== state.category) continue;
     for (const tag of post.tags) tagCounts[tag] += 1;
@@ -125,8 +135,7 @@ export default function PostBrowser({ posts, showPrivate = false, initial }: Pro
   const allTags = Object.keys(tagCounts)
     .sort()
     .map((name) => ({ name, count: tagCounts[name] }));
-  const tagsIn = (category: CategorySlug | null) =>
-    new Set(posts.filter((p) => !category || p.category === category).flatMap((p) => p.tags));
+  const tagsIn = (category: CategorySlug | null) => new Set(postsIn(category).flatMap((p) => p.tags));
 
   // The column heads sort the 01B list only; the grid has no heads, and is always
   // newest first (the order the posts arrive in)
@@ -137,7 +146,7 @@ export default function PostBrowser({ posts, showPrivate = false, initial }: Pro
   const words = state.query.toLowerCase().split(/\s+/).filter(Boolean);
   const inTitle = (post: ForReaders) => words.every((w) => post.title.toLowerCase().includes(w));
   const quickResults = words.length
-    ? posts
+    ? open
         .filter((post) => matches(post, { ...state, category: null, tags: [] }))
         .sort((a, b) => Number(inTitle(b)) - Number(inTitle(a)))
     : []; // every match — the panel shows about six and scrolls for the rest
@@ -252,7 +261,7 @@ export default function PostBrowser({ posts, showPrivate = false, initial }: Pro
           <TagsToggle turns={tagTurns} onToggle={() => setTagTurns((n) => n + 1)} />
           <SearchBox
             value={state.query}
-            total={posts.length}
+            total={open.length}
             results={quickResults}
             onChange={(query) => update({ query })}
             onOpen={(post) => go?.(postUrl(post))}
@@ -265,7 +274,7 @@ export default function PostBrowser({ posts, showPrivate = false, initial }: Pro
           tags={allTags}
           selected={state.tags}
           matching={matching.length}
-          total={posts.length}
+          total={postsIn(state.category).length}
           onToggleTag={toggleTag}
           onClear={() => update({ tags: [] })}
         />

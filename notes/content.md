@@ -125,5 +125,10 @@ npm run rebuild-index -- ../blog-content
   - หน้า Project ไม่ถาม session เลย (project ไม่มี private)
 - ไม่ล็อก: รูปใน `/media` (เจ้าของ — ชื่อไฟล์ขึ้นด้วยรหัสสุ่ม) · คลิปใน Blob (URL สาธารณะ)
 - เลข No. ใช้ชุดเดียวกับ blog → มุม List ของคนทั่วไปเห็นเลขเว้น
+- แม้ login แล้ว โพสต์ Private ขึ้นที่หมวด Private **เท่านั้น** (เจ้าของ 10 ต.ค. 69) — `matches()` ใน PostBrowser
+  - ไม่อยู่ใน All · ตัวเลข All และ "Search N posts" ไม่นับ · ค้นหาไม่เจอ (ทั้งกล่องค้นหาและตอนพิมพ์ในหมวด Private)
+  - แผง Tags ใน All / หมวดอื่น ไม่มี tag ที่มีแค่ในโพสต์ Private · ในหมวด Private มี
+  - Previous / Next: โพสต์ Private วนกันเอง · โพสต์ทั่วไปข้ามโพสต์ Private
+  - หน้าโพสต์ Private ใส่ noindex อีกชั้น
 - ปุ่ม Private ขึ้นทุกครั้งที่ login แม้ยังไม่มีโพสต์ (`Private⁰`, เจ้าของ 10 ต.ค. 69)
 - มือถือ: Private ไม่พอในแถวแรก → ขึ้นบรรทัด 2 ซ้ายสุด, Tags ต่อท้ายบรรทัดเดียวกัน (`[data-value="private"] + .toggleRow`)

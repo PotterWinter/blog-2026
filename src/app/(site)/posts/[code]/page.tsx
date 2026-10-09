@@ -8,6 +8,7 @@ import PostNav from "@/components/post/PostNav";
 import { coverClip } from "@/lib/clips";
 import { findPublished, forReaders, getClips, getPostTitles, getPublished } from "@/lib/content";
 import { seesPrivate } from "@/lib/session";
+import { isPrivate } from "@/lib/site";
 
 // /posts/<code>: published blog posts only. Drafts, projects (they live at /project/…)
 // and unknown codes get the 404 page; an old /posts/<slug> link moves to the code
@@ -20,7 +21,13 @@ async function load(code: string) {
 
 export async function generateMetadata({ params }: PageProps<"/posts/[code]">): Promise<Metadata> {
   const post = await load((await params).code);
-  return post ? { title: `${post.title} · Code by Korn Natthanat`, description: post.excerpt } : {};
+  if (!post) return {};
+  return {
+    title: `${post.title} · Code by Korn Natthanat`,
+    description: post.excerpt,
+    // A Private post's page is 404 to anyone signed out; noindex as well, in case
+    ...(isPrivate(post) ? { robots: { index: false, follow: false } } : {}),
+  };
 }
 
 // 04 Post detail
@@ -28,8 +35,9 @@ export default async function PostPage({ params }: PageProps<"/posts/[code]">) {
   const post = await load((await params).code);
   if (!post) notFound();
   const clips = await getClips();
-  // Neighbours in the home list (newest first)
-  const posts = await getPublished("blog");
+  // Neighbours in the home list (newest first): a Private post's are the other Private
+  // posts, everyone else's skip them (they're not in All)
+  const posts = (await getPublished("blog")).filter((p) => isPrivate(p) === isPrivate(post));
   const i = posts.findIndex((p) => p.slug === post.slug);
   return (
     <main data-post>
