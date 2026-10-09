@@ -368,9 +368,13 @@
 /* The desktop panel's excerpt, a size down for the phone */
 /* As tall as its text, up to three lines (JS sets the height and it eases, so the
    card grows or shrinks with the excerpt instead of jumping) */
+/* The 10px under the text is a border, not padding: overflow clips at the padding's
+   outer edge, so in a bottom padding the 4th line showed under the "…" (owner,
+   10 Oct 69) */
 .cardExcerpt {
   display: -webkit-box;
-  padding: 8px 10px 10px;
+  padding: 8px 10px 0;
+  border-bottom: 10px solid transparent;
   overflow: hidden;
   font-family: var(--ff-serif);
   font-size: 14px;

@@ -243,9 +243,18 @@ export function TagsPanel({
 
 // ---------- Links (04B buttons under the lead: up to 3, label ≤ 24) ----------
 
-const PRESETS = ["Live site", "GitHub", "Behance"];
+// YouTube for a project's walkthrough video (owner, 10 Oct 69)
+const PRESETS = ["Live site", "GitHub", "Behance", "YouTube"];
 const fromUrl = (url: string) =>
-  /github\.com/i.test(url) ? "GitHub" : /behance\.net/i.test(url) ? "Behance" : /^https?:\/\/\S+\.\S+/i.test(url) ? "Live site" : "";
+  /github\.com/i.test(url)
+    ? "GitHub"
+    : /behance\.net/i.test(url)
+      ? "Behance"
+      : /(youtube\.com|youtu\.be)\//i.test(url)
+        ? "YouTube"
+        : /^https?:\/\/\S+\.\S+/i.test(url)
+          ? "Live site"
+          : "";
 
 export function LinksField({ links, onChange }: { links: PostLink[]; onChange: (links: PostLink[]) => void }) {
   // Which labels were filled from the URL (and so may change with it)

@@ -954,11 +954,12 @@
   line-height: inherit;
 }
 
+/* As light as a table's lines (owner, 10 Oct 69 — it was ink) */
 .prose hr {
   height: 0;
   margin: 44px 0 56px;
   border: 0;
-  border-top: var(--rule-section);
+  border-top: var(--rule-row);
 }
 
 .tableWrap {

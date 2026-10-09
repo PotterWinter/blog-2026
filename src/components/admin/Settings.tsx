@@ -150,7 +150,7 @@ export default function Settings({
             </Row>
           </Section>
 
-          <Section n={2} id="categories" title="Categories" aside="Blog's three, Project's two">
+          <Section n={2} id="categories" title="Categories" aside="Blog's four, Project's two">
             <div className={s.catHead}>
               <span className="label">Name</span>
               <span className="label">Slug</span>

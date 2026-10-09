@@ -14,6 +14,12 @@ button.toggle,
   flex-basis: 100%;
 }
 
+/* …unless Private is there (signed in): it can't fit on the first row, so it starts the
+   second and Tags follows it on that line (owner, 10 Oct 69) */
+[data-value="private"] + .toggleRow {
+  flex: 1 0 auto;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;

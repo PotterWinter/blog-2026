@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { COOKIE, readCookie, sign } from "./cookie";
 import { PREFIX, pipeline, redis } from "./redis";
 
@@ -54,6 +55,17 @@ export async function currentSession(): Promise<{ id: string } | null> {
   if (!cookie) return null;
   return (await redis<number>("EXISTS", key(`session:${cookie.id}`))) ? { id: cookie.id } : null;
 }
+
+// May this request see the Private category (site.ts)? A device still signed in, asked
+// of Redis on every page the blog renders — once per request however many ask (cache).
+// Redis down = no: the private posts hide rather than the blog breaking.
+export const seesPrivate = cache(async (): Promise<boolean> => {
+  try {
+    return (await currentSession()) != null;
+  } catch {
+    return false;
+  }
+});
 
 // Every signed-in device, newest first (Settings, 5.5)
 export async function allSessions(): Promise<Session[]> {

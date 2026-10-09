@@ -101,23 +101,10 @@ header.header {
   color: var(--muted);
 }
 
-/* v4 .btnd: a black pill */
+/* The Editor's Publish button, motion and all (owner, 10 Oct 69): a black pill that
+   shrinks to a dot on hover, the label turning ink on grey (Login's Continue) */
 .newPost {
-  padding: 13px 26px;
-  border: 1px solid var(--ink);
-  border-radius: 999px;
-  background: var(--ink);
-  font: inherit;
-  font-size: 14px;
-  color: var(--paper);
-  cursor: pointer;
-  transition: opacity 0.25s;
-}
-
-@media (hover: hover) {
-  .newPost:hover {
-    opacity: 0.82;
-  }
+  composes: continue from "../login/Login.module.css";
 }
 
 /* ---------- Counts ---------- */

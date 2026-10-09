@@ -2,7 +2,7 @@ import Hero from "@/components/home/Hero";
 import HomeIntro from "@/components/home/HomeIntro";
 import PostBrowser from "@/components/home/PostBrowser";
 import { getPublished } from "@/lib/content";
-import { isCategory } from "@/lib/site";
+import { isCategory, isPrivate } from "@/lib/site";
 import { isSort } from "@/lib/sort";
 
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -25,7 +25,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <PostBrowser
         posts={posts}
         initial={{
-          category: isCategory(category) ? category : null,
+          // ?category=private on a device that isn't signed in: All, as if it weren't there
+          category:
+            isCategory(category) && (!isPrivate({ category }) || posts.some(isPrivate)) ? category : null,
           tags: tags ? tags.split(",").filter(Boolean) : [],
           query: one(params.q) ?? "",
           page: Math.max(1, Number.parseInt(one(params.page) ?? "1", 10) || 1),

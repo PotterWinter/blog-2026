@@ -2,6 +2,8 @@ import "server-only";
 
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { seesPrivate } from "./session";
+import { isPrivate } from "./site";
 import { coverClip, MEDIA_JSON, parseClips, type ClipEntry, type ClipMap } from "./clips.ts";
 import {
   buildIndex,
@@ -150,9 +152,16 @@ export function forReaders<T extends PostMeta>(post: T): ForReaders<T> {
 // Highest number first (owner, 2 Oct 69): the order they went out in, newest on top —
 // the same order as by publish date, since both are set on the first publish
 // A clip cover comes with its entry, so a card can play it (owner, 4 Oct 69)
+// The blog's Private posts only for a signed-in device (seesPrivate) — a project is
+// never private, so the project pages never ask
 export async function getPublished(section: IndexEntry["section"]) {
-  const [posts, clips] = await Promise.all([getPosts({ section }), getClips()]);
+  const [posts, clips, open] = await Promise.all([
+    getPosts({ section }),
+    getClips(),
+    section === "blog" ? seesPrivate() : false,
+  ]);
   return posts
+    .filter((p) => open || !isPrivate(p))
     .sort((a, b) => (b.no ?? 0) - (a.no ?? 0))
     .map((p) => {
       const clip = coverClip(p.cover, clips);
@@ -161,20 +170,24 @@ export async function getPublished(section: IndexEntry["section"]) {
 }
 
 // Every published post's title by its address (/posts/<code>, and its old slug one):
-// a post linked by its address alone reads as its title (PostBody)
-export async function getPostTitles(): Promise<Record<string, string>> {
-  const posts = await getPosts();
+// a post linked by its address alone reads as its title (PostBody). A Private post's
+// title only when the page has already asked seesPrivate (the blog's pages do).
+export async function getPostTitles(withPrivate = false): Promise<Record<string, string>> {
+  const posts = (await getPosts()).filter((p) => withPrivate || !isPrivate(p));
   return Object.fromEntries(posts.flatMap((p) => [[postUrl(p), p.title], [postUrl({ ...p, code: null }), p.title]]));
 }
 
 // A published post by its address (/posts/<code>), in its own section. A slug — an
 // address from before codes (until 2 Oct 69) — moves to the code while it's still the
 // post's own slug; a post with no code yet is served at its slug.
+// A Private post is not there at all (404, no move) unless the device is signed in.
 export async function findPublished(
   section: IndexEntry["section"],
   param: string,
 ): Promise<{ post: Post } | { moved: string } | null> {
-  const posts = await getPosts({ section });
+  const all = await getPosts({ section });
+  const open = all.some(isPrivate) && (await seesPrivate());
+  const posts = all.filter((p) => open || !isPrivate(p));
   const entry = posts.find((p) => p.code === param) ?? posts.find((p) => !p.code && p.slug === param);
   if (entry) {
     const post = await getPost(entry.slug);

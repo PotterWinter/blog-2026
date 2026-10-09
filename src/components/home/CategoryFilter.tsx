@@ -48,6 +48,7 @@ export default function CategoryFilter<T>({
           className={styles.item}
           aria-pressed={i === active}
           data-active={i === active || undefined}
+          data-value={option.value == null ? "all" : String(option.value)}
           onClick={() => (i === active ? boing() : onChange(option.value))}
           {...pressHandlers}
         >

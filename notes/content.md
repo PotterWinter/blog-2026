@@ -114,3 +114,15 @@ npm run rebuild-index -- ../blog-content
 - แก้ (5 ต.ค.): ของเดิมเก็บไว้ที่ branch `backup/local-before-sync-2026-10-05` + `git stash` (แก้ #3 ที่ลบไปแล้ว) แล้ว `reset --hard origin/main`
 - ถ้าแยกทางอีก: `git fetch` แล้ว `git reset --hard origin/main` (ไม่มีอะไรของเครื่องที่ต้องเก็บ ถ้าไม่ได้แก้ไฟล์ในนี้)
 
+
+## หมวด Private (10 ต.ค. 69)
+
+- หมวดที่ 4 ของ blog (`site.ts` › `PRIVATE`) · เลือกใน Editor ได้เหมือนหมวดอื่น
+- ใครเห็น: เครื่องที่ login admin อยู่ — `seesPrivate()` (session.ts) เช็ก cookie + Redis ทุกหน้าที่ render, ครั้งเดียวต่อ request
+  - Sign out (เครื่องนี้หรือจาก Settings) = หายตั้งแต่หน้าถัดไป · Redis ล่ม = ซ่อน (ไม่ใช่เว็บพัง)
+- กรองที่ server: `getPublished("blog")`, `findPublished`, `getPostTitles(withPrivate)` — ข้อมูลไม่ถึง browser ของคนทั่วไป
+  - ไม่ login: ไม่มีการ์ด, ไม่มีปุ่ม Private, Prev / Next ข้าม, tag ที่มีแค่ในโพสต์ private ไม่ขึ้น, ลิงก์ถึงโพสต์ไม่ขึ้นชื่อ, เปิดตรง = 404, `?category=private` = All
+  - หน้า Project ไม่ถาม session เลย (project ไม่มี private)
+- ไม่ล็อก: รูปใน `/media` (เจ้าของ — ชื่อไฟล์ขึ้นด้วยรหัสสุ่ม) · คลิปใน Blob (URL สาธารณะ)
+- เลข No. ใช้ชุดเดียวกับ blog → มุม List ของคนทั่วไปเห็นเลขเว้น
+- มือถือ: Private ไม่พอในแถวแรก → ขึ้นบรรทัด 2 ซ้ายสุด, Tags ต่อท้ายบรรทัดเดียวกัน (`[data-value="private"] + .toggleRow`)
