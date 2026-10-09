@@ -4,7 +4,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidateTag } from "next/cache";
 import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
-import { placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, planUntag, type Change, type Plan, type PostInput } from "./edit.ts";
+import { changesRun, placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, planUntag, type Change, type Plan, type PostInput } from "./edit.ts";
 import { clipKey, clipsIn, isClip, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
 import { placeUploads, type Pending } from "./media";
 import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
@@ -274,7 +274,9 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
     // The cover may be a clip as well (owner, 4 Oct 69): "clip:cover-x" → its path
     const cover = input.cover && placeClips(placeWaiting(input.cover, paths), clipPaths, "");
     const body = placeClips(placeWaiting(input.body, paths, "../"), clipPaths);
-    const plan = planSave(index, { ...input, cover, body }, now, previous, code);
+    // Into or out of Private with a number: the posts after it in its old run move down
+    const later = changesRun(before, input) ? await readLater(index, before!.id, read) : [];
+    const plan = planSave(index, { ...input, cover, body }, now, previous, code, later);
 
     // media.json: this save's clips in, the ones its text let go of out
     const map: ClipMap = parseClips(await read.file(MEDIA_JSON));
@@ -359,6 +361,17 @@ export async function unpublishPost(id: number): Promise<Saved> {
   return done(result, id);
 }
 
+// The posts numbered after this one in its run (renumbered), with their .md
+async function readLater(index: ContentIndex, id: number, read: { file: (path: string) => Promise<string | null> }) {
+  return Promise.all(
+    renumbered(index, id).map(async (entry) => {
+      const text = await read.file(entry.file);
+      if (text == null) throw new Error(`${entry.file} is missing`);
+      return { entry, text };
+    }),
+  );
+}
+
 // Its clips go with it (owner, 4 Oct 69 — they stayed in Blob): those its text and its
 // cover point at, named for it (<code>- or <id>-, as its own images are), lose their
 // media.json entry and their poster in the same commit, and their file in Blob after it
@@ -366,14 +379,8 @@ export async function deletePost(id: number): Promise<Saved> {
   let gone: string[] = [];
   const result = await commit(async (read) => {
     const { index, file } = await withFile(id, read);
-    // The posts after it in its section move down a number, in the same commit
-    const later = await Promise.all(
-      renumbered(index, id).map(async (entry) => {
-        const text = await read.file(entry.file);
-        if (text == null) throw new Error(`${entry.file} is missing`);
-        return { entry, text };
-      }),
-    );
+    // The posts after it in its run move down a number, in the same commit
+    const later = await readLater(index, id, read);
     const plan = planDelete(index, id, new Date(), file, later);
 
     const post = index.posts.find((p) => p.id === id)!;

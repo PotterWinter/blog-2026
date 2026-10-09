@@ -971,10 +971,11 @@ header.header {
 
 /* The head and the rows share one set of columns. Phones (v4 390): No. · Title · Status
    · Date, no file or Cat. v4's 64 / 60px wrapped "30 AUG 26" in our type: 66 / 66
-   fit the widest ("Published" 65.8, a date 64.6) */
+   fit the widest ("Published" 65.8, a date 64.6). No. is 36: "Pro01" / "Pri01" in 12px
+   mono (owner, 10 Oct 69) */
 .listGrid {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 66px 66px;
+  grid-template-columns: 36px minmax(0, 1fr) 66px 66px;
   column-gap: 12px;
   align-items: center;
 }
@@ -1214,7 +1215,7 @@ header.header {
 @media (min-width: 768px) {
   /* v4 768: the file and Cat. come in */
   .listGrid {
-    grid-template-columns: 32px minmax(0, 1fr) 84px 36px 84px;
+    grid-template-columns: 40px minmax(0, 1fr) 84px 36px 84px;
     column-gap: 20px;
   }
 
@@ -1324,7 +1325,7 @@ header.header {
 /* From 1024 the details sit beside the cards, held in view as the page scrolls */
 @media (min-width: 1024px) {
   .listGrid {
-    grid-template-columns: 32px minmax(0, 1fr) 84px 36px 76px;
+    grid-template-columns: 40px minmax(0, 1fr) 84px 36px 76px;
     column-gap: 16px;
   }
 

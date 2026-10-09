@@ -124,7 +124,10 @@ npm run rebuild-index -- ../blog-content
   - ไม่ login: ไม่มีการ์ด, ไม่มีปุ่ม Private, Prev / Next ข้าม, tag ที่มีแค่ในโพสต์ private ไม่ขึ้น, ลิงก์ถึงโพสต์ไม่ขึ้นชื่อ, เปิดตรง = 404, `?category=private` = All
   - หน้า Project ไม่ถาม session เลย (project ไม่มี private)
 - ไม่ล็อก: รูปใน `/media` (เจ้าของ — ชื่อไฟล์ขึ้นด้วยรหัสสุ่ม) · คลิปใน Blob (URL สาธารณะ)
-- เลข No. ใช้ชุดเดียวกับ blog → มุม List ของคนทั่วไปเห็นเลขเว้น
+- เลข No. ของ Private นับแยก (`series()` ใน edit.ts: blog · project · private) — blog ไม่มีเลขเว้น (เจ้าของ 10 ต.ค. 69)
+  - admin โชว์ `Pro01` (project) · `Pri01` (private) · blog `012` — 3 ตัวอักษรเพราะ P ชนกัน · คอลัมน์ No. กว้าง 36 / 40px
+  - ย้ายโพสต์ที่มีเลขแล้วเข้า / ออก Private ตอน Save = ได้เลขถัดไปของชุดใหม่ + โพสต์หลังมันในชุดเดิมเลื่อนลง 1 (commit เดียว เหมือน Delete)
+  - ไม่ทำ: Checks เตือนลิงก์จากโพสต์ทั่วไปไปโพสต์ Private (เจ้าของไม่ลิงก์อยู่แล้ว)
 - แม้ login แล้ว โพสต์ Private ขึ้นที่หมวด Private **เท่านั้น** (เจ้าของ 10 ต.ค. 69) — `matches()` ใน PostBrowser
   - ไม่อยู่ใน All · ตัวเลข All และ "Search N posts" ไม่นับ · ค้นหาไม่เจอ (ทั้งกล่องค้นหาและตอนพิมพ์ในหมวด Private)
   - แผง Tags ใน All / หมวดอื่น ไม่มี tag ที่มีแค่ในโพสต์ Private · ในหมวด Private มี

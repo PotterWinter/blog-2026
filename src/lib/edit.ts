@@ -1,3 +1,4 @@
+import { PRIVATE } from "./site.ts";
 import {
   indexEntry,
   newCode,
@@ -140,6 +141,31 @@ const dropped = (owner: Owner, before: string, after: string): Change[] => {
   return [...ownMedia(owner, before)].filter((p) => !kept.has(p)).map((path) => ({ path, text: null }));
 };
 
+// The run a post's number counts in: blog, project — and Private by itself (owner,
+// 10 Oct 69), so the blog's numbers have no gap where a private post sits
+export const series = (p: { section: string; category: string }) =>
+  p.category === PRIVATE ? "private" : p.section;
+
+const topNo = (index: ContentIndex, run: string) =>
+  Math.max(0, ...index.posts.filter((p) => series(p) === run).map((p) => p.no ?? 0));
+
+// Does this save move a numbered post into, or out of, Private? Then it takes the next
+// number there, and the posts after it in its old run move down one (readLater)
+export const changesRun = (before: IndexEntry | null | undefined, input: { section: string; category: string }) =>
+  before?.no != null && series(before) !== series(input);
+
+// later: renumbered()'s posts with their .md, each written back a number lower
+function shiftDown(index: ContentIndex, changes: Change[], later: { entry: IndexEntry; text: string }[]): ContentIndex {
+  let next = index;
+  for (const { entry, text } of later) {
+    const { data, body } = splitFrontmatter(text, entry.slug);
+    const meta = toMeta(data, entry.slug);
+    changes.push({ path: entry.file, text: toMarkdown({ ...meta, no: meta.no! - 1 }, body) });
+    next = withEntry(next, entry.id, { ...entry, no: entry.no! - 1 });
+  }
+  return next;
+}
+
 // Save (Save draft, or a published post's edits): a new post gets the next id and
 // starts as a draft; a slug change moves the file. Status, number and publish date stay.
 // previous: the .md as it was, to see which of its images it has stopped using.
@@ -148,7 +174,14 @@ const dropped = (owner: Owner, before: string, after: string): Change[] => {
 // never refused: a title with no a–z (Thai only) gives "post-<id>", and one another
 // post has (or "new", the editor's) gets "-<id>" on the end.
 // code: the one its new images were named with, when it gets its code on this save
-export function planSave(index: ContentIndex, input: PostInput, now: Date, previous = "", code?: string): Plan {
+export function planSave(
+  index: ContentIndex,
+  input: PostInput,
+  now: Date,
+  previous = "",
+  code?: string,
+  later: { entry: IndexEntry; text: string }[] = [],
+): Plan {
   if (input.slug && !SLUG.test(input.slug)) throw new Error("Slug: lowercase letters, numbers and single dashes");
   const before = input.id == null ? null : find(index, input.id);
   const id = before?.id ?? index.nextId;
@@ -163,7 +196,7 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date, previ
     id,
     // Its address: made on the first save (or the first since codes came in), then kept
     code: before?.code ?? code ?? newCode(takenCodes(index)),
-    no: before?.no ?? null,
+    no: changesRun(before, input) ? topNo(index, series(input)) + 1 : (before?.no ?? null),
     status: before?.status ?? "draft",
     publishedAt: before?.publishedAt ?? today,
     updatedAt: today,
@@ -172,11 +205,11 @@ export function planSave(index: ContentIndex, input: PostInput, now: Date, previ
   const { entry, changes, slugs } = written(meta, body, before, now, message);
   changes.push(...dropped(meta, previous, `${meta.cover ?? ""}\n${body}`));
   // The tags it brings in join the kept list (ContentIndex.tags)
-  const next = withEntry(index, id, entry, before ? index.nextId : id + 1);
+  const next = shiftDown(withEntry(index, id, entry, before ? index.nextId : id + 1), changes, later);
   return { changes, message, index: { ...next, tags: sortedTags([...index.tags, ...meta.tags]) }, entry, slugs };
 }
 
-// Publish: the first time, the section's next number and today's date; again after an
+// Publish: the first time, its run's next number (series) and today's date; again after an
 // unpublish, the number and date it had
 export function planPublish(index: ContentIndex, id: number, file: string, now: Date): Plan {
   const before = find(index, id);
@@ -184,7 +217,7 @@ export function planPublish(index: ContentIndex, id: number, file: string, now: 
   const { data, body } = splitFrontmatter(file, before.slug);
   const meta = toMeta(data, before.slug);
   const first = meta.no == null;
-  const top = Math.max(0, ...index.posts.filter((p) => p.section === meta.section).map((p) => p.no ?? 0));
+  const top = topNo(index, series(meta));
   const today = bangkok(now).date;
   const message = commitMessage(now, "Publish", id);
   const { entry, changes, slugs } = written(
@@ -243,22 +276,15 @@ export function planUntag(index: ContentIndex, tag: string, now: Date, files: { 
 export function renumbered(index: ContentIndex, id: number): IndexEntry[] {
   const gone = find(index, id);
   if (gone.no == null) return [];
-  return index.posts.filter((p) => p.section === gone.section && p.no != null && p.no > gone.no!);
+  return index.posts.filter((p) => p.id !== id && series(p) === series(gone) && p.no != null && p.no > gone.no!);
 }
 
-// later: renumbered()'s posts with their .md, each written back a number lower
 export function planDelete(index: ContentIndex, id: number, now: Date, file = "", later: { entry: IndexEntry; text: string }[] = []): Plan {
   const before = find(index, id);
   if (before.status !== "draft") throw new Error(`#${id} is published: unpublish it first`);
   const message = commitMessage(now, "Delete", id);
   const changes: Change[] = [{ path: before.file, text: null }, ...dropped(before, file, "")];
-  let next = withEntry(index, id, null);
-  for (const { entry, text } of later) {
-    const { data, body } = splitFrontmatter(text, entry.slug);
-    const meta = toMeta(data, entry.slug);
-    changes.push({ path: entry.file, text: toMarkdown({ ...meta, no: meta.no! - 1 }, body) });
-    next = withEntry(next, entry.id, { ...entry, no: entry.no! - 1 });
-  }
+  const next = shiftDown(withEntry(index, id, null), changes, later);
   return { changes, message, index: next, entry: null, slugs: [before.slug, ...later.map((l) => l.entry.slug)] };
 }
 

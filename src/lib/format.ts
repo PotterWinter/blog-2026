@@ -17,11 +17,15 @@ export function longDate(iso: string): string {
   return `${Number(day)} ${MONTH_NAMES[Number(month) - 1]} ${year}`;
 }
 
-// A post's number as shown: "012" · a project's "P01" in the admin, where both
-// sections share one list · "—" for a draft that was never published
-export function postNo(p: { no: number | null; section: string }, admin = false): string {
+// A post's number as shown: "012" · in the admin, where every run shares one list, a
+// project's "Pro01" and a Private post's "Pri01" (owner, 10 Oct 69 — three letters,
+// so the two P's don't clash) · "—" for a draft that was never published
+export function postNo(p: { no: number | null; section: string; category?: string }, admin = false): string {
   if (p.no == null) return "—";
-  return admin && p.section === "project" ? `P${String(p.no).padStart(2, "0")}` : String(p.no).padStart(3, "0");
+  if (!admin) return String(p.no).padStart(3, "0");
+  const n = String(p.no).padStart(2, "0");
+  if (p.category === "private") return `Pri${n}`;
+  return p.section === "project" ? `Pro${n}` : String(p.no).padStart(3, "0");
 }
 
 // Minutes to read a markdown body — the same count the index keeps (Thai words found by
