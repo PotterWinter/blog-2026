@@ -61,6 +61,7 @@ const easings = [
 
 // Where the build left v4 on purpose — the owner's calls, newest first
 const changes = [
+  ["12 Oct 69", "PDFs show as a card in posts: the first page, Open and Download"],
   ["10 Oct 69", "--- is a light line (--rule-row), like a table's — v4 drew it in ink"],
   ["10 Oct 69", "New post moves like Publish: the pill shrinks to a dot on hover"],
   ["10 Oct 69", "A Private category on the blog, shown only while signed in"],
