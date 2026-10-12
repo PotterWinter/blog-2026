@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import BangkokClock from "./BangkokClock";
 import JumpText from "../jump/JumpText";
 import CursorBadge from "./CursorBadge";
+import EmailCopy from "./EmailCopy";
 import styles from "./About.module.css";
 
 const timeline = [
@@ -43,7 +44,7 @@ const now = [
 const elsewhere = [
   { text: "GitHub", href: "https://github.com/PotterWinter" },
   { text: "Behance", href: "https://www.behance.net/korn-natthanat" },
-  { text: "LinkedIn", href: "#" },
+  { text: "LinkedIn", href: "https://www.linkedin.com/in/korn-natthanat/" },
 ];
 
 // Long arrows from v4: down (a download) and out (leaves the page)
@@ -228,7 +229,7 @@ export default function About() {
         <div className={styles.ways}>
           <div className={styles.way}>
             <span className="label">Hiring? Start here</span>
-            <a className={styles.bigLink} href="#">
+            <a className={styles.bigLink} href="/natthanat-chuayriang-cv.pdf" target="_blank" rel="noopener">
               <CursorBadge label="View" />
               <span className={styles.bigText}>
                 Download my CV
@@ -236,29 +237,20 @@ export default function About() {
                   <ArrowDown />
                 </span>
               </span>
-              <span className="label">PDF · one page · Sep 2026</span>
+              <span className="label">PDF · one page · Oct 2026</span>
             </a>
           </div>
           <div className={styles.way}>
             <span className="label">Have a role or project in mind?</span>
-            <a className={styles.bigLink} href="mailto:natthanataa@gmail.com">
-              <CursorBadge label="Email" />
-              <span className={styles.bigText}>
-                <span className={styles.email}>natthanataa@gmail.com</span>
-                <span className={styles.arrow}>
-                  <ArrowOut />
-                </span>
-              </span>
-              <span className="label">Replies within a day</span>
-            </a>
+            <EmailCopy email="natthanataa@gmail.com" note="Replies within a day" />
           </div>
           <div className={styles.small}>
             <div className={styles.smallPair}>
               <div className={styles.smallGroup}>
                 <span className="label">Call</span>
                 <div className={styles.smallLinks}>
-                  <a className={`${styles.underline} ${styles.tap}`} href="tel:+66868346007">
-                    +66 86 834 6007
+                  <a className={`${styles.underline} ${styles.tap}`} href="tel:+66644966804">
+                    +66 64 496 6804
                   </a>
                 </div>
               </div>

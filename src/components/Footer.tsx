@@ -9,21 +9,21 @@ const groups = [
     label: "Contact",
     links: [
       { text: "natthanataa@gmail.com", href: "mailto:natthanataa@gmail.com" },
-      { text: "+66 86 834 6007", href: "tel:+66868346007" },
+      { text: "+66 64 496 6804", href: "tel:+66644966804" },
     ],
   },
   {
     label: "Social",
     inline: true,
     links: [
-      { text: "LinkedIn", href: "#" },
+      { text: "LinkedIn", href: "https://www.linkedin.com/in/korn-natthanat/" },
       { text: "GitHub", href: "https://github.com/PotterWinter" },
       { text: "Behance", href: "https://www.behance.net/korn-natthanat" },
     ],
   },
   {
     label: "Résumé",
-    links: [{ text: "Download CV (PDF)", href: "#" }],
+    links: [{ text: "Download CV (PDF)", href: "/natthanat-chuayriang-cv.pdf" }],
   },
 ];
 

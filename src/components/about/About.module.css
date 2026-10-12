@@ -398,9 +398,15 @@
   }
 }
 
-.bigLink:focus-visible .arrow {
+.bigLink:focus-visible .arrow,
+.bigLink[data-done] .arrow {
   opacity: 1;
   transform: none;
+}
+
+/* The email row's ⧉ (EmailCopy), as the code block's Copy has it */
+.copyIcon {
+  font-size: 0.8em;
 }
 
 /* The cursor badge (v4 .dlbadge): hides the pointer over the row it follows */

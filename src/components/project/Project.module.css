@@ -3,7 +3,11 @@
    768    text 1fr · cover .87fr, gap 32 (48 from 1024)
    1280   text 430 · cover 373, gap 76, centred on the page
    Rows with data-flip put the cover first (every other pair). */
+/* Room before the footer, as the blog's pager has: with the last row's 24px and these
+   8, 72 → 88 (768) → 104 (1024) — the space the Case studies section used to take
+   (owner, 12 Oct 69: its line moved into the hero) */
 .list {
+  margin-bottom: 40px;
   padding: 0 var(--page-x) 8px;
 }
 
@@ -102,32 +106,11 @@
   object-fit: cover;
 }
 
-/* ---------- Case studies ---------- */
-.cases {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  margin: 72px var(--page-x) 0;
-  padding: 34px 0 56px;
-  border-top: var(--rule-section);
-}
-
-.casesTitle {
-  font-size: var(--fs-display);
-  font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-}
-
-.casesText {
-  font-family: var(--ff-serif);
-  font-size: var(--fs-lead);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  text-wrap: pretty;
-}
-
 @media (min-width: 768px) {
+  .list {
+    margin-bottom: 56px;
+  }
+
   .row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.87fr);
     gap: 32px;
@@ -144,22 +127,15 @@
   .row[data-flip] .cover {
     order: -1;
   }
-
-  .cases {
-    gap: 20px;
-    margin-top: 88px;
-  }
 }
 
 @media (min-width: 1024px) {
-  .row {
-    gap: 48px;
+  .list {
+    margin-bottom: 72px;
   }
 
-  .cases {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-    gap: 56px;
-    margin-top: 104px;
+  .row {
+    gap: 48px;
   }
 }
 

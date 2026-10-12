@@ -8,8 +8,8 @@ import styles from "./About.module.css";
 const FOLLOW = 0.34;
 
 // An 82px black badge that takes the place of the mouse pointer over its parent row
-// (v4 .dlbadge): "View" on the CV row, "Email" on the email row. Mouse only — on touch
-// the row is just a link.
+// (v4 .dlbadge): "View" on the CV row, "Copy" / "Copied" on the email row (EmailCopy).
+// Mouse only — on touch the row is just a link.
 export default function CursorBadge({ label }: { label: string }) {
   const ref = useRef<HTMLSpanElement>(null);
 

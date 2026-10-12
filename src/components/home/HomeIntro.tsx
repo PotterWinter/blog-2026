@@ -5,10 +5,9 @@ import { Keep } from "./Hero";
 export default function HomeIntro() {
   return (
     <>
-      I graduated in architecture, <Keep>ended up</Keep> building software, and write here
-      about how things are <Keep>put together.</Keep> This is <Keep>a notebook,</Keep>{" "}
-      <Keep>not a publication.</Keep> Posts go up when something breaks and{" "}
-      <Keep>I finally understand why.</Keep>
+      Architecture taught me how things are <Keep>put together.</Keep> Software is where{" "}
+      <Keep>I build them.</Keep> This is the place I keep notes along the way on what I make,
+      what I read, and <Keep>what finally made sense.</Keep>
     </>
   );
 }
