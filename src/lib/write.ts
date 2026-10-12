@@ -284,8 +284,8 @@ export async function savePost(input: PostInput, pending: Pending[] = [], clips:
     for (const c of clips) {
       const at = clipPaths[c.key];
       if (!at) continue;
-      const { url, bytes, seconds, width, height } = c;
-      map[at] = { url, bytes, seconds, width, height, poster: paths[`upload:${c.key}`] };
+      const { url, bytes, seconds, width, height, pages } = c;
+      map[at] = { url, bytes, seconds, width, height, ...(pages ? { pages } : {}), poster: paths[`upload:${c.key}`] };
     }
     const kept = clipsIn(body);
     if (cover && isClip(cover)) kept.add(clipKey(cover));

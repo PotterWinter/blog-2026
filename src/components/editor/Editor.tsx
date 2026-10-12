@@ -18,7 +18,9 @@ import type { Images } from "./WriteFigure";
 import type { LinkTarget } from "./WriteMenus";
 import { UPLOAD, type Waiting } from "./waiting";
 import { firstFrame } from "./clipFrame";
-import { CLIP, CLIP_MAX, CLIP_TYPES, clipKey, isClip, placeClips, waitingClips, type ClipMap, type WaitingClip } from "@/lib/clips";
+import { firstPage } from "./pdfPage";
+import { fileSize } from "@/lib/format";
+import { CLIP, CLIP_MAX, CLIP_TYPES, clipKey, isClip, isPdf, PDF, PDF_MAX, PDF_TYPE, placeClips, waitingClips, type ClipMap, type WaitingClip } from "@/lib/clips";
 import { shrinkForUpload } from "./shrink";
 import { anchorIn, type Anchor } from "./anchor";
 import styles from "./Editor.module.css";
@@ -65,8 +67,11 @@ const RETRY_MS = 10_000;
 
 type Note = { text: string; tone: "ok" | "bad" | "muted" };
 
-// A clip picked, not saved: the file itself, and `url` a blob: address for playing it
+// A clip picked, not saved: the file itself, and `url` a blob: address for playing it.
+// A PDF is held the same way (its file a PDF, its key named in the text "pdf:<key>").
 type HeldClip = WaitingClip & { file: File };
+// How the text names a held one, by what it is
+const heldSrc = (held: HeldClip) => `${held.file.type === PDF_TYPE ? PDF : CLIP}${held.key}`;
 
 // On Save, the held clips go up to Blob — from here, straight (/api/clip hands out the
 // token; through a function, 5 MB would hit Vercel's 4.5 MB limit). One failing takes
@@ -77,8 +82,9 @@ async function toBlob(held: HeldClip[]): Promise<{ ok: true; clips: WaitingClip[
   const clips: WaitingClip[] = [];
   try {
     for (const { file, ...clip } of held) {
-      const ext = file.type === "video/webm" ? "webm" : "mp4";
-      const blob = await put(`clips/${clip.key}.${ext}`, file, {
+      const where =
+        file.type === PDF_TYPE ? `pdfs/${clip.key}.pdf` : `clips/${clip.key}.${file.type === "video/webm" ? "webm" : "mp4"}`;
+      const blob = await put(where, file, {
         access: "public",
         handleUploadUrl: "/api/clip",
         contentType: file.type,
@@ -92,7 +98,7 @@ async function toBlob(held: HeldClip[]): Promise<{ ok: true; clips: WaitingClip[
     // /api/clip refused the token: Blob not connected here (no BLOB_READ_WRITE_TOKEN), or
     // signed out
     const said = /client token/i.test(why) ? "Blob isn't connected (BLOB_READ_WRITE_TOKEN) — or sign in again" : why;
-    return { ok: false, error: `Clip not sent · ${said}` };
+    return { ok: false, error: `File not sent to Blob · ${said}` };
   }
 }
 // The last message under Publish, per post. Kept outside the editor: when a new post's
@@ -461,8 +467,8 @@ export default function Editor({
     },
     rename: (src, typed) => renameImage(src.slice(UPLOAD.length), typed),
     clip: (src) => {
-      if (!src.startsWith(CLIP)) return clipMap[clipKey(src)];
-      const key = src.slice(CLIP.length);
+      if (!src.startsWith(CLIP) && !src.startsWith(PDF)) return clipMap[clipKey(src)];
+      const key = src.slice(src.indexOf(":") + 1);
       const waiting = waitingClipsRef.current[key];
       return waiting && { ...waiting, poster: pending[key]?.url ?? "" };
     },
@@ -499,6 +505,40 @@ export default function Editor({
         return null;
       }
     },
+    addPdf: async (file) => {
+      if (file.type !== PDF_TYPE) {
+        setNote({ text: "PDF not added · a .pdf file only", tone: "bad" });
+        return null;
+      }
+      if (file.size > PDF_MAX) {
+        setNote({ text: `PDF not added · ${(file.size / 1024 / 1024).toFixed(1)} MB, over 50 MB`, tone: "bad" });
+        return null;
+      }
+      try {
+        // Its first page goes the images' way (the key names both); the file waits here
+        // for Save (toBlob), as a clip does
+        const page = await firstPage(file);
+        const poster = await prepare(page.poster, "image");
+        if (!poster.ok) throw new Error(poster.error);
+        const key = poster.image.key;
+        URL.revokeObjectURL(waitingClipsRef.current[key]?.url ?? "");
+        waitingClipsRef.current[key] = {
+          key,
+          file,
+          url: URL.createObjectURL(file),
+          bytes: file.size,
+          seconds: 0,
+          width: page.width,
+          height: page.height,
+          pages: page.pages,
+        };
+        setNote({ text: `PDF ready · ${page.pages} pages · ${fileSize(file.size)} · goes in with ${saveWord}`, tone: "muted" });
+        return `${PDF}${key}`;
+      } catch (error) {
+        setNote({ text: `PDF not added · ${error instanceof Error ? error.message : "can't read it"}`, tone: "bad" });
+        return null;
+      }
+    },
   };
 
   // ---------- Checks (5.3f) ----------
@@ -510,8 +550,8 @@ export default function Editor({
   const [answers, setAnswers] = useState<Record<string, "ok" | "broken" | "asking">>({});
   const fileOf = (src: string) => {
     if (src.startsWith(UPLOAD)) return pending[src.slice(UPLOAD.length)] ?? null;
-    if (src.startsWith(CLIP)) return waitingClipsRef.current[src.slice(CLIP.length)] ?? null;
-    if (isClip(src)) return clipMap[clipKey(src)] ?? null;
+    if (src.startsWith(CLIP) || src.startsWith(PDF)) return waitingClipsRef.current[src.slice(src.indexOf(":") + 1)] ?? null;
+    if (isClip(src) || isPdf(src)) return clipMap[clipKey(src)] ?? null;
     if (!mediaFiles) return undefined;
     const bytes = mediaFiles[clipKey(src)];
     return bytes == null ? null : { bytes };
@@ -748,7 +788,7 @@ export default function Editor({
           clips={{
             ...clipMap,
             ...Object.fromEntries(
-              Object.keys(waitingClipsRef.current).map((key) => [`${CLIP}${key}`, images.clip(`${CLIP}${key}`)!]),
+              Object.values(waitingClipsRef.current).map((held) => [heldSrc(held), images.clip(heldSrc(held))!]),
             ),
           }}
         />

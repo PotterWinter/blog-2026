@@ -84,3 +84,13 @@
 - **แก้ใน Safari** (เจ้าของ, 5 ต.ค. 69 — ภาพย่อไม่ขึ้น, ชื่อทับกัน, Dimensions ค้าง "…"): Safari ไม่ยืดลูกของ `<button>` ให้เต็มความกว้างแบบ Chrome → ช่องภาพกว้าง 0 · ใส่ `width: 100%` ให้ `.tile` `.thumb` `.caption` ตรงๆ · Dimensions: ไฟล์แรกที่เลือกไว้ตั้งแต่เปิดหน้า รูปโหลดเสร็จก่อน React พร้อม onLoad เลยหลุด → อ่านจาก `img.complete` ใน ref ด้วย · ทดสอบผ่าน safaridriver: ช่อง 183 × 183, Dimensions ขึ้นทั้งตอนเปิดหน้าและตอนคลิก
 - ปุ่ม JPG / PNG / WEBP มองไม่เห็นบนพื้นขาว (เจ้าของ, 5 ต.ค. 69): Segmented วาดตัวอักษรแบบ difference ต้องมีพื้นกระดาษข้างหลัง → `.downloadRow` ใส่ `isolation: isolate; background: var(--paper)` แบบเดียวกับ `.fig` ใน Editor
 - ดูเต็มจอ: แตะพื้นหลังมืดรอบรูปแล้วปิดได้ (เจ้าของ, 5 ต.ค. 69 — เดิมปิดได้แค่ ×): รูปเคยกินเต็มพื้นที่ (100% + contain) เลยรับคลิกพื้นหลังไปหมด → รูปเท่าตัวเอง (absolute + max 100% + margin auto) · ทดสอบ: รูป 640 × 800 กลางจอ, คลิกข้างรูป = ปิด, คลิกบนรูป = ไม่ปิด
+
+## PDF (12 ต.ค. 69)
+
+- ใช้ทางเดียวกับคลิป: ไฟล์ใน Vercel Blob (`pdfs/`, ≤ 50 MB) · หน้าแรกเป็น WebP ใน git · entry ใน `media.json` (มี `pages`)
+  - ทำไมไม่ใช่ GitHub: Vercel function รับ / ส่งได้ 4.5 MB ต่อครั้ง ทั้งตอน Save และตอนเสิร์ฟ `/media/…`
+- markdown: `![ชื่อ](../media/2026/<code>-x.pdf "caption")` · รอ Save = `pdf:<key>`
+- Editor: ปุ่ม **PDF** ในแถบเครื่องมือ + `/` → บล็อกว่าง → `+ Add PDF` / ลากวาง · pdf.js (legacy, worker บนหน้า) วาดหน้าแรก + นับหน้า (`pdfPage.ts`) · Title = ชื่อไฟล์ถ้ายังว่าง
+- หน้าเว็บ: การ์ด (`PdfCard`) — หน้าแรก · PDF · ชื่อ · หน้า · ขนาด · Open ↗ (แท็บใหม่) · Download ↓ (`?download=1`) · ไม่ฝัง PDF ในหน้า (Safari iPhone โชว์แค่หน้าแรก)
+- Checks: ไม่นับ PDF เป็นรูป (ไม่เตือน 500 KB) · Media: kind `pdf`, ป้าย `PDF · 6p`
+- ทดสอบแล้ว: เลือกไฟล์ใน Editor → หน้าแรก + 6 pages · Preview การ์ด คอม / มือถือ · markdown ไปกลับ · **ยังไม่ได้ลอง Save ขึ้น Blob จริง**

@@ -2245,6 +2245,25 @@
   outline-color: var(--error);
 }
 
+/* ---------- WRITE: PDF block (WritePdf, 12 Oct 69) ----------
+   Its first page, a page's shape, centred on grey as a clip's frame is */
+.pdfPreview {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  background: var(--surface);
+}
+
+.pdfPreview img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 360px;
+  border: var(--rule-row);
+  background: var(--paper);
+  pointer-events: none; /* a preview: a press goes to the block (to select it) */
+}
+
 /* ---------- WRITE: Clip block (5.4d, WriteClip) ---------- */
 .clipVideo {
   display: block;

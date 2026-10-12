@@ -22,10 +22,11 @@ const total = (bytes: number) =>
 const name = (path: string) => path.replace(/^.*\//, "");
 const clock = (s = 0) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 const src = (path: string) => `/${path}`;
-const still = (item: MediaItem) => src(item.kind === "clip" ? item.poster! : item.path);
+const still = (item: MediaItem) => src(item.kind !== "image" ? item.poster! : item.path);
 const format = (item: MediaItem) => {
   const ext = /\.(\w+)$/.exec(item.path)?.[1].toLowerCase() ?? "";
   const label = { webp: "WebP", jpg: "JPEG", jpeg: "JPEG", png: "PNG", gif: "GIF", avif: "AVIF", svg: "SVG", mp4: "MP4", webm: "WebM" }[ext] ?? ext.toUpperCase();
+  if (item.kind === "pdf") return `PDF · ${item.pages ?? "?"} pages`;
   return item.kind === "clip" ? `${label} · ${(item.seconds ?? 0).toFixed(1)} s · muted loop` : label;
 };
 // "2026-09-29T14:16:21Z" → "29 Sep 2026 · 21:16" (Bangkok, as the rest of the admin)
@@ -225,6 +226,7 @@ export default function MediaLibrary({ items, head }: { items: MediaItem[]; head
                 <span className={m.thumb}>
                   <Image src={still(item)} alt="" fill sizes="(min-width: 768px) 180px, 45vw" className={m.img} />
                   {item.kind === "clip" && <span className={m.length}>▶ {clock(item.seconds)}</span>}
+                  {item.kind === "pdf" && <span className={m.length}>PDF · {item.pages}p</span>}
                 </span>
                 <span className={m.caption}>
                   <span className={m.name} data-bad={!item.uses.length || item.noAlt || undefined}>
@@ -308,7 +310,7 @@ function Facts({ item, onFull }: { item: MediaItem; onFull: () => void }) {
   const [history, setHistory] = useState<{ added: string; sha: string } | null | undefined>(undefined);
   useEffect(() => {
     let live = true;
-    void mediaHistory(item.kind === "clip" ? item.poster! : item.path).then((h) => live && setHistory(h));
+    void mediaHistory(item.kind !== "image" ? item.poster! : item.path).then((h) => live && setHistory(h));
     return () => {
       live = false;
     };
@@ -319,7 +321,7 @@ function Facts({ item, onFull }: { item: MediaItem; onFull: () => void }) {
 
   const alts = [...new Set(item.uses.filter((u) => u.as !== "preview").map((u) => u.alt.trim()))];
   const problems = [
-    ...(item.over ? [`Over ${item.kind === "clip" ? "5 MB" : "500 KB"}`] : []),
+    ...(item.over ? [`Over ${item.kind === "clip" ? "5 MB" : item.kind === "pdf" ? "50 MB" : "500 KB"}`] : []),
     ...(!item.uses.length ? ["Not used in any post"] : []),
     ...(item.noAlt ? ["Missing alt text"] : []),
   ];
@@ -334,10 +336,10 @@ function Facts({ item, onFull }: { item: MediaItem; onFull: () => void }) {
       a.click();
     };
     // A clip, or the file as it is: straight from where it's kept
-    if (item.kind === "clip" || file.toLowerCase().endsWith(`.${as}`)) {
+    if (item.kind !== "image" || file.toLowerCase().endsWith(`.${as}`)) {
       setSaving(true);
       try {
-        const blob = await (await fetch(item.kind === "clip" ? item.url! : src(item.path))).blob();
+        const blob = await (await fetch(item.kind !== "image" ? item.url! : src(item.path))).blob();
         const url = URL.createObjectURL(blob);
         save(url, file);
         URL.revokeObjectURL(url);
@@ -375,6 +377,9 @@ function Facts({ item, onFull }: { item: MediaItem; onFull: () => void }) {
       <div className={m.preview} data-cover onClick={lift} onDoubleClick={onFull}>
         {item.kind === "clip" ? (
           <video key={item.url} src={item.url} poster={src(item.poster!)} muted loop playsInline autoPlay />
+        ) : item.kind === "pdf" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- its first page, from the repo
+          <img src={src(item.poster!)} alt="" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- its own size is read from it
           <img
@@ -538,6 +543,9 @@ function FullView({
             autoPlay
             onClick={(e) => e.stopPropagation()}
           />
+        ) : item.kind === "pdf" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- its first page, from the repo
+          <img src={src(item.poster!)} alt="" onClick={(e) => e.stopPropagation()} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- the file itself, whole
           <img src={src(item.path)} alt="" onClick={(e) => e.stopPropagation()} />

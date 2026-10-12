@@ -1,4 +1,4 @@
-import { isClip } from "./clips.ts";
+import { isClip, isPdf } from "./clips.ts";
 import type { PostLink, PostMeta } from "./schema.ts";
 
 // The details pane's Checks (v4 06): the same list for every post, a black square when
@@ -121,11 +121,14 @@ export function postChecks(p: Checked, seen?: Seen): Check[] {
   // The cover and every image and clip in the text. One elsewhere on the web
   // (https://…) isn't ours to check.
   const srcs = [...new Set([...(p.cover ? [p.cover] : []), ...images.map((i) => i.src)])].filter((s) => s && !/^https?:/.test(s));
-  const found = srcs.map((src) => ({ src, file: seen.file(src), clip: isClip(src) }));
+  // A PDF (12 Oct 69) is checked for being there, not for size: it's up to 50 MB by design
+  const found = srcs.map((src) => ({ src, file: seen.file(src), clip: isClip(src), pdf: isPdf(src) }));
   const missing = found.filter((f) => f.file === null).map((f) => named(f.src));
   const unsure = found.some((f) => f.file === undefined);
   const over = (clip: boolean) =>
-    found.flatMap((f) => (f.clip === clip && f.file && f.file.bytes > (clip ? CLIP_MAX : IMAGE_MAX) ? [`${named(f.src)} ${size(f.file.bytes)}`] : []));
+    found.flatMap((f) =>
+      !f.pdf && f.clip === clip && f.file && f.file.bytes > (clip ? CLIP_MAX : IMAGE_MAX) ? [`${named(f.src)} ${size(f.file.bytes)}`] : [],
+    );
   const bigImages = over(false);
   const bigClips = over(true);
   const state = (bad: number) => (bad ? false : unsure ? null : true);

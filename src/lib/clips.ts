@@ -8,11 +8,12 @@
 
 export type ClipEntry = {
   url: string; // the file in Blob
-  poster: string; // "media/2026/<code>-typing.webp" — its first frame
+  poster: string; // "media/2026/<code>-typing.webp" — its first frame (a PDF's first page)
   bytes: number;
-  seconds: number;
+  seconds: number; // a PDF: 0
   width: number;
   height: number;
+  pages?: number; // a PDF's
 };
 export type ClipMap = Record<string, ClipEntry>; // "media/2026/<code>-typing.mp4" → where it is
 
@@ -20,23 +21,31 @@ export const MEDIA_JSON = "media.json";
 export const CLIP_MAX = 5 * 1024 * 1024;
 export const CLIP_TYPES = ["video/mp4", "video/webm"];
 
+// PDFs (owner, 12 Oct 69: papers and book notes in Reading) live the clips' way: the
+// file in Blob, its first page a WebP in git, an entry in media.json under its path —
+// "media/2026/<code>-paper.pdf", written as an image is. The page shows a card.
+export const PDF = "pdf:";
+export const PDF_MAX = 50 * 1024 * 1024;
+export const PDF_TYPE = "application/pdf";
+export const isPdf = (src: string) => src.startsWith(PDF) || /\.pdf$/i.test(src);
+
 // A clip picked in the editor, its post not saved yet (it goes up to Blob on Save): the body
-// says "clip:<key>" (its poster waits as the image "upload:<key>")
+// says "clip:<key>" (its poster waits as the image "upload:<key>"). A PDF: "pdf:<key>".
 export const CLIP = "clip:";
 export type WaitingClip = Omit<ClipEntry, "poster"> & { key: string };
-const WAITING = /clip:[a-z0-9-]+/g;
+const WAITING = /(?:clip|pdf):[a-z0-9-]+/g;
+const keyOf = (m: string) => m.slice(m.indexOf(":") + 1);
 
 export const isClip = (src: string) => src.startsWith(CLIP) || /\.(mp4|webm)$/i.test(src);
 // "../media/2026/x.mp4" → "media/2026/x.mp4", the key in media.json
 export const clipKey = (src: string) => src.replace(/^(\.\.\/)+/, "").replace(/^\//, "");
 
-export const waitingClips = (text: string) =>
-  new Set([...text.matchAll(WAITING)].map(([m]) => m.slice(CLIP.length)));
+export const waitingClips = (text: string) => new Set([...text.matchAll(WAITING)].map(([m]) => keyOf(m)));
 
 // The body's clips are relative to the post ("../media/…"); the cover field's aren't
 export const placeClips = (text: string, paths: Record<string, string>, prefix = "../") =>
   text.replace(WAITING, (m) => {
-    const path = paths[m.slice(CLIP.length)];
+    const path = paths[keyOf(m)];
     return path ? prefix + path : m;
   });
 
@@ -44,7 +53,9 @@ export const placeClips = (text: string, paths: Record<string, string>, prefix =
 // is the same path ending .webp (write.ts names the clip after it), so wherever a still
 // is wanted — the cards, the admin, a link's preview — this gives it without media.json
 export const still = (src: string) =>
-  isClip(src) && !src.startsWith(CLIP) ? src.replace(/\.(mp4|webm)$/i, ".webp") : src;
+  (isClip(src) && !src.startsWith(CLIP)) || (isPdf(src) && !src.startsWith(PDF))
+    ? src.replace(/\.(mp4|webm|pdf)$/i, ".webp")
+    : src;
 
 // A clip cover's entry in media.json, if it's one
 export const coverClip = (cover: string | null, clips: ClipMap) =>
@@ -64,5 +75,5 @@ export function parseClips(text: string | null): ClipMap {
 // text is the whole .md ("cover: ../media/…" in the frontmatter)
 export const clipsIn = (text: string) =>
   new Set(
-    [...text.matchAll(/(?:\]\(|^cover:[ \t]*)(?:\.\.\/)*(media\/\d{4}\/[a-z0-9-]+\.(?:mp4|webm))/gm)].map((m) => m[1]),
+    [...text.matchAll(/(?:\]\(|^cover:[ \t]*)(?:\.\.\/)*(media\/\d{4}\/[a-z0-9-]+\.(?:mp4|webm|pdf))/gm)].map((m) => m[1]),
   );

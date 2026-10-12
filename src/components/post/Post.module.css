@@ -1549,3 +1549,106 @@
     line-height: 1.02;
   }
 }
+
+/* ---------- A PDF (PdfCard, owner 12 Oct 69) ----------
+   A ruled row as wide as the text: its first page at the left — a page's shape, a
+   hairline round it as paper on paper — then PDF, the title, pages and size, Open and
+   Download. Pressing the page opens it too. */
+.pdf {
+  margin: 36px 0;
+}
+
+.pdfCard {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 18px 0;
+  border-top: var(--rule-row);
+  border-bottom: var(--rule-row);
+}
+
+.pdfPage {
+  display: block;
+  border: var(--rule-row);
+  background: var(--paper);
+  transition: border-color 0.25s ease;
+}
+
+.pdfPage img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (hover: hover) {
+  .pdfPage:hover {
+    border-color: var(--ink);
+  }
+}
+
+.pdfInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pdfTitle {
+  font-size: var(--fs-card-title);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word; /* a word breaks only when it can't fit a line at all */
+}
+
+.pdfMeta {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+
+.pdfLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-top: 8px;
+  font-size: var(--fs-ui);
+}
+
+/* Underlined as the text's links are (.link), the arrow after the word */
+.pdfLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 1px;
+  background-image: linear-gradient(var(--ink), var(--ink));
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 100% 1px;
+  transition: background-color 0.25s ease;
+}
+
+@media (hover: hover) {
+  .pdfLinks a:hover {
+    background-color: var(--surface);
+  }
+}
+
+.pdf figcaption {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (min-width: 768px) {
+  .pdfCard {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 28px;
+    padding: 22px 0;
+  }
+
+  .pdfInfo {
+    gap: 8px;
+    padding-top: 2px;
+  }
+}

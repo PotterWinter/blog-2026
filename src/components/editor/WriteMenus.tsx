@@ -300,6 +300,7 @@ export const SLASH: SlashItem[] = [
   { label: "Two images", hint: "side by side", run: (e) => imageOpeners.get(e)?.("two") },
   { label: "Carousel", hint: "one slide at a time", run: (e) => imageOpeners.get(e)?.("carousel") },
   { label: "Clip", hint: "MP4 / WebM · 5 MB", run: (e) => clipOpeners.get(e)?.() },
+  { label: "PDF", hint: "a card · 50 MB", run: (e) => e.chain().focus().insertContent({ type: "pdf", attrs: { src: "" } }).run() },
   {
     label: "YouTube",
     hint: "or paste its link",
@@ -491,6 +492,8 @@ const blockName = (type: string, layout?: string) =>
       ? "YouTube"
       : type === "clip"
         ? "Clip"
+        : type === "pdf"
+          ? "PDF"
         : type === "horizontalRule"
           ? "Divider"
           : "Block";
@@ -509,7 +512,7 @@ function pickedBlock(e: TiptapEditor) {
     from: number;
   };
   const node = sel.node;
-  if (!node || !["figure", "youtube", "clip", "raw", "horizontalRule"].includes(node.type.name)) return null;
+  if (!node || !["figure", "youtube", "clip", "pdf", "raw", "horizontalRule"].includes(node.type.name)) return null;
   return { pos: sel.from, name: blockName(node.type.name, String(node.attrs.layout ?? "")) };
 }
 

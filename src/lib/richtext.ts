@@ -4,7 +4,7 @@ import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown, gfmToMarkdown } from "mdast-util-gfm";
 import { toMarkdown } from "mdast-util-to-markdown";
 import { gfm } from "micromark-extension-gfm";
-import { isClip } from "./clips.ts";
+import { isClip, isPdf } from "./clips.ts";
 
 // WRITE (5.3d): a post's markdown body ↔ the Tiptap document the editor shows.
 //
@@ -145,7 +145,10 @@ function block(n: RootContent): JSONContent | null {
       // clip (an .mp4 / .webm, written as an image is) its own block (5.4d)
       const images = imagesOf(n);
       if (images?.length === 1 && isClip(images[0].src)) return { type: "clip", attrs: { ...images[0] } };
-      if (images) return images.length === 1 && !images.some((i) => isClip(i.src)) ? figure("single", "", images) : null;
+      // …and one PDF a card of its own (owner, 12 Oct 69)
+      if (images?.length === 1 && isPdf(images[0].src)) return { type: "pdf", attrs: { ...images[0] } };
+      if (images)
+        return images.length === 1 && !images.some((i) => isClip(i.src) || isPdf(i.src)) ? figure("single", "", images) : null;
       // A paragraph that's only a YouTube link is the video on the page:
       // [caption](youtube link) — a block of its own (5.3e)
       const only = n.children.length === 1 ? n.children[0] : null;
@@ -258,7 +261,7 @@ export function mdToDoc(md: string, titles: Record<string, string> = {}): JSONCo
     if (n.type === "html" && /^<!--/.test(n.value) && next?.type === "paragraph") {
       const layout = LAYOUT.exec(n.value.trim());
       const found = imagesOf(next);
-      const images = found?.some((i) => isClip(i.src)) ? null : found; // clips aren't laid out…
+      const images = found?.some((i) => isClip(i.src) || isPdf(i.src)) ? null : found; // clips, PDFs aren't laid out…
       const src = slice(n, next);
       // …but one may be Full (owner, 4 Oct 69): <!-- full --> over it, as over an image
       if (layout?.[1] === "full" && found?.length === 1 && isClip(found[0].src)) {
@@ -278,7 +281,7 @@ export function mdToDoc(md: string, titles: Record<string, string> = {}): JSONCo
     content.push(
       b
         ? // (a clip's src is its file: its markdown is kept as `source`)
-          { ...b, attrs: { ...b.attrs, [b.type === "clip" ? "source" : "src"]: slice(n) } }
+          { ...b, attrs: { ...b.attrs, [b.type === "clip" || b.type === "pdf" ? "source" : "src"]: slice(n) } }
         : { type: "raw", attrs: { src: slice(n) } },
     );
   }
@@ -431,8 +434,8 @@ export function youtubeMd(url: string, caption: string): string {
 function blockMd(n: JSONContent, keep = true): string {
   if (n.type === "raw") return String(n.attrs?.src ?? "");
   let md: string;
-  if (n.type === "clip") {
-    const layout = n.attrs?.layout === "full" ? "full" : "single";
+  if (n.type === "clip" || n.type === "pdf") {
+    const layout = n.type === "clip" && n.attrs?.layout === "full" ? "full" : "single";
     md = figureMd(layout, "", [{ src: n.attrs?.src ?? "", alt: n.attrs?.alt ?? "", caption: n.attrs?.caption ?? "" }]);
     const src = keep ? n.attrs?.source : null;
     return src && canonical(src) === md ? src : md;

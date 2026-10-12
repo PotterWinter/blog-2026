@@ -48,6 +48,7 @@ import PostBody, { headingId, youTubeId } from "../post/PostBody";
 import styles from "./Editor.module.css";
 import { clipOpeners, imageOpeners, linkOpeners } from "./openers";
 import { ClipBlock } from "./WriteClip";
+import { PdfBlock } from "./WritePdf";
 import { Figure, ImagesContext, selectOnPress, type Images } from "./WriteFigure";
 import { YouTubeBlock } from "./WriteYouTube";
 
@@ -436,6 +437,12 @@ const TOOLS: (Tool | "|")[] = [
     run: (e) => clipOpeners.get(e)?.(),
   },
   {
+    label: "PDF",
+    name: "PDF — a paper or notes, up to 50 MB, shown as a card",
+    keys: "/pdf",
+    run: (e) => e.chain().focus().insertContent({ type: "pdf", attrs: { src: "" } }).run(),
+  },
+  {
     label: "YouTube",
     name: "YouTube — or paste its link on an empty line",
     keys: "⇧⌘Y",
@@ -808,6 +815,7 @@ export default function WriteBox({
       Figure,
       YouTubeBlock,
       ClipBlock,
+      PdfBlock,
     ],
     content: mdToDoc(body, titles),
     editorProps: {

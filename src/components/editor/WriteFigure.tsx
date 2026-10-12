@@ -25,6 +25,8 @@ export type Images = {
   clip: (src: string) => ClipEntry | undefined;
   // → "clip:<key>"; the cover's poster is named "cover-<name>" as a cover image is
   addClip: (file: File, role?: "cover" | "image") => Promise<string | null>;
+  // A PDF (owner, 12 Oct 69): kept the clips' way, its first page the poster → "pdf:<key>"
+  addPdf: (file: File) => Promise<string | null>;
 };
 export const ImagesContext = createContext<Images | null>(null);
 

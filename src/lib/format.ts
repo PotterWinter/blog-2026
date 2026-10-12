@@ -33,3 +33,7 @@ export function postNo(p: { no: number | null; section: string; category?: strin
 export function readingMinutes(markdown: string): number {
   return readMinutes(countWords(markdown));
 }
+
+// A file's size as read: "954 KB", "12.3 MB" (a PDF's card, its editor block)
+export const fileSize = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;

@@ -1,6 +1,6 @@
 import "server-only";
 import { IMAGE_MAX } from "./checks.ts";
-import { CLIP_MAX, clipKey, isClip } from "./clips.ts";
+import { CLIP_MAX, clipKey, isClip, isPdf, PDF_MAX } from "./clips.ts";
 import { getClips, getMediaFiles, getPost, getPosts } from "./content.ts";
 import type { IndexEntry } from "./schema.ts";
 
@@ -14,13 +14,13 @@ export type MediaUse = {
   title: string;
   slug: string;
   status: IndexEntry["status"];
-  as: "cover" | "image" | "clip" | "preview"; // a project link's screenshot: no alt
+  as: "cover" | "image" | "clip" | "pdf" | "preview"; // a project link's screenshot: no alt
   alt: string;
 };
 
 export type MediaItem = {
   path: string; // "media/2026/<code>-name.webp", or a clip's "….mp4" (its key in media.json)
-  kind: "image" | "clip";
+  kind: "image" | "clip" | "pdf"; // a PDF (12 Oct 69) is kept as a clip is, in media.json
   bytes: number;
   // A clip: where it plays from, its first frame (a WebP in media/, not listed apart),
   // its size and length
@@ -29,6 +29,7 @@ export type MediaItem = {
   width?: number;
   height?: number;
   seconds?: number;
+  pages?: number;
   uses: MediaUse[];
   over: boolean; // an image over 500 KB, a clip over 5 MB
   noAlt: boolean; // used somewhere with no alt text
@@ -54,7 +55,7 @@ export async function getMediaLibrary(): Promise<MediaItem[]> {
       if (post.cover) add(post.cover, { ...of, as: "cover", alt: post.coverAlt });
       for (const link of post.links) if (link.preview) add(link.preview, { ...of, as: "preview", alt: "" });
       for (const [, alt, src] of post.body.matchAll(EMBED)) {
-        add(src, { ...of, as: isClip(src) ? "clip" : "image", alt: alt.replace(/\\(.)/g, "$1") });
+        add(src, { ...of, as: isClip(src) ? "clip" : isPdf(src) ? "pdf" : "image", alt: alt.replace(/\\(.)/g, "$1") });
       }
     }),
   );
@@ -69,17 +70,19 @@ export async function getMediaLibrary(): Promise<MediaItem[]> {
     });
   const videos: MediaItem[] = Object.entries(clips).map(([path, c]) => {
     const list = uses.get(path) ?? [];
+    const pdf = isPdf(path);
     return {
       path,
-      kind: "clip",
+      kind: pdf ? ("pdf" as const) : ("clip" as const),
       bytes: c.bytes,
       url: c.url,
       poster: c.poster,
       width: c.width,
       height: c.height,
       seconds: c.seconds,
+      pages: c.pages,
       uses: list,
-      over: c.bytes > CLIP_MAX,
+      over: c.bytes > (pdf ? PDF_MAX : CLIP_MAX),
       noAlt: noAlt(list),
     };
   });

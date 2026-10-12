@@ -29,10 +29,13 @@ export async function save(input: PostInput, pending: Pending[] = [], clips: Wai
 }
 
 // Clips the editor sent up to Blob for a save that then didn't happen: out again, so
-// nothing stays there that no post names. Only files of this store's clips/ folder.
+// nothing stays there that no post names. Only files of this store's clips/ and pdfs/
+// folders.
 export async function discardClips(urls: string[]) {
   if (!(await currentSession())) return;
-  const ours = urls.filter((u) => /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/clips\/[a-z0-9-]+\.(mp4|webm)$/i.test(u));
+  const ours = urls.filter((u) =>
+    /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/(clips\/[a-z0-9-]+\.(mp4|webm)|pdfs\/[a-z0-9-]+\.pdf)$/i.test(u),
+  );
   if (ours.length) await dropClips(ours);
 }
 

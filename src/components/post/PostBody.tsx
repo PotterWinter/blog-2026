@@ -5,9 +5,10 @@ import FitImage from "./FitImage";
 import Lightbox, { ZoomButton } from "./Lightbox";
 import TableScroll from "./TableScroll";
 import TransitionLink from "../TransitionLink";
-import { clipKey, isClip, type ClipMap } from "@/lib/clips";
+import { clipKey, isClip, isPdf, type ClipMap } from "@/lib/clips";
 import Carousel from "./Carousel";
 import Clip from "./Clip";
+import PdfCard from "./PdfCard";
 import CodeBlock from "./CodeBlock";
 import styles from "./Post.module.css";
 import YouTube from "./YouTube";
@@ -144,7 +145,7 @@ export default function PostBody({
     <Markdown
       remarkPlugins={[remarkGfm, remarkAlerts, remarkImageLayouts]}
       // The editor's Preview shows images and clips still waiting for Save
-      urlTransform={(url) => (/^(clip|upload):/.test(url) ? url : defaultUrlTransform(url))}
+      urlTransform={(url) => (/^(clip|pdf|upload):/.test(url) ? url : defaultUrlTransform(url))}
       components={{
         h2: ({ children }) => <h2 id={headingId(textOf(children))}>{children}</h2>,
         h3: ({ children }) => <h3 id={headingId(textOf(children))}>{children}</h3>,
@@ -312,9 +313,16 @@ export default function PostBody({
             </figure>
           );
         },
-        // A clip (.mp4 / .webm) is written as an image is; media.json says where it is
+        // A clip (.mp4 / .webm) is written as an image is; media.json says where it is.
+        // So is a PDF: a card (owner, 12 Oct 69).
         img: ({ src, alt, title }) =>
-          isClip(String(src ?? "")) ? (
+          isPdf(String(src ?? "")) ? (
+            <PdfCard
+              entry={clips[clipKey(String(src))] ?? clips[String(src)]}
+              title={alt ?? ""}
+              caption={title ?? undefined}
+            />
+          ) : isClip(String(src ?? "")) ? (
             <Clip
               entry={clips[clipKey(String(src))] ?? clips[String(src)]}
               alt={alt ?? ""}
