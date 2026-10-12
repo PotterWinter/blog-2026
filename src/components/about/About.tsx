@@ -12,18 +12,18 @@ const timeline = [
     role: "Java developer, core banking",
     where: "Silverlake Structure Services",
   },
-  { when: "Sep 2024 – Jan 2025", role: "Full-stack bootcamp", where: "TECH UP" },
+  { when: "Sep 2024 – Jan 2025", role: "Full stack developer bootcamp", where: "TECH UP" },
   { when: "Aug 2023 – Feb 2024", role: "Brand designer", where: "Freelance · Bangkok" },
   { when: "Apr 2021 – Jul 2022", role: "Packaging designer", where: "SCG Packaging" },
   {
     when: "Jan 2018 – Jan 2022",
-    role: "B.Arch, industrial & automotive design",
+    role: "Bachelor’s degree, industrial and product design",
     where: "KMITL · GPA 3.01",
   },
 ];
 
 const stack = [
-  { group: "Frontend", items: ["Next.js", "React", "TypeScript", "Tailwind"] },
+  { group: "Frontend", items: ["Angular", "Next.js", "React", "TypeScript", "Tailwind"] },
   { group: "Backend", items: ["Java", "Spring Boot", "Node", "REST APIs"] },
   { group: "Data", items: ["PostgreSQL", "MySQL", "Jaspersoft", "SQL reports"] },
   { group: "Tools", items: ["Git", "Docker", "Postman", "Figma"] },
@@ -32,13 +32,13 @@ const stack = [
 const now = [
   {
     label: "Preparing",
-    text: "A master’s application in software architecture and system design — reading, portfolio, and the entrance exam.",
+    text: "A master’s application in DevSecOps and CI/CD security. Reading, a portfolio, and the entrance exam.",
   },
   {
     label: "Learning",
-    text: "Cybersecurity — building systems trustworthy enough to hold AI-driven tooling.",
+    text: "How build and deployment pipelines get misconfigured, and how to catch it before it reaches production.",
   },
-  { label: "Writing", text: "Roughly one post a week — whatever took longest to get right." },
+  { label: "Writing", text: "Roughly one post a week, on whatever took longest to get right." },
 ];
 
 const elsewhere = [
@@ -126,14 +126,14 @@ export default function About() {
             the pieces became APIs, databases, services, networks, and infrastructure.
           </p>
           <p className={styles.text}>
-            Today I’m interested in the layer between software and infrastructure — building systems
-            that are reliable, observable, secure, and understandable.
+            Today I’m interested in the layer between software and infrastructure, and in building
+            systems that are reliable, observable, secure, and understandable.
           </p>
           <p className={styles.text}>
-            I work on enterprise software in banking, mostly around Java, Spring Boot, Angular, data
-            migration, and reporting systems. Outside work I build small systems to understand how
-            software actually gets deployed and operated — from Git to containers, cloud
-            infrastructure, CI/CD, and security.
+            I worked on enterprise software in banking, mostly around Java, Spring Boot, Angular, data
+            migration, and reporting systems. Outside work I build small things to see how software
+            actually gets deployed and run. This site is one of them: Next.js, posts kept in Git,
+            deployed on Vercel.
           </p>
         </div>
         <figure className={styles.portrait} data-reveal data-d="220">
@@ -154,7 +154,7 @@ export default function About() {
               Chuayriang
             </span>
             <span className={`label ${styles.role}`}>
-              Junior full-stack
+              Software
               <br />
               developer
             </span>
@@ -217,11 +217,12 @@ export default function About() {
           </span>
         </p>
         <h2 className={styles.pitch}>
-          Looking for a full-stack role where design and implementation sit together.
+          Looking for a full stack role where design and implementation sit together.
         </h2>
         <p className={styles.lead}>
-          Junior full-stack, one year of production Java and Angular behind me, and a design degree
-          before that. Full-time or contract — replies usually land within a day.
+          One year of production Java and Angular behind me, and a design degree before that. Looking
+          for work alongside my master’s studies, full time or contract. Replies usually land within
+          a day.
         </p>
       </Band>
 
