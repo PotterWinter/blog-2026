@@ -144,7 +144,7 @@
 - [x] ปิดโปรเจกต์ Vercel เก่า 3 ตัว — pause ไม่ลบ (korn-natthanat 2025 → โดเมน korn-natthanat-2024.vercel.app · korn-personal-blog · personal-blog-api ไม่มี env) (5 ต.ค. 69)
 - [x] **เว็บจริง = https://korn-natthanat.vercel.app** (โปรเจกต์เปลี่ยนชื่อเป็น `personal-blog-2026`) · `LIVE_URL` ในโค้ดชี้ชื่อใหม่ · blog-2026-vercel.vercel.app ยังเปิดได้ (ตั้ง redirect ใน Vercel › Domains ถ้าต้องการ)
 - [ ] ใส่ลิงก์จริง: ~~Behance~~ (ใส่แล้ว 6 ต.ค. — footer + About) · ~~LinkedIn~~ ~~CV~~ (ใส่แล้ว 12 ต.ค.) · วิดีโอ walkthrough ในหน้า Login ยังเป็น `#`
-- [ ] ภาพพรีวิวลิงก์ของ project จริง (ตอนนี้ Buddy Blog ใช้รูป interior ชั่วคราว)
+- ~~ภาพพรีวิวลิงก์ของ project จริง~~ ไม่ต้อง: Buddy Blog ไม่ได้ทำแล้ว มีแค่ใน fixtures (เจ้าของ 13 ต.ค. 69) · เว็บจริงมี project Design 4 ชิ้น
 - [x] Project ฝั่ง Design 4 ชิ้นจาก Behance (WATTARIN HOUSE, day one, CHANA, KATHU Swimming) — publish แล้ว (Pro01–Pro04)
 
 ## อนาคต (มี homelab database แล้ว)
