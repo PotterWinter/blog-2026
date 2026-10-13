@@ -1550,73 +1550,149 @@
   }
 }
 
-/* ---------- A PDF (PdfCard, owner 12 Oct 69) ----------
-   A ruled row as wide as the text: its first page at the left — a page's shape, a
-   hairline round it as paper on paper — then PDF, the title, pages and size, Open and
-   Download. Pressing the page opens it too. */
+/* ---------- A PDF (PdfCard, owner 12–13 Oct 69) ----------
+   A grey frame the column's width, its pages on a track as the carousel's (.track):
+   each slide the frame's width, its page centred on it — 500 tall at most on every
+   screen (--img-max is ~209 on a phone: a page there was 162 wide), the first page's
+   ratio (--r), a hairline round it, white on grey as paper; blank till it's drawn.
+   Under it the carousel's caption row (title · 01 / 06), Previous / Next by finger,
+   then Open, Download and the file's line, close under it. */
 .pdf {
   margin: 36px 0;
+  outline: none;
 }
 
-.pdfCard {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-  padding: 18px 0;
-  border-top: var(--rule-row);
-  border-bottom: var(--rule-row);
+/* The frame and what sits on it: the halves reaching out to the page's edges (--out-l,
+   --out-r, measured in PdfCard), the ⤢ in its corner */
+.pdfWrap {
+  position: relative;
+}
+
+/* Dark grey, white pages on it as a PDF reader has them: the ⤢ keeps its light lines
+   (#e8e8e7, as on a photo) and shows — on --surface it was the frame's own colour
+   (owner, 13 Oct 69) */
+.pdfFrame {
+  position: relative;
+  overflow: hidden;
+  background: var(--muted);
+  container-type: inline-size;
+  touch-action: pan-y;
+}
+
+/* No will-change: a layer kept for it, Safari blends nothing through it — the long
+   arrow over a page stayed dark over its black text (owner, 13 Oct 69) */
+.pdfTrack {
+  display: flex;
+  transition: transform 0.7s cubic-bezier(0.6, 0, 0.2, 1);
+}
+
+.pdfSlide {
+  display: flex;
+  flex: 0 0 100%;
+  justify-content: center;
+  padding: 24px;
 }
 
 .pdfPage {
-  display: block;
+  --h: min(500px, (100cqw - 48px) / var(--r));
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--h) * var(--r));
+  height: var(--h);
   border: var(--rule-row);
   background: var(--paper);
-  transition: border-color 0.25s ease;
 }
 
 .pdfPage img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
 }
 
-@media (hover: hover) {
-  .pdfPage:hover {
-    border-color: var(--ink);
-  }
-}
-
-.pdfInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.pdfTitle {
-  font-size: var(--fs-card-title);
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  overflow-wrap: break-word; /* a word breaks only when it can't fit a line at all */
-}
-
-.pdfMeta {
+.pdfWait {
+  padding: 0 16px;
   font-family: var(--ff-mono);
   font-size: var(--fs-meta);
   color: var(--muted);
+  text-align: center;
 }
 
-.pdfLinks {
+/* With a mouse the frame's halves step it, as the carousel's do (ArrowCursor: the long
+   arrow); by finger, the swipe and Previous / Next under it */
+.pdfHalf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--out-l, 0px));
+  display: none;
+  width: calc(50% + var(--out-l, 0px));
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.pdfHalfNext {
+  right: calc(-1 * var(--out-r, 0px));
+  left: auto;
+  width: calc(50% + var(--out-r, 0px));
+}
+
+/* Its ⤢: shown while the mouse is on the frame (Post .zoom) */
+.pdfZoom {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+}
+
+.pdfWrap:hover .pdfZoom .zoom {
+  opacity: 1;
+}
+
+.pdfPage img[data-zoom] {
+  touch-action: manipulation;
+}
+
+.pdfTitle {
+  min-width: 0;
+  margin-right: auto;
+  font-size: var(--fs-ui);
+  color: var(--ink);
+  overflow-wrap: break-word; /* a word breaks only when it can't fit a line at all */
+}
+
+.pdf .slideCount {
+  white-space: nowrap; /* "02 / 06" as one, beside a title of two lines */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pdfHalf {
+    display: block;
+  }
+
+  /* The halves do it already: no row kept for it either (owner, 13 Oct 69 — the
+     carousel keeps its place, unseen; here the gap read as a mistake) */
+  .pdfNav {
+    display: none;
+  }
+}
+
+/* PDF · pages · size at the left, Open and Download at the right, close under the
+   title row (owner, 13 Oct 69) */
+.pdfDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 20px;
-  margin-top: 8px;
+  align-items: baseline;
+  gap: 6px 20px;
+  margin-top: 10px;
   font-size: var(--fs-ui);
 }
 
 /* Underlined as the text's links are (.link), the arrow after the word */
-.pdfLinks a {
+.pdfDetails a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1629,26 +1705,31 @@
 }
 
 @media (hover: hover) {
-  .pdfLinks a:hover {
+  .pdfDetails a:hover {
     background-color: var(--surface);
   }
 }
 
-.pdf figcaption {
-  margin-top: 12px;
-  font-size: 12px;
+.pdfMeta {
+  margin-right: auto;
+  font-family: var(--ff-mono);
+  font-size: var(--fs-meta);
   color: var(--muted);
 }
 
-@media (min-width: 768px) {
-  .pdfCard {
-    grid-template-columns: 140px minmax(0, 1fr);
-    gap: 28px;
-    padding: 22px 0;
+.pdfCaption {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .pdfSlide {
+    padding: 14px;
   }
 
-  .pdfInfo {
-    gap: 8px;
-    padding-top: 2px;
+  .pdfPage {
+    --h: min(500px, (100cqw - 28px) / var(--r));
   }
 }

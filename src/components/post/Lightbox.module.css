@@ -23,9 +23,27 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  max-width: 100%;
+  width: 100%;
   max-height: 100%;
   margin: 0;
+}
+
+/* The images on a track (Lightbox step / a finger): each pane the width the image may
+   take, the one shown in the middle; the box clips the others */
+.view {
+  width: 100%;
+}
+
+.track {
+  display: flex;
+}
+
+.pane {
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .img {
@@ -123,7 +141,8 @@
   }
 }
 
-/* A phone swipes instead: the arrows would sit on the image */
+/* A phone swipes instead: the images follow the finger (tried with the arrows under
+   the image too, 13 Oct 69 — the owner took them off again) */
 @media (max-width: 767px) {
   .prev,
   .next {

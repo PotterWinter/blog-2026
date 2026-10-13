@@ -1,15 +1,12 @@
+import { loadPdfjs } from "@/lib/pdfjs";
+
 // A PDF's first page and page count, read in the browser (owner, 12 Oct 69): the page
 // becomes its poster — the card's picture on the post, a WebP in git beside the images —
 // so it waits for Save as an image does, as a clip's first frame does (clipFrame).
-// pdf.js comes in only when a PDF is picked. Its legacy build (older Safari too), and its
-// worker run on the page (globalThis.pdfjsWorker) rather than as a separate file the
-// bundler would have to serve: one page, read once, doesn't need a thread.
 const WIDTH = 1200; // px: the poster's width — sharp on the card, shrunk to WebP after
 
 export async function firstPage(file: File): Promise<{ poster: File; pages: number; width: number; height: number }> {
-  const g = globalThis as { pdfjsWorker?: unknown };
-  if (!g.pdfjsWorker) g.pdfjsWorker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs");
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const { getDocument } = await loadPdfjs();
   const doc = await getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   try {
     const page = await doc.getPage(1);
