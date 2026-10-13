@@ -297,7 +297,7 @@ export const SLASH: SlashItem[] = [
     run: (e) => e.chain().focus().setHeading({ level: 3 }).run(),
   },
   { label: "Image", hint: "or drop / paste one", run: (e) => imageOpeners.get(e)?.("single") },
-  { label: "Two images", hint: "side by side", run: (e) => imageOpeners.get(e)?.("two") },
+  { label: "Grid", hint: "two to a row", run: (e) => imageOpeners.get(e)?.("two") },
   { label: "Carousel", hint: "one slide at a time", run: (e) => imageOpeners.get(e)?.("carousel") },
   { label: "Clip", hint: "MP4 / WebM · 5 MB", run: (e) => clipOpeners.get(e)?.() },
   { label: "PDF", hint: "a card · 50 MB", run: (e) => e.chain().focus().insertContent({ type: "pdf", attrs: { src: "" } }).run() },

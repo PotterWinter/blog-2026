@@ -964,7 +964,7 @@ export default function WriteBox({
     const wanted = want;
     const layout = wanted !== "single" ? wanted : srcs.length > 1 ? "carousel" : "single";
     const list = (
-      layout === "single" ? srcs.slice(0, 1) : layout === "two" ? srcs.slice(0, 2) : srcs
+      layout === "single" ? srcs.slice(0, 1) : srcs
     ).map((src) => ({ src, alt: "", caption: "" }));
     const node = {
       type: "figure",

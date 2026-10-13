@@ -47,7 +47,10 @@ function restingPoint(items: (HTMLElement | null)[], active: number, dot: HTMLEl
     x -= open - slotWidth(item);
     for (let i = active + 1; i < items.length; i++) x += slotWidth(items[i]);
   } else {
-    for (let i = 0; i < active; i++) x -= slotWidth(items[i]);
+    // Only a slot on the label's own line moves it: on a phone Private starts the second
+    // line, and taking off a slot closing on the first left the dot 13px short of it
+    // (owner, 14 Oct 69)
+    for (let i = 0; i < active; i++) if (items[i]?.offsetTop === item.offsetTop) x -= slotWidth(items[i]);
   }
   const y = item.offsetTop + item.offsetHeight / 2 - dot.offsetHeight / 2;
   return { x, y };

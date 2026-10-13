@@ -1840,8 +1840,23 @@
   gap: 16px;
 }
 
+/* Grid (14 Oct 69): as the page has it — two to a row, an odd number's last three a
+   row of their own (data-third); "+ Add image" a row of its own under them */
 .figShow[data-layout="two"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.figCell {
+  grid-column: span 3;
+  min-width: 0;
+}
+
+.figCell[data-third] {
+  grid-column: span 2;
+}
+
+.figShow[data-layout="two"] > .figAdd {
+  grid-column: 1 / -1;
 }
 
 /* A carousel's slides side by side, the strip scrolling */

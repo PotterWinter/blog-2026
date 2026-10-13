@@ -145,7 +145,8 @@ export default function PostBody({
     <Markdown
       remarkPlugins={[remarkGfm, remarkAlerts, remarkImageLayouts]}
       // The editor's Preview shows images and clips still waiting for Save
-      urlTransform={(url) => (/^(clip|pdf|upload):/.test(url) ? url : defaultUrlTransform(url))}
+      // (an image waiting there is the blob: of its file in memory)
+      urlTransform={(url) => (/^(clip|pdf|upload|blob):/.test(url) ? url : defaultUrlTransform(url))}
       components={{
         h2: ({ children }) => <h2 id={headingId(textOf(children))}>{children}</h2>,
         h3: ({ children }) => <h3 id={headingId(textOf(children))}>{children}</h3>,
@@ -271,11 +272,20 @@ export default function PostBody({
               : [],
           );
           if (layout === "carousel") return <Carousel slides={images} ratio={ratio} />;
+          // Grid (written "two", as it began — owner, 14 Oct 69): any number, two to a
+          // row, an odd number's last row three; one alone in the middle. Full screen it's
+          // a set, stepped through as a carousel's (data-slides).
           if (layout === "two") {
+            const n = images.length;
+            const three = n >= 3 && n % 2 === 1 ? n - 3 : n; // where the row of three starts
             return (
-              <div className={styles.two} data-ratio={ratio || "4:5"}>
-                {images.slice(0, 2).map((img) => (
-                  <figure key={img.src}>
+              <div
+                className={styles.two}
+                data-ratio={ratio || "4:5"}
+                data-slides={n > 1 ? JSON.stringify(images) : undefined}
+              >
+                {images.map((img, i) => (
+                  <figure key={img.src + i} data-third={i >= three || undefined}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- sizes come from the file */}
                     <img src={img.src} alt={img.alt} loading="lazy" data-zoom="" />
                     <ZoomButton {...img} />

@@ -170,7 +170,7 @@ export const hint = (layout: Layout, ratio: string, screen: Screen) => {
     : layout === "full"
       ? `Full · cropped to 2:1 · frame ${x(box!)} here · ${best}`
       : layout === "two"
-        ? `Two up · each frame ${x(box!)} here · ${best}`
+        ? `Grid · two to a row, an odd number ends in three · each frame ${x(box!)} here (a third smaller in a row of three) · ${best}`
         : `Carousel · frame ${x(box!)} here · ${best}`;
 };
 
@@ -225,10 +225,10 @@ function FigureView(props: NodeViewProps) {
     fileRef.current?.click();
   };
   // Picked or dropped: into slot `at` (replacing it), or -1 added — as many as there's
-  // room for
-  const room = kind === "two" ? images.length < 2 : kind === "carousel" || !images.length;
+  // room for. A Grid takes any number (owner, 14 Oct 69 — Two took two).
+  const room = kind === "single" ? !images.length : true;
   const put = async (files: File[], at: number) => {
-    const space = kind === "carousel" ? files.length : (kind === "two" ? 2 : 1) - images.length;
+    const space = kind === "single" ? 1 - images.length : files.length;
     const take = files.filter((f) => f.type.startsWith("image/")).slice(0, at >= 0 ? 1 : space);
     if (!ctx || !take.length) return;
     setBusy(true);
@@ -246,7 +246,7 @@ function FigureView(props: NodeViewProps) {
   const target = (e: React.DragEvent) => {
     const t = (e.target as Element).closest<HTMLElement>("[data-slot]");
     if (t) return Number(t.dataset.slot);
-    return room ? -1 : kind === "two" ? 1 : 0; // full: the last one gives way
+    return room ? -1 : 0; // full (a single image): it gives way
   };
   const files = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
   const drag = {
@@ -271,11 +271,11 @@ function FigureView(props: NodeViewProps) {
     // it; from one image, 4:5 (owner, 4 Oct 69). Written as each says it: Two's "" is
     // 4:5, Carousel's "" is 16:10.
     const now = kind === "two" ? ratio || "4:5" : kind === "carousel" ? ratio || "16:10" : "4:5";
-    // Two keeps the first two; going back to one keeps the first
+    // A Grid keeps them all; going back to one keeps the first
     if (k === "single")
       updateAttributes({ layout: "single", ratio: "", images: images.slice(0, 1) });
     else if (k === "two")
-      updateAttributes({ layout: "two", ratio: now, images: images.slice(0, 2) });
+      updateAttributes({ layout: "two", ratio: now });
     else updateAttributes({ layout: "carousel", ratio: now === "16:10" ? "" : "4:5" });
   };
   const option = kind === "single" ? layout : ratio;
@@ -319,7 +319,14 @@ function FigureView(props: NodeViewProps) {
     >
       <span className={styles.figLegend}>{kind === "carousel" ? "Carousel" : "Image"}</span>
       <div className={styles.figShow} data-layout={layout} data-ratio={ratio || undefined}>
-        {images.map(tile)}
+        {kind === "two"
+          ? // As the page lays it out: an odd number's last three a row of their own
+            images.map((im, i) => (
+              <div key={i} className={styles.figCell} data-third={(images.length >= 3 && images.length % 2 === 1 && i >= images.length - 3) || undefined}>
+                {tile(im, i)}
+              </div>
+            ))
+          : images.map(tile)}
         {room && (
           <button
             type="button"
@@ -354,7 +361,7 @@ function FigureView(props: NodeViewProps) {
           label="Layout"
           options={[
             { value: "single", label: "Single" },
-            { value: "two", label: "Two" },
+            { value: "two", label: "Grid" }, // "two" in the .md, as it began
             { value: "carousel", label: "Carousel" },
           ]}
           value={kind}

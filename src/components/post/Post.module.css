@@ -1123,23 +1123,47 @@
 /* <!-- two 4:5 --> / <!-- two 16:10 -->: side by side, each cropped to the ratio. Each
    keeps its shape: half the column, but never taller than --img-max — narrower then,
    the pair centred (owner, 5 Oct 69) */
+/* Grid (<!-- two -->, owner 14 Oct 69): two to a row, each as big as Two's pair was;
+   an odd number's last row three, each a third (shorter, the same shape); one alone in
+   the middle. Six columns, a figure spanning three — or two (data-third). */
 .two {
+  --cell: calc(var(--img-max) * 0.8); /* one image's width at most, 4:5 */
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, calc(var(--img-max) * 0.8)));
-  justify-content: center;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
-  margin: 36px 0;
+  width: min(100%, calc(var(--cell) * 2 + 16px));
+  margin: 36px auto;
 }
 
 .two[data-ratio="16:10"] {
-  grid-template-columns: repeat(2, minmax(0, calc(var(--img-max) * 1.6)));
+  --cell: calc(var(--img-max) * 1.6);
 }
 
-/* On a narrow screen the pair sits as the home grid's covers do: 2px apart (owner,
-   6 Oct 69 — 16 split two small images on a phone) */
+.two > figure {
+  grid-column: span 3;
+  min-width: 0;
+}
+
+.two > figure[data-third] {
+  grid-column: span 2;
+}
+
+/* One image alone: in the middle, the size it'd be beside another (owner, 14 Oct 69 —
+   it sat in the left column) */
+.two:has(> figure:only-child) {
+  width: min(100%, var(--cell));
+}
+
+.two > figure:only-child {
+  grid-column: 1 / -1;
+}
+
+/* On a narrow screen they sit as the home grid's covers do: 2px apart (owner, 6 Oct
+   69 — 16 split two small images on a phone) */
 @media (max-width: 767px) {
   .two {
-    column-gap: 2px;
+    gap: 16px 2px;
+    width: min(100%, calc(var(--cell) * 2 + 2px));
   }
 }
 

@@ -754,6 +754,9 @@ export default function Editor({
   const today = new Date().toISOString().slice(0, 10);
   const previewPost = {
     ...form,
+    // Images waiting for Save are "upload:<key>" in the text: the Preview shows them from
+    // memory, as WRITE does (owner, 14 Oct 69 — they came up as a broken image there)
+    body: form.body.replace(/upload:[a-z0-9-]+/g, (m) => pending[m.slice(UPLOAD.length)]?.url ?? m),
     code: entry?.code ?? null,
     no: entry?.no ?? null,
     status: entry?.status ?? "draft",
