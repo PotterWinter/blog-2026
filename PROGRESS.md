@@ -24,7 +24,7 @@
 - push แล้ว (12 ต.ค. 69): **PDF ในบทความ** (Blob + การ์ด, ปุ่ม PDF ใน Editor) → notes/media.md · ร่างบทความ Reading แรก `working-files/drafts/reading-01-dockerfile-hardening.md`
 - push แล้ว (13 ต.ค. 69): PDF ในบทความ = กรอบเทาเข้มเต็มคอลัมน์ เลื่อนหน้าแบบ carousel (ตามนิ้ว, วน, ครึ่งจอถึงขอบ) · ⤢ เต็มจอทุกหน้า · หน้าวาด 1600px · Lightbox เลื่อนแบบ slide (carousel + PDF) → notes/media.md, notes/04-post.md
 - push แล้ว (14 ต.ค. 69): **Grid** (เดิม Two — กี่รูปก็ได้, แถวละ 2, คี่ = แถวท้าย 3) · Preview เห็นรูปก่อน Save · จุดหมวด Private บนมือถือ → notes/04-post.md
-- push แล้ว (17 ต.ค. 69): เว็บจริงย้ายเป็น **https://kornnatthanat.vercel.app** (ถอด korn-natthanat.vercel.app แล้ว) · `SITE_URL` ใน `src/lib/site.ts` ที่เดียว (`LIVE_URL` ใช้ตัวนี้) · SEO: `metadataBase` · `/robots.txt` (กัน /admin /api /login /design) · `/sitemap.xml` (หน้า Home / Project / About + โพสต์ที่ publish ยกเว้น Private) · ทำต่อ: Google Search Console
+- push แล้ว (17 ต.ค. 69): เว็บจริงย้ายเป็น **https://kornnatthanat.vercel.app** (ถอด korn-natthanat.vercel.app แล้ว) · `SITE_URL` ใน `src/lib/site.ts` ที่เดียว (`LIVE_URL` ใช้ตัวนี้) · SEO: `metadataBase` · `/robots.txt` (กัน /admin /api /login /design) · `/sitemap.xml` (หน้า Home / Project / About + โพสต์ที่ publish ยกเว้น Private) · Google Search Console ยืนยันแล้ว + ส่ง sitemap แล้ว · ชื่อเก่า korn-natthanat.vercel.app ใส่กลับเป็น redirect 308 ไปชื่อใหม่ (ผล Google ยังชี้ชื่อเก่า)
 - **รอตัดสินใจ (6 ต.ค. 69): จังหวัดตอน login** — เมืองจาก IP เพี้ยน (เน็ตมือถือแฟนที่ภูเก็ตขึ้นเกาะเต่า) · ข้อเสนอ: ขอตำแหน่งจากเครื่องตอนกด Continue (ไม่บังคับ — ปฏิเสธ = login ได้แต่ขึ้น "location refused" แดง) · เก็บแค่ชื่อจังหวัด (เทียบพิกัดกลาง 77 จังหวัดในเครื่อง ไม่ส่งพิกัดออก ไม่เก็บพิกัด) · ใช้กับรหัสผิดด้วย · ไม่ได้ = เมืองจาก IP + ≈ · ปลอมได้ = ข้อมูลประกอบ ไม่ใช่หลักฐาน
 - **ถัดไป (แชทใหม่):** ~~5.5b~~ ไม่ทำ (เจ้าของ 5 ต.ค.) · เจ้าของจะทำ list เรื่องที่ต้องลองบน iPhone · ลิงก์จริง (LinkedIn, Behance, CV, วิดีโอ) · Home / Welcome page แล้วค่อย Dark mode (Site / Categories / Checks แก้ได้, เก็บ `site.json` ใน content repo — เจ้าของเลือก)
 - ~~รอเจ้าของตัดสินใจ — 5.5 Settings~~ ตัดสินแล้ว 5 ต.ค. 69 (แบ่ง 2 รอบ · site.json ใน content repo): (1) แบ่ง 2 รอบไหม — 5.5a: โครงหน้า + Security (sessions, Sign out ทีละเครื่อง / ทุกเครื่องอื่น, ประวัติ login) + Repository (ดูอย่างเดียว) + Clear cache · Site / Categories / Checks อ่านอย่างเดียว · 5.5b: ให้แก้ได้ · (2) ค่าตั้งเก็บที่ `site.json` ใน content repo (แนะนำ, commit เดียวแบบโพสต์) หรือ `site.config.ts` ในโค้ด (ต้องรอ build) · ไม่ทำ: Reset authenticator / recovery codes (พลาด = เข้า admin ไม่ได้), Rebuild site (push rebuild ให้อยู่แล้ว)
@@ -42,6 +42,8 @@
 
 ## ทำต่อ
 
+- [ ] **ย้ายชื่อเว็บ** (เริ่ม 17 ต.ค. 69): ค้น `kornnatthanat` ใน Google แล้วขึ้น kornnatthanat.vercel.app (ไม่ใช่ korn-natthanat) → เข้า Vercel › personal-blog-2026 › Settings › Domains ถอด korn-natthanat.vercel.app (ถอดแล้วลิงก์เก่าใน CV / LinkedIn / ที่ส่ง HR ไปจะ 404 → แก้พวกนั้นให้ครบก่อน)
+- [ ] แก้ลิงก์เว็บเป็น kornnatthanat.vercel.app: CV · LinkedIn (Contact info / Featured) · GitHub profile
 - [x] เจ้าของลอง Cover คลิป (คลิปจาก Coverr / Pexels ขนาด SD-720p ≤5 MB) บนคอม + iPhone: หัวบทความเล่นเอง, การ์ดเป็นภาพนิ่ง
 
 - [x] **เจ้าของ: เปิด Debouncing (#3) และ Test website system (#4) ใน Editor → กด Attach ↑ ที่กรอบ Output → Save** (กรอบติดกันเฉพาะที่มี `attach` แล้ว ไม่งั้น Output แยกห่างจากโค้ด)
