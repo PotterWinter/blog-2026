@@ -7,6 +7,7 @@ import { BRANCH, LOCAL_DIR, localIndex, REPO } from "./content";
 import { changesRun, placeWaiting, renumbered, takenCodes, planDelete, planPublish, planSave, planUnpublish, planUntag, type Change, type Plan, type PostInput } from "./edit.ts";
 import { clipKey, clipsIn, isClip, MEDIA_JSON, parseClips, placeClips, type ClipMap, type WaitingClip } from "./clips.ts";
 import { placeUploads, type Pending } from "./media";
+import { SITE_URL } from "./site";
 import { newCode, readIndex, type ContentIndex, type IndexEntry } from "./schema.ts";
 
 // The admin's writes (5.3b). Each action is one commit to the content repo holding the
@@ -202,7 +203,7 @@ export function refresh(slugs: string[]) {
 // line above doesn't reach — so it's asked to clear the same things (/api/revalidate).
 // Needs REVALIDATE_SECRET here and on Vercel. If it fails the save still stands; the
 // live site catches up within the hour, and the editor says so.
-const LIVE_URL = process.env.LIVE_URL || "https://korn-natthanat.vercel.app";
+const LIVE_URL = process.env.LIVE_URL || SITE_URL;
 
 // Settings › Clear cache (5.5): everything read from the content repo, read again —
 // here, and on the live site when this is dev on the real repo

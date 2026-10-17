@@ -1,3 +1,6 @@
+// The live site's address: sitemap, robots and share links are built from it
+export const SITE_URL = "https://kornnatthanat.vercel.app";
+
 // Site-wide settings. Step 5 moves these into site.json in the content repo so the
 // admin Settings page (09) can edit them; until then they live here.
 

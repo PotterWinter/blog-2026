@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans_Thai, Newsreader } from "next/font/google"
 import ArrowCursor from "@/components/ArrowCursor";
 import PageTransition from "@/components/PageTransition";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 const serif = Newsreader({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ const thai = IBM_Plex_Sans_Thai({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Code by Korn Natthanat",
   description: "Notes on how things are put together.",
 };
