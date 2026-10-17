@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Code by Korn Natthanat",
   description: "Notes on how things are put together.",
+  // Google Search Console: proves the site is ours (not a secret; it's in every page's <head>)
+  verification: { google: "4zgF15jFt_LwfziDmD8RGFy7w6bTIJAithbtwfwqYD8" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
