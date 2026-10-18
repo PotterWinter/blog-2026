@@ -51,14 +51,23 @@
   margin-left: 20px;
 }
 
+/* One line as tall as the category's (12px): a card with tags kept its title 3px lower
+   than one without, and a long tag broke onto a second line (owner, 18 Oct 69) */
 .tags {
   font-family: var(--ff-mono);
   font-size: var(--fs-meta);
+  line-height: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The date waits above its clip and drops in on hover */
 .dateClip {
   display: block;
+  flex-shrink: 0;
+  white-space: nowrap;
   margin-left: 4px;
   overflow: hidden;
 }

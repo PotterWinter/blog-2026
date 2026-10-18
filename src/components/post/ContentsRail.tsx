@@ -49,9 +49,10 @@ export default function ContentsRail({
     onJumpRef.current = onJump;
   });
 
-  // "Title" = the post's title (back to the top), then the article's numbered headings
-  // (h2 = section, h3 = sub-section), and always last "End" = Previous | Next. Title and
-  // End carry no number (owner, 30 Sep 69)
+  // "Title" = the post's title (back to the top), then the article's numbered headings,
+  // and always last "End" = Previous | Next. Title and End carry no number (owner, 30 Sep 69).
+  // h2 only: with each h3 too the rail ran too long (owner, 18 Oct 69). The sub rows
+  // (data-sub, "01.1") stay for when that changes
   useEffect(() => {
     const post = navRef.current?.closest("[data-post]");
     const article = post?.querySelector("[data-rail-text]") ?? post?.querySelector("article");
@@ -60,7 +61,7 @@ export default function ContentsRail({
     const collect = () => {
       let n = 0;
       let m = 0;
-      const found = [...article.querySelectorAll<HTMLElement>("h2[id], h3[id]")].map((h) => {
+      const found = [...article.querySelectorAll<HTMLElement>("h2[id]")].map((h) => {
         const sub = h.tagName === "H3";
         if (sub) m += 1;
         else {
